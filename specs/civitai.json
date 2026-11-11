@@ -1,0 +1,2063 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Civitai",
+    "version": "1.0.0",
+    "description": "The Civitai API from API.SH: public Civitai data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Civitai",
+      "description": "6 endpoints (content & communities)",
+      "x-slug": "civitai",
+      "x-domains": [
+        "civitai.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/civitai/v1/creators": {
+      "get": {
+        "operationId": "civitaiCreators",
+        "summary": "Civitai creator search",
+        "description": "Creators on Civitai matching a name: username, model count, avatar and profile link. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/civitai-creators",
+        "tags": [
+          "Civitai"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Part of a username.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "sg"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Creators per page (1-200, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "sg",
+                  "page": 1,
+                  "count": 20,
+                  "total": 21,
+                  "creators": [
+                    {
+                      "username": "ksg2ndid",
+                      "model_count": 0,
+                      "image": null,
+                      "url": "https://civitai.com/user/ksg2ndid",
+                      "models_link": "https://civitai.com/api/v1/models?username=ksg2ndid"
+                    },
+                    {
+                      "username": "sg3829",
+                      "model_count": 2,
+                      "image": null,
+                      "url": "https://civitai.com/user/sg3829",
+                      "models_link": "https://civitai.com/api/v1/models?username=sg3829"
+                    },
+                    "… 18 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/civitai/v1/images": {
+      "get": {
+        "operationId": "civitaiImages",
+        "summary": "Civitai images",
+        "description": "Images posted on Civitai, newest or most reacted first, filtered by model, model version, post or creator: image link, size, creator, base model, reactions and comments, and the generation data the creator shared (prompt, sampler, steps, seed, resources used). PG-rated images only by default; `include_nsfw=true` returns every rating (or up to `nsfw_level`), each with its rating. Pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/civitai-images",
+        "tags": [
+          "Civitai"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "model_id",
+            "in": "query",
+            "required": false,
+            "description": "Model id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "4201"
+          },
+          {
+            "name": "model_version_id",
+            "in": "query",
+            "required": false,
+            "description": "Model version id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "post_id",
+            "in": "query",
+            "required": false,
+            "description": "Post id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "required": false,
+            "description": "Creator username.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Most Reactions, Most Comments, Most Collected, Newest, Oldest, Random or Recently Added.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Most Reactions",
+                "Most Comments",
+                "Most Collected",
+                "Newest",
+                "Oldest",
+                "Random",
+                "Recently Added"
+              ]
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "description": "Day, Week, Month, Year or AllTime.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Day",
+                "Week",
+                "Month",
+                "Year",
+                "AllTime"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Images per page (1-100, default 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "`next_cursor` from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_nsfw",
+            "in": "query",
+            "required": false,
+            "description": "Opt in to adult content: `true` also returns adult models and images, each with its content rating (`nsfw`, `nsfw_level`). Default off.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "nsfw_level",
+            "in": "query",
+            "required": false,
+            "description": "With `include_nsfw=true`: the content rating filter the site applies (None, Soft, Mature, X; default X = every rating).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "None",
+                "Soft",
+                "Mature",
+                "X"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "applied_filters": {
+                    "modelId": "4201"
+                  },
+                  "count": 50,
+                  "images": [
+                    {
+                      "id": 147884814,
+                      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/87a4e387-1a06-4905-b4c7-2d66ef490db8/original=true/87a4e387-1a06-4905-b4c7-2d66ef490db8.jpe…",
+                      "width": 512,
+                      "height": 768,
+                      "type": "image",
+                      "hash": "UKHxc{M{LNj[00aeI9of9v%MwIbHIoWB%2az",
+                      "created_at": "2026-11-04T06:45:54.670Z",
+                      "post_id": 32143048,
+                      "username": "Hideus68",
+                      "base_model": "SD 1.5 Hyper",
+                      "model_version_ids": [
+                        102533,
+                        424706,
+                        "… 2 more"
+                      ],
+                      "stats": {
+                        "cryCount": 0,
+                        "laughCount": 0,
+                        "likeCount": 1,
+                        "dislikeCount": 0,
+                        "heartCount": 0,
+                        "commentCount": 0
+                      },
+                      "page_url": "https://civitai.com/images/147884814"
+                    },
+                    {
+                      "id": 147884813,
+                      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/d9cfbad1-7d39-40f2-a035-ec38dce51269/original=true/d9cfbad1-7d39-40f2-a035-ec38dce51269.jpe…",
+                      "width": 512,
+                      "height": 768,
+                      "type": "image",
+                      "hash": "UGHBuRS1G^kC01IUDiae9^-:rqR+EMt7xtt7",
+                      "created_at": "2026-11-04T06:45:54.666Z",
+                      "post_id": 32143048,
+                      "username": "Hideus68",
+                      "base_model": "SD 1.5 Hyper",
+                      "model_version_ids": [
+                        102533,
+                        424706,
+                        "… 2 more"
+                      ],
+                      "stats": {
+                        "cryCount": 0,
+                        "laughCount": 0,
+                        "likeCount": 1,
+                        "dislikeCount": 0,
+                        "heartCount": 0,
+                        "commentCount": 0
+                      },
+                      "page_url": "https://civitai.com/images/147884813"
+                    },
+                    "… 48 more"
+                  ],
+                  "next_cursor": "144442438",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/civitai/v1/model": {
+      "get": {
+        "operationId": "civitaiModel",
+        "summary": "Civitai model",
+        "description": "One Civitai model: name, type, description, creator, tags, stats, licence terms, and every version (base model, trigger words, files with size, format, hashes, scan results and download link, PG-rated sample images). Adult models answer 404 unless `include_nsfw=true` (then with all sample images and their content ratings).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/civitai-model",
+        "tags": [
+          "Civitai"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Model id or a civitai.com/models/<id> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "4201"
+          },
+          {
+            "name": "include_nsfw",
+            "in": "query",
+            "required": false,
+            "description": "Opt in to adult content: `true` also returns adult models and images, each with its content rating (`nsfw`, `nsfw_level`). Default off.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 4201,
+                  "name": "Realistic Vision V6.0 B1",
+                  "type": "Checkpoint",
+                  "description": "<p><strong><span style=\"color:rgb(21, 170, 191)\">Check my exclusive models on Mage: </span></strong><a target=\"_blank\" rel=\"ugc\" href=\"https…",
+                  "creator": {
+                    "username": "SG_161222",
+                    "image": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/41ce091f-1006-491f-916d-873a9c80dfde/width=96/SG_161222.jpeg"
+                  },
+                  "tags": [
+                    "photorealistic",
+                    "anatomical",
+                    "… 4 more"
+                  ],
+                  "base_models": [
+                    "SD 1.5 Hyper",
+                    "SD 1.5"
+                  ],
+                  "stats": {
+                    "downloadCount": 2362462,
+                    "thumbsUpCount": 52988,
+                    "thumbsDownCount": 97,
+                    "commentCount": 790,
+                    "tippedAmountCount": 115916
+                  },
+                  "poi": false,
+                  "minor": false,
+                  "availability": "Public",
+                  "supports_generation": true,
+                  "license": {
+                    "allow_no_credit": false,
+                    "allow_commercial_use": [
+                      "Image",
+                      "RentCivit",
+                      "… 1 more"
+                    ],
+                    "allow_derivatives": true,
+                    "allow_different_license": false
+                  },
+                  "versions": [
+                    {
+                      "id": 501240,
+                      "model_id": 4201,
+                      "name": "V5.1 Hyper (VAE)",
+                      "base_model": "SD 1.5 Hyper",
+                      "base_model_type": "Standard",
+                      "published_at": "2024-05-12T06:24:13.109Z",
+                      "created_at": "2024-05-12T06:04:22.202Z",
+                      "updated_at": null,
+                      "status": "Published",
+                      "availability": "Public",
+                      "description": null,
+                      "trained_words": [],
+                      "stats": {
+                        "downloadCount": 828312,
+                        "thumbsUpCount": 12711,
+                        "thumbsDownCount": 46
+                      },
+                      "download_url": "https://civitai.com/api/download/models/501240",
+                      "files": [
+                        {
+                          "id": 418901,
+                          "name": "realisticVisionV60B1_v51HyperVAE_418901.safetensors",
+                          "type": "Model",
+                          "size_kb": 2082642.474609375,
+                          "primary": true,
+                          "metadata": {
+                            "…": "3 fields"
+                          },
+                          "hashes": {
+                            "…": "7 fields"
+                          },
+                          "scan": {
+                            "…": "3 fields"
+                          },
+                          "download_url": "https://civitai.com/api/download/models/501240?fileId=418901"
+                        },
+                        {
+                          "id": 418904,
+                          "name": "realisticVisionV60B1_v51HyperVAE_418904.safetensors",
+                          "type": "Model",
+                          "size_kb": 4165133.80078125,
+                          "primary": false,
+                          "metadata": {
+                            "…": "3 fields"
+                          },
+                          "hashes": {
+                            "…": "7 fields"
+                          },
+                          "scan": {
+                            "…": "3 fields"
+                          },
+                          "download_url": "https://civitai.com/api/download/models/501240?fileId=418904"
+                        }
+                      ],
+                      "images": [
+                        {
+                          "id": null,
+                          "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/1c65dc07-2e32-4e76-a0b7-458c450ff1ae/original=true/12221824.jpeg",
+                          "width": 1024,
+                          "height": 1536,
+                          "type": "image",
+                          "hash": "UADu}F9a00xb+sIW?uNG0NoL}?D*0gD*-Uxu",
+                          "created_at": null,
+                          "post_id": null,
+                          "username": null,
+                          "base_model": null,
+                          "page_url": null
+                        },
+                        {
+                          "id": null,
+                          "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/9d8e6d7d-7a26-44b4-a02d-131f53fd5d77/original=true/12221845.jpeg",
+                          "width": 1024,
+                          "height": 1536,
+                          "type": "image",
+                          "hash": "ULC~|_~VtRt74.4oE1Vsbvf,aet8bExt%1WB",
+                          "created_at": null,
+                          "post_id": null,
+                          "username": null,
+                          "base_model": null,
+                          "page_url": null
+                        },
+                        "… 14 more"
+                      ],
+                      "page_url": "https://civitai.com/models/4201?modelVersionId=501240"
+                    },
+                    {
+                      "id": 501286,
+                      "model_id": 4201,
+                      "name": "V5.1 Hyper-Inpaint (VAE)",
+                      "base_model": "SD 1.5 Hyper",
+                      "base_model_type": "Inpainting",
+                      "published_at": "2024-05-12T07:02:08.427Z",
+                      "created_at": "2024-05-12T06:48:50.525Z",
+                      "updated_at": null,
+                      "status": "Published",
+                      "availability": "Public",
+                      "description": null,
+                      "trained_words": [],
+                      "stats": {
+                        "downloadCount": 58906,
+                        "thumbsUpCount": 407,
+                        "thumbsDownCount": 2
+                      },
+                      "download_url": "https://civitai.com/api/download/models/501286",
+                      "files": [
+                        {
+                          "id": 418955,
+                          "name": "realisticVisionV60B1_v51HyperInpaintVAE_418955.safetensors",
+                          "type": "Model",
+                          "size_kb": 2082695.26171875,
+                          "primary": true,
+                          "metadata": {
+                            "…": "3 fields"
+                          },
+                          "hashes": {
+                            "…": "7 fields"
+                          },
+                          "scan": {
+                            "…": "3 fields"
+                          },
+                          "download_url": "https://civitai.com/api/download/models/501286?fileId=418955"
+                        },
+                        {
+                          "id": 418958,
+                          "name": "realisticVisionV60B1_v51HyperInpaintVAE_418958.safetensors",
+                          "type": "Model",
+                          "size_kb": 4165238.15234375,
+                          "primary": false,
+                          "metadata": {
+                            "…": "3 fields"
+                          },
+                          "hashes": {
+                            "…": "7 fields"
+                          },
+                          "scan": {
+                            "…": "3 fields"
+                          },
+                          "download_url": "https://civitai.com/api/download/models/501286?fileId=418958"
+                        }
+                      ],
+                      "images": [
+                        {
+                          "id": null,
+                          "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/14f129fe-ed7b-402e-be55-8a7988116a6f/original=true/12224341.jpeg",
+                          "width": 1024,
+                          "height": 1536,
+                          "type": "image",
+                          "hash": "UCFYV|Ipl-9G~p.8_2-;x]s,MxRPM_MyaLM{",
+                          "created_at": null,
+                          "post_id": null,
+                          "username": null,
+                          "base_model": null,
+                          "page_url": null
+                        }
+                      ],
+                      "page_url": "https://civitai.com/models/4201?modelVersionId=501286"
+                    },
+                    "… 17 more"
+                  ],
+                  "url": "https://civitai.com/models/4201",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/civitai/v1/model-version": {
+      "get": {
+        "operationId": "civitaiModelVersion",
+        "summary": "Civitai model version",
+        "description": "One version of a model, by version id or by a file hash (AutoV1, AutoV2, SHA256, CRC32 or BLAKE3): name, base model, trigger words, stats, files with hashes and download links, PG-rated sample images and the parent model's name and type. Pass `id` or `hash`. Adult models answer 404 unless `include_nsfw=true`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/civitai-model-version",
+        "tags": [
+          "Civitai"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Model version id, or a civitai.com link with ?modelVersionId=.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "130072"
+          },
+          {
+            "name": "hash",
+            "in": "query",
+            "required": false,
+            "description": "A model file hash (finds the version a downloaded file belongs to).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_nsfw",
+            "in": "query",
+            "required": false,
+            "description": "Opt in to adult content: `true` also returns adult models and images, each with its content rating (`nsfw`, `nsfw_level`). Default off.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 130072,
+                  "model_id": 4201,
+                  "name": "V5.1 (VAE)",
+                  "base_model": "SD 1.5",
+                  "base_model_type": "Standard",
+                  "published_at": "2023-07-31T08:27:16.052Z",
+                  "created_at": "2023-07-31T08:00:27.426Z",
+                  "updated_at": "2025-02-14T21:40:35.698Z",
+                  "status": "Published",
+                  "availability": null,
+                  "description": "<p>The required VAE is already baked into the model.<br /><br />This version (Code_1284) is a fix for many issues of 5.0 (<u>artifacts, ugly…",
+                  "trained_words": [],
+                  "stats": {
+                    "downloadCount": 498415,
+                    "thumbsUpCount": 4626
+                  },
+                  "download_url": "https://civitai.com/api/download/models/130072",
+                  "files": [
+                    {
+                      "id": 94300,
+                      "name": "realisticVisionV60B1_v51VAE_94300.ckpt",
+                      "type": "Model",
+                      "size_kb": 4165379.6484375,
+                      "primary": false,
+                      "metadata": {
+                        "format": "PickleTensor",
+                        "size": "full",
+                        "fp": "fp16"
+                      },
+                      "hashes": {
+                        "AutoV1": "F95D2E44",
+                        "AutoV2": "139AC005D4",
+                        "SHA256": "139AC005D4D1E33C6335F5651ABB3D2E4654DC0520AEDFEA07909BDD20435518",
+                        "CRC32": "38FEBCD3",
+                        "BLAKE3": "205A6ADCDEA77D98089653AA3372FB30EC38E93C46B79B0A9B00B2A07A704B7C",
+                        "SHA256_12": "139AC005D4D1"
+                      },
+                      "scan": {
+                        "pickle": "Success",
+                        "virus": "Success",
+                        "scanned_at": "2023-07-31T08:27:30.586"
+                      },
+                      "download_url": "https://civitai.com/api/download/models/130072?fileId=94300"
+                    },
+                    {
+                      "id": 94298,
+                      "name": "realisticVisionV60B1_v51VAE_94298.safetensors",
+                      "type": "Model",
+                      "size_kb": 2082642.474609375,
+                      "primary": true,
+                      "metadata": {
+                        "format": "SafeTensor",
+                        "size": "pruned",
+                        "fp": "fp16"
+                      },
+                      "hashes": {
+                        "AutoV1": "A0F13C83",
+                        "AutoV2": "15012C538F",
+                        "SHA256": "15012C538F503CE2EBFC2C8547B268C75CCDAFF7A281DB55399940FF1D70E21D",
+                        "CRC32": "FFE8B9E1",
+                        "BLAKE3": "013543ADE69517662AC86E97A113B994679F33CD69B573D68C4D51F5457C9528",
+                        "SHA256_12": "15012C538F50"
+                      },
+                      "scan": {
+                        "pickle": "Success",
+                        "virus": "Success",
+                        "scanned_at": "2023-07-31T08:16:29.099"
+                      },
+                      "download_url": "https://civitai.com/api/download/models/130072?fileId=94298"
+                    },
+                    "… 2 more"
+                  ],
+                  "images": [
+                    {
+                      "id": null,
+                      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/0dcee20e-415c-42c3-92bc-d596f9b45289/original=true/2375288.jpeg",
+                      "width": 640,
+                      "height": 960,
+                      "type": "image",
+                      "hash": "UMD+l7~qAcpJI;tR?a%M9aM{w]xFWBt6xuof",
+                      "created_at": null,
+                      "post_id": null,
+                      "username": null,
+                      "base_model": null,
+                      "meta": {
+                        "VAE": "vae-ft-mse-840000-ema-pruned.safetensors",
+                        "Size": "640x960",
+                        "seed": 3898569358,
+                        "Model": "realisticVisionV51",
+                        "steps": 25,
+                        "hashes": {
+                          "model": "ef76aa2332"
+                        },
+                        "prompt": "RAW photo, face portrait photo of beautiful 26 y.o woman, cute face, wearing black dress, happy face, hard shadows, cinematic shot, dramatic…",
+                        "Version": "v1.6.0",
+                        "sampler": "DPM++ SDE Karras",
+                        "VAE hash": "551eac7037",
+                        "cfgScale": 7,
+                        "resources": [
+                          {
+                            "…": "3 fields"
+                          }
+                        ],
+                        "Model hash": "ef76aa2332",
+                        "negativePrompt": "(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime, mutated hands and fingers:1.4), (deformed…"
+                      },
+                      "page_url": null
+                    },
+                    {
+                      "id": null,
+                      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/7052f043-d0ac-4893-936c-e07a62948726/original=true/2023636.jpeg",
+                      "width": 640,
+                      "height": 768,
+                      "type": "image",
+                      "hash": "UEB{ie~V0L0L^*t79ZM{NGWqxaoMELR%xaoL",
+                      "created_at": null,
+                      "post_id": null,
+                      "username": null,
+                      "base_model": null,
+                      "meta": {
+                        "Size": "640x768",
+                        "seed": 3776793451,
+                        "Model": "Realistic_Vision_V5.1",
+                        "steps": 25,
+                        "hashes": {
+                          "model": "ef76aa2332"
+                        },
+                        "prompt": "high quality, face portrait photo of 30 y.o european man, wearing black shirt, serious face, detailed face, skin pores, cinematic shot, dram…",
+                        "Version": "v1.5.1",
+                        "sampler": "DPM++ SDE Karras",
+                        "cfgScale": 7,
+                        "resources": [
+                          {
+                            "…": "3 fields"
+                          }
+                        ],
+                        "Model hash": "ef76aa2332",
+                        "negativePrompt": "(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime, mutated hands and fingers:1.4), (deformed…"
+                      },
+                      "page_url": null
+                    },
+                    "… 6 more"
+                  ],
+                  "model": {
+                    "name": "Realistic Vision V6.0 B1",
+                    "type": "Checkpoint",
+                    "poi": false
+                  },
+                  "page_url": "https://civitai.com/models/4201?modelVersionId=130072",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/civitai/v1/models": {
+      "get": {
+        "operationId": "civitaiModels",
+        "summary": "Civitai model search",
+        "description": "AI models on Civitai (checkpoints, LoRAs, embeddings, ControlNets, VAEs, workflows...) matching a keyword, tag or creator, with every filter the site takes: types, base models, sort, period and licence flags. Each model: id, name, type, description, creator, tags, stats (downloads, likes, comments, tips), licence terms and every version with its base model, trigger words, files (size, format, hashes, scan results, download link) and PG-rated sample images. Safe-for-work by default: adult models and images are left out unless `include_nsfw=true`. Up to 10 a page; pass `next_cursor` back as `cursor`, null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/civitai-models",
+        "tags": [
+          "Civitai"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Keywords (model name).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "anime"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "description": "A tag, e.g. character or style.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "required": false,
+            "description": "Creator username.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "description": "One or more model types, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Hot, Highest Rated, Most Downloaded, Most Liked, Most Discussed, Most Collected, Most Images, Newest, Oldest or Recently Added.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Hot",
+                "Highest Rated",
+                "Most Downloaded",
+                "Most Liked",
+                "Most Discussed",
+                "Most Collected",
+                "Most Images",
+                "Newest",
+                "Oldest",
+                "Recently Added"
+              ]
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "description": "Day, Week, Month, Year or AllTime (for the sort).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Day",
+                "Week",
+                "Month",
+                "Year",
+                "AllTime"
+              ]
+            }
+          },
+          {
+            "name": "base_models",
+            "in": "query",
+            "required": false,
+            "description": "Base models, comma-separated (e.g. SDXL 1.0, Pony, Flux.1 D, SD 1.5).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "allow_commercial_use",
+            "in": "query",
+            "required": false,
+            "description": "None, Image, RentCivit, Rent, Sell or SellMerge (comma-separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "allow_no_credit",
+            "in": "query",
+            "required": false,
+            "description": "true/false: use without crediting the creator.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "allow_derivatives",
+            "in": "query",
+            "required": false,
+            "description": "true/false: merges and derivatives allowed.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "allow_different_licenses",
+            "in": "query",
+            "required": false,
+            "description": "true/false: derivatives may use another licence.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "supports_generation",
+            "in": "query",
+            "required": false,
+            "description": "true/false: can be run on the site's generator.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "primary_file_only",
+            "in": "query",
+            "required": false,
+            "description": "true: only each version's primary file.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "required": false,
+            "description": "Model ids, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Models per page (1-10, default 10).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "`next_cursor` from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_nsfw",
+            "in": "query",
+            "required": false,
+            "description": "Opt in to adult content: `true` also returns adult models and images, each with its content rating (`nsfw`, `nsfw_level`). Default off.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "anime",
+                  "applied_filters": {
+                    "query": "anime"
+                  },
+                  "count": 10,
+                  "models": [
+                    {
+                      "id": 16014,
+                      "name": "Anime Lineart / Manga-like (线稿/線画/マンガ風/漫画风) Style",
+                      "type": "LORA",
+                      "description": "<h2>Update information</h2><p></p><p>V3.0 updated. Fine-tuned LoRA to improve the effects of generating characters with complex body limbs a…",
+                      "creator": {
+                        "username": "CyberAIchemist",
+                        "image": null
+                      },
+                      "tags": [
+                        "lineart",
+                        "art style",
+                        "… 10 more"
+                      ],
+                      "base_models": [
+                        "SD 1.5"
+                      ],
+                      "stats": {
+                        "downloadCount": 208327,
+                        "thumbsUpCount": 21439,
+                        "thumbsDownCount": 5,
+                        "commentCount": 0,
+                        "tippedAmountCount": 1043
+                      },
+                      "poi": false,
+                      "minor": false,
+                      "availability": "Public",
+                      "supports_generation": false,
+                      "license": {
+                        "allow_no_credit": true,
+                        "allow_commercial_use": [],
+                        "allow_derivatives": true,
+                        "allow_different_license": true
+                      },
+                      "versions": [
+                        {
+                          "id": 28907,
+                          "model_id": 16014,
+                          "name": "v3.0 manga-like",
+                          "base_model": "SD 1.5",
+                          "base_model_type": "Standard",
+                          "published_at": "2023-03-25T13:39:23.464Z",
+                          "created_at": null,
+                          "updated_at": null,
+                          "status": null,
+                          "availability": "Public",
+                          "description": null,
+                          "trained_words": [
+                            "lineart, monochrome"
+                          ],
+                          "stats": {
+                            "…": "3 fields"
+                          },
+                          "download_url": "https://civitai.com/api/download/models/28907",
+                          "files": [
+                            {
+                              "…": "9 fields"
+                            }
+                          ],
+                          "images": [
+                            {
+                              "…": "11 fields"
+                            },
+                            {
+                              "…": "11 fields"
+                            },
+                            "… 14 more"
+                          ],
+                          "page_url": "https://civitai.com/models/16014?modelVersionId=28907"
+                        },
+                        {
+                          "id": 19075,
+                          "model_id": 16014,
+                          "name": "v2.0 offset",
+                          "base_model": "SD 1.5",
+                          "base_model_type": "Standard",
+                          "published_at": "2023-03-05T20:00:31.679Z",
+                          "created_at": null,
+                          "updated_at": null,
+                          "status": null,
+                          "availability": "Public",
+                          "description": "<p>V2.0 is updated! Trained with offset noise, and all demos are generated with Anything V4.5 base model and orange mix VAE.</p><p>What this…",
+                          "trained_words": [
+                            "monochrome",
+                            "lineart"
+                          ],
+                          "stats": {
+                            "…": "3 fields"
+                          },
+                          "download_url": "https://civitai.com/api/download/models/19075",
+                          "files": [
+                            {
+                              "…": "9 fields"
+                            }
+                          ],
+                          "images": [
+                            {
+                              "…": "11 fields"
+                            },
+                            {
+                              "…": "11 fields"
+                            },
+                            "… 14 more"
+                          ],
+                          "page_url": "https://civitai.com/models/16014?modelVersionId=19075"
+                        },
+                        "… 1 more"
+                      ],
+                      "url": "https://civitai.com/models/16014"
+                    },
+                    {
+                      "id": 11177,
+                      "name": "Anime Tarot Card Art Style LoRA (塔罗牌/タロットカード)",
+                      "type": "LORA",
+                      "description": "<p>Trained on Phantom Star illustrations.</p><p>V3.1 updated. Improve consistency. Support for more varied backgrounds (use <code>{} backgro…",
+                      "creator": {
+                        "username": "CyberAIchemist",
+                        "image": null
+                      },
+                      "tags": [
+                        "illustration",
+                        "style",
+                        "… 4 more"
+                      ],
+                      "base_models": [
+                        "SD 1.5"
+                      ],
+                      "stats": {
+                        "downloadCount": 89782,
+                        "thumbsUpCount": 13477,
+                        "thumbsDownCount": 2,
+                        "commentCount": 0,
+                        "tippedAmountCount": 524
+                      },
+                      "poi": false,
+                      "minor": false,
+                      "availability": "Public",
+                      "supports_generation": false,
+                      "license": {
+                        "allow_no_credit": true,
+                        "allow_commercial_use": [],
+                        "allow_derivatives": true,
+                        "allow_different_license": true
+                      },
+                      "versions": [
+                        {
+                          "id": 28609,
+                          "model_id": 11177,
+                          "name": "v3.1",
+                          "base_model": "SD 1.5",
+                          "base_model_type": "Standard",
+                          "published_at": "2023-03-24T22:12:16.903Z",
+                          "created_at": null,
+                          "updated_at": null,
+                          "status": null,
+                          "availability": "Public",
+                          "description": "<p>Improve performance</p>",
+                          "trained_words": [],
+                          "stats": {
+                            "…": "3 fields"
+                          },
+                          "download_url": "https://civitai.com/api/download/models/28609",
+                          "files": [
+                            {
+                              "…": "9 fields"
+                            }
+                          ],
+                          "images": [
+                            {
+                              "…": "11 fields"
+                            },
+                            {
+                              "…": "11 fields"
+                            },
+                            "… 7 more"
+                          ],
+                          "page_url": "https://civitai.com/models/11177?modelVersionId=28609"
+                        },
+                        {
+                          "id": 28248,
+                          "model_id": 11177,
+                          "name": "v3.0",
+                          "base_model": "SD 1.5",
+                          "base_model_type": "Standard",
+                          "published_at": "2023-03-24T06:16:39.064Z",
+                          "created_at": null,
+                          "updated_at": null,
+                          "status": null,
+                          "availability": "Public",
+                          "description": "<p>V3.0 updated. Support for more varied backgrounds (use <code>{} background</code> to set). You can use it without any additional prompts,…",
+                          "trained_words": [
+                            "tarot"
+                          ],
+                          "stats": {
+                            "…": "3 fields"
+                          },
+                          "download_url": "https://civitai.com/api/download/models/28248",
+                          "files": [
+                            {
+                              "…": "9 fields"
+                            }
+                          ],
+                          "images": [
+                            {
+                              "…": "11 fields"
+                            },
+                            {
+                              "…": "11 fields"
+                            },
+                            "… 13 more"
+                          ],
+                          "page_url": "https://civitai.com/models/11177?modelVersionId=28248"
+                        },
+                        "… 2 more"
+                      ],
+                      "url": "https://civitai.com/models/11177"
+                    },
+                    "… 8 more"
+                  ],
+                  "next_cursor": "10",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/civitai/v1/tags": {
+      "get": {
+        "operationId": "civitaiTags",
+        "summary": "Civitai tag search",
+        "description": "Model tags on Civitai matching a word, each with a link to its models. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/civitai-tags",
+        "tags": [
+          "Civitai"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Part of a tag.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "anime"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Tags per page (1-200, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "anime",
+                  "page": 1,
+                  "count": 20,
+                  "total": null,
+                  "tags": [
+                    {
+                      "name": "anime",
+                      "model_count": null,
+                      "url": "https://civitai.com/tag/anime",
+                      "models_link": "https://civitai.com/api/v1/models?tag=anime"
+                    },
+                    {
+                      "name": "animei",
+                      "model_count": null,
+                      "url": "https://civitai.com/tag/animei",
+                      "models_link": "https://civitai.com/api/v1/models?tag=animei"
+                    },
+                    "… 18 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

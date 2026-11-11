@@ -1,0 +1,1447 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: BBB",
+    "version": "1.0.0",
+    "description": "The BBB API from API.SH: public BBB data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "BBB",
+      "description": "5 endpoints (search & seo)",
+      "x-slug": "bbb",
+      "x-domains": [
+        "bbb.org"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bbb/v1/business": {
+      "get": {
+        "operationId": "bbbBusiness",
+        "summary": "One BBB business profile",
+        "description": "A business profile as BBB publishes it: BBB rating and rating reasons, accreditation (and since when), customer review rating and count, complaint counts (total, closed in the last 3 years and 12 months), phone, e-mail, website, contacts, address, categories, business start and incorporation dates, payment methods, additional information, the latest reviews, opening hours, map position, BBB alerts (government actions, complaint patterns), products and services, social media links, and the business's other locations (the first 5, with each one's rating, accreditation and link, plus the total).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bbb-business",
+        "tags": [
+          "BBB"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "BBB business profile URL.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.bbb.org/us/co/denver/profile/plumber/ennis-plumbing-llc-1296-90156205"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.bbb.org/us/co/denver/profile/plumber/ennis-plumbing-llc-1296-90156205",
+                  "id": "0_690834",
+                  "bbb_id": "1296",
+                  "business_id": "90156205",
+                  "name": "Ennis Plumbing LLC",
+                  "alternate_names": [],
+                  "rating": "A+",
+                  "rating_reasons": [
+                    "Customer Reviews are not used in the calculation of the BBB Letter Grade Rating."
+                  ],
+                  "not_rated_reason": null,
+                  "accredited": true,
+                  "accredited_since": "2013-05-06T00:00:00",
+                  "review_rating": 5,
+                  "review_count": 2,
+                  "complaint_count": 0,
+                  "complaints_closed_last_3_years": 0,
+                  "complaints_closed_last_12_months": 0,
+                  "phone": "+1 555 010 0000",
+                  "email": "name@example.com",
+                  "website": null,
+                  "additional_phones": [],
+                  "additional_emails": [
+                    "name@example.com"
+                  ],
+                  "fax_numbers": [],
+                  "contacts": [
+                    {
+                      "name": "Mr. James M Ennis",
+                      "title": "Owner",
+                      "principal": true,
+                      "management": true
+                    }
+                  ],
+                  "address": "4865 Golden Ct, Denver, CO 80212",
+                  "street": "4865 Golden Ct",
+                  "city": "Denver",
+                  "state": "CO",
+                  "postal_code": "80212",
+                  "categories": [
+                    "Plumber",
+                    "Commercial Plumber"
+                  ],
+                  "business_started": "2011-11-16T00:00:00",
+                  "incorporated": "2011-11-16T00:00:00",
+                  "file_opened": "2013-04-29T00:00:00",
+                  "employees": null,
+                  "description": "Ennis Plumbing offers plumbing contractor services.",
+                  "payment_methods": [],
+                  "out_of_business": false,
+                  "additional_information": [
+                    {
+                      "title": "Products and Services",
+                      "text": "plumbing contractors"
+                    },
+                    {
+                      "title": "Rating Reason",
+                      "text": "Customer Reviews are not used in the calculation of the BBB Letter Grade Rating."
+                    }
+                  ],
+                  "local_bbb": "BBB Great West + Pacific",
+                  "multi_location": false,
+                  "logo": null,
+                  "…": "17 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/bbb/v1/categories": {
+      "get": {
+        "operationId": "bbbCategories",
+        "summary": "BBB business categories",
+        "description": "The Better Business Bureau's business categories that start with a letter: slug, name (usable as /bbb/v1/search's category) and link. With q, the categories starting with q's first letter that contain q.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bbb-categories",
+        "tags": [
+          "BBB"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "letter",
+            "in": "query",
+            "required": false,
+            "description": "First letter, a to z (default a), or pass q.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "p"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "A word: lists the categories that start with its first letter and contain it.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "plumb"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "us (default) or ca.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "us",
+                "ca"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "us",
+                  "letter": "p",
+                  "query": "plumb",
+                  "count": 7,
+                  "categories": [
+                    {
+                      "category": "plumber",
+                      "name": "Plumber",
+                      "url": "https://www.bbb.org/us/category/plumber"
+                    },
+                    {
+                      "category": "plumbing-fixtures",
+                      "name": "Plumbing Fixtures",
+                      "url": "https://www.bbb.org/us/category/plumbing-fixtures"
+                    },
+                    "… 5 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/bbb/v1/complaints": {
+      "get": {
+        "operationId": "bbbComplaints",
+        "summary": "BBB complaints against a business",
+        "description": "Pass `next_page` from the previous response; `next_page` is null on the last page.\n\nComplaints filed against a business, 10 per page: date, complaint type, status (answered or resolved), the complaint text and the business response, with the counts per status and type to filter by.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bbb-complaints",
+        "tags": [
+          "BBB"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "BBB business profile URL.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.bbb.org/us/pa/philadelphia/profile/internet-providers/comcast-corporation-0241-80003221"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Only complaints with this status: answered or resolved.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "answered",
+                "resolved"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Only complaints of this type (a slug from `available_filters.type`, for example billingissues, serviceorrepair, productissues, customerservice, order, salesadvertising, delivery).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_page` from the previous response; `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.bbb.org/us/pa/philadelphia/profile/internet-providers/comcast-corporation-0241-80003221",
+                  "bbb_id": "0241",
+                  "business_id": "80003221",
+                  "page": 1,
+                  "applied_filters": {
+                    "status": null,
+                    "type": null
+                  },
+                  "total": 10000,
+                  "total_pages": 1000,
+                  "hidden": 3972,
+                  "next_page": 2,
+                  "count": 10,
+                  "complaints": [
+                    {
+                      "id": "0241_80003221_25358213",
+                      "date": "2026-10-06",
+                      "type": "Sales and Advertising Issues",
+                      "status": "Resolved",
+                      "text": "Hi, I had received my current bill for my xfinity account and it went back to the original amount of $70.90 because the promo had expired wh…",
+                      "business_response": null,
+                      "responses": [
+                        {
+                          "id": "0241_80003221_25358213_0",
+                          "from": "consumer",
+                          "date": "2026-10-07",
+                          "text": "Hi, I have spoken to a xfinity representative that handles complaints and she was able to resolve the issue. Thank you,***** ******** Rodrig…"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "0241_80003221_25354424",
+                      "date": "2026-10-05",
+                      "type": "Service or Repair Issues",
+                      "status": "Resolved",
+                      "text": "Started mobile services June 2025 was told that my bill would be $40 for two years. Summer *************************************************…",
+                      "business_response": {
+                        "id": "0241_80003221_25354424_0",
+                        "from": "business",
+                        "date": "2026-10-08",
+                        "text": "October 7, 2026 BBB of ******************* & ***********************************************************************************************…"
+                      },
+                      "responses": [
+                        {
+                          "id": "0241_80003221_25354424_0",
+                          "from": "business",
+                          "date": "2026-10-08",
+                          "text": "October 7, 2026 BBB of ******************* & ***********************************************************************************************…"
+                        },
+                        {
+                          "id": "0241_80003221_25354424_1",
+                          "from": "consumer",
+                          "date": "2026-10-08",
+                          "text": "[A default letter is provided here which indicates your acceptance of the business's response. If you wish, you may update it before sending…"
+                        }
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "available_filters": {
+                    "status": [
+                      {
+                        "count": 20468,
+                        "slug": "answered"
+                      },
+                      {
+                        "count": 5846,
+                        "slug": "resolved"
+                      }
+                    ],
+                    "type": [
+                      {
+                        "count": 12480,
+                        "slug": "serviceorrepair"
+                      },
+                      {
+                        "count": 5279,
+                        "slug": "billingissues"
+                      },
+                      "… 5 more"
+                    ]
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/bbb/v1/reviews": {
+      "get": {
+        "operationId": "bbbReviews",
+        "summary": "BBB customer reviews",
+        "description": "Pass `next_page` from the previous response; `next_page` is null on the last page.\n\nCustomer reviews of a business, 10 per page: rating, author, date, text, the business response and the customer's reply.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bbb-reviews",
+        "tags": [
+          "BBB"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "BBB business profile URL.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.bbb.org/us/pa/philadelphia/profile/internet-providers/comcast-corporation-0241-80003221"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "newest (default), oldest, highest or lowest.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "oldest",
+                "highest",
+                "lowest"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_page` from the previous response; `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.bbb.org/us/pa/philadelphia/profile/internet-providers/comcast-corporation-0241-80003221",
+                  "bbb_id": "0241",
+                  "business_id": "80003221",
+                  "sort": "newest",
+                  "page": 1,
+                  "total": 2884,
+                  "total_pages": 289,
+                  "next_page": 2,
+                  "count": 10,
+                  "reviews": [
+                    {
+                      "id": "0241_80003221_561760",
+                      "rating": 1,
+                      "author": "Jessica L",
+                      "date": "2026-10-28",
+                      "preview": false,
+                      "text": "I have a cracked utility pole outside of my home that was damaged two and a half months ago by a bad storm. Nipsco deemed it xfinitys pole v…",
+                      "extended_text": null,
+                      "business_response": null,
+                      "customer_reply": null,
+                      "business_rebuttal": null
+                    },
+                    {
+                      "id": "0241_80003221_561749",
+                      "rating": 1,
+                      "author": "John D",
+                      "date": "2026-10-27",
+                      "preview": false,
+                      "text": "Misleading advertising. Constantly over a period of years get the same message \"Peacock is yours. Claim it now to start *********** an Xfini…",
+                      "extended_text": null,
+                      "business_response": null,
+                      "customer_reply": null,
+                      "business_rebuttal": null
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/bbb/v1/search": {
+      "get": {
+        "operationId": "bbbSearch",
+        "summary": "Better Business Bureau business search",
+        "description": "Pass `next_page` from the previous response; `next_page` is null on the last page.\n\nBusinesses and charities listed by the Better Business Bureau (15 per page, up to 15 pages): BBB rating, accreditation, categories, phone, address, coordinates, service area and the profile URL to pass to /bbb/v1/business and /bbb/v1/reviews. `available_filters` lists the category and state values for this search. Filter by accreditation (`accredited=true`) and BBB rating letter grades (`rating`); `applied_filters` echoes them.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bbb-search",
+        "tags": [
+          "BBB"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Business name or category.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "plumber"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "City and state or ZIP code.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Denver, CO"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "USA (default) or CAN.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "USA",
+                "CAN"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), distance, rating, name_asc or name_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "distance",
+                "rating",
+                "name_asc",
+                "name_desc"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category id from `available_filters.category`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter state or province from `available_filters.state`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_page` from the previous response; `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "accredited",
+            "in": "query",
+            "required": false,
+            "description": "true: only BBB Accredited Businesses.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "required": false,
+            "description": "BBB rating letter grades, comma-separated (any matches): A, B, C, D, F. A covers A+, A and A-.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "comcast",
+                  "location": null,
+                  "country": "USA",
+                  "sort": "relevance",
+                  "page": 1,
+                  "applied_filters": {
+                    "category": null,
+                    "state": null
+                  },
+                  "total": 966,
+                  "total_pages": 15,
+                  "next_page": 2,
+                  "count": 15,
+                  "businesses": [
+                    {
+                      "id": "0241_80003221_198454_391173",
+                      "business_id": "80003221",
+                      "bbb_id": "0241",
+                      "name": "Comcast",
+                      "url": "https://www.bbb.org/us/pa/philadelphia/profile/internet-providers/comcast-corporation-0241-80003221",
+                      "rating": "A+",
+                      "accredited": false,
+                      "category": "Internet Providers",
+                      "categories": [
+                        "Internet Providers",
+                        "Internet Services",
+                        "… 2 more"
+                      ],
+                      "phone": "+1 555 010 0000",
+                      "phones": [
+                        "+1 555 010 0000",
+                        "+1 555 010 0000"
+                      ],
+                      "address": "720 Taylor St",
+                      "city": "Fort Wayne",
+                      "state": "IN",
+                      "postal_code": "46802-5144",
+                      "latitude": 41.06780242919922,
+                      "longitude": -85.14680480957033,
+                      "logo": null,
+                      "local_bbb": "BBB serving Metro Washington DC, Metro Philadelphia & Eastern Pennsylvania",
+                      "service_area": null,
+                      "service_areas": [],
+                      "out_of_business": null,
+                      "is_charity": false,
+                      "reviews_url": "https://www.bbb.org/us/pa/philadelphia/profile/internet-providers/comcast-corporation-0241-80003221/customer-reviews"
+                    },
+                    {
+                      "id": "0241_80003221_198459_391175",
+                      "business_id": "80003221",
+                      "bbb_id": "0241",
+                      "name": "Comcast",
+                      "url": "https://www.bbb.org/us/pa/philadelphia/profile/internet-providers/comcast-corporation-0241-80003221",
+                      "rating": "A+",
+                      "accredited": false,
+                      "category": "Internet Providers",
+                      "categories": [
+                        "Internet Providers",
+                        "Internet Services",
+                        "… 2 more"
+                      ],
+                      "phone": "+1 555 010 0000",
+                      "phones": [
+                        "+1 555 010 0000",
+                        "+1 555 010 0000"
+                      ],
+                      "address": "2000 Ohio St",
+                      "city": "La Porte",
+                      "state": "IN",
+                      "postal_code": "46350-8053",
+                      "latitude": 41.606964111328125,
+                      "longitude": -86.68476867675781,
+                      "logo": null,
+                      "local_bbb": "BBB serving Metro Washington DC, Metro Philadelphia & Eastern Pennsylvania",
+                      "service_area": null,
+                      "service_areas": [],
+                      "out_of_business": null,
+                      "is_charity": false,
+                      "reviews_url": "https://www.bbb.org/us/pa/philadelphia/profile/internet-providers/comcast-corporation-0241-80003221/customer-reviews"
+                    },
+                    "… 13 more"
+                  ],
+                  "available_filters": {
+                    "category": [
+                      {
+                        "value": "70623-000",
+                        "label": "Cable TVs"
+                      },
+                      {
+                        "value": "60473-100",
+                        "label": "Internet Providers"
+                      },
+                      "… 8 more"
+                    ],
+                    "state": [
+                      {
+                        "value": "AL",
+                        "label": "AL"
+                      },
+                      {
+                        "value": "AR",
+                        "label": "AR"
+                      },
+                      "… 34 more"
+                    ]
+                  },
+                  "related_categories": [
+                    {
+                      "title": "Cable TVs",
+                      "url": "/us/category/cable-tv",
+                      "entityType": null,
+                      "entityId": null,
+                      "id": null
+                    },
+                    {
+                      "title": "Internet Providers",
+                      "url": "/us/category/internet-providers",
+                      "entityType": null,
+                      "entityId": null,
+                      "id": null
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

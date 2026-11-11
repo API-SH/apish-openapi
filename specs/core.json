@@ -1,0 +1,2515 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: CORE",
+    "version": "1.0.0",
+    "description": "The CORE API from API.SH: public CORE data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "CORE",
+      "description": "10 endpoints (reference)",
+      "x-slug": "core",
+      "x-domains": [
+        "core.ac.uk"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/v1/aggregate": {
+      "get": {
+        "operationId": "coreAggregate",
+        "summary": "CORE search counts",
+        "description": "Counts of CORE records matching a search, grouped by publication year, document type, field of study, publisher or author (up to four groupings at once), largest first.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/core-aggregate",
+        "tags": [
+          "CORE"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search terms or a CORE query.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "climate"
+          },
+          {
+            "name": "by",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated groupings: yearPublished, documentType, fieldOfStudy, publisher, authors (default yearPublished).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "yearPublished,documentType"
+          },
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "description": "works (default) or outputs.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "works",
+                "outputs"
+              ]
+            },
+            "example": "works"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "entity": "works",
+                  "query": "climate",
+                  "by": [
+                    "yearPublished"
+                  ],
+                  "aggregations": {
+                    "yearPublished": [
+                      {
+                        "value": "2023",
+                        "count": 166869
+                      },
+                      {
+                        "value": "2022",
+                        "count": 162479
+                      },
+                      "… 98 more"
+                    ]
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/core/v1/data-provider": {
+      "get": {
+        "operationId": "coreDataProvider",
+        "summary": "CORE data provider",
+        "description": "One repository or journal CORE harvests: its record (as in `/core/v1/data-providers`) and its counts of metadata records and full texts in CORE, with harvesting status.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/core-data-provider",
+        "tags": [
+          "CORE"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "CORE data provider id or core.ac.uk/data-providers link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "86"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 86,
+                  "name": "Open Research Online (The Open University)",
+                  "type": "REPOSITORY",
+                  "institution": "Open University",
+                  "ror_id": "https://ror.org/05mzfcs16",
+                  "opendoar_id": null,
+                  "homepage": null,
+                  "oai_pmh_url": "https://oro.open.ac.uk/cgi/oai2",
+                  "email": "name@example.com",
+                  "software": "eprints",
+                  "metadata_format": "rioxx",
+                  "country": "GB",
+                  "latitude": 52.0333,
+                  "longitude": -0.7,
+                  "created": "2011-05-05T00:00:00+01:00",
+                  "aliases": [],
+                  "other_identifiers": [],
+                  "url": "https://core.ac.uk/data-providers/86",
+                  "logo": "https://api.core.ac.uk/data-providers/86/logo",
+                  "stats": {
+                    "metadata_count": 67078,
+                    "fulltext_count": 26175,
+                    "active": false,
+                    "harvest_times": [],
+                    "history": null
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/core/v1/data-provider/outputs": {
+      "get": {
+        "operationId": "coreDataProviderOutputs",
+        "summary": "Outputs of a CORE data provider",
+        "description": "The papers CORE harvested from one repository, newest first or by relevance to a search. Same output fields as `/core/v1/output`. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/core-data-provider-outputs",
+        "tags": [
+          "CORE"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "CORE data provider id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "86"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search within this repository.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "recency (default without q) or relevance (default with q).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recency",
+                "relevance"
+              ]
+            },
+            "example": "recency"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, up to 50 (default 10).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "10"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-based).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 86,
+                  "query": null,
+                  "sort": "recency",
+                  "total": 66675,
+                  "page": 1,
+                  "count": 10,
+                  "items": [
+                    {
+                      "id": 672884869,
+                      "kind": "output",
+                      "title": "Clinical Scholarship’s Contribution to the Global Clinical Movement: Progress Made and More to Do",
+                      "authors": [
+                        "Wortham, Leah",
+                        "McFaul, Hugh",
+                        "… 1 more"
+                      ],
+                      "contributors": [
+                        "Stege, Ulrich",
+                        "Bloch, Frank S."
+                      ],
+                      "abstract": "This chapter investigates the areas of focus of clinical legal scholarship since 2011",
+                      "year": "2027",
+                      "published": "2027-01-30T00:00:00+00:00",
+                      "accepted": null,
+                      "deposited": "2025-10-14T14:05:54+01:00",
+                      "created": "2025-10-24T07:23:50+01:00",
+                      "updated": null,
+                      "document_type": "",
+                      "field_of_study": null,
+                      "language": null,
+                      "publisher": "Oxford University Press (In Press)",
+                      "doi": "",
+                      "arxiv_id": null,
+                      "pubmed_id": null,
+                      "mag_id": null,
+                      "oai_ids": [
+                        "oai:oro.open.ac.uk:106629"
+                      ],
+                      "identifiers": {
+                        "doi": null,
+                        "oai": "oai:oro.open.ac.uk:106629"
+                      },
+                      "journals": [],
+                      "citation_count": null,
+                      "references": [],
+                      "download_url": null,
+                      "source_fulltext_urls": [],
+                      "links": [
+                        {
+                          "type": "display",
+                          "url": "https://core.ac.uk/outputs/672884869"
+                        }
+                      ],
+                      "url": "https://core.ac.uk/outputs/672884869",
+                      "data_provider": {
+                        "id": 86,
+                        "name": "Open Research Online (Open)",
+                        "url": "https://core.ac.uk/data-providers/86",
+                        "logo": "https://api.core.ac.uk/data-providers/86/logo"
+                      },
+                      "repositories": [],
+                      "repository_document": {
+                        "id": 672884869,
+                        "depositedDate": "",
+                        "publishedDate": "2027-01-30T00:00:00+00:00",
+                        "updatedDate": "",
+                        "acceptedDate": "",
+                        "createdDate": ""
+                      },
+                      "set_specs": [],
+                      "tags": [],
+                      "subjects": [],
+                      "full_text_identifier": null,
+                      "urls": []
+                    },
+                    {
+                      "id": 750693293,
+                      "kind": "output",
+                      "title": "Digital humanities",
+                      "authors": [
+                        "Benatti, Francesca"
+                      ],
+                      "contributors": [
+                        "Mahlberg, Michaela",
+                        "Brookes, Gavin",
+                        "… 1 more"
+                      ],
+                      "abstract": "The methodologies of Digital Humanities (DH) are acquiring an ever greater relevance to the study of the history of reading, for example thr…",
+                      "year": "2027",
+                      "published": "2027-01-01T00:00:00+00:00",
+                      "accepted": null,
+                      "deposited": "2026-07-21T11:45:06+01:00",
+                      "created": "2026-07-27T11:21:25+01:00",
+                      "updated": null,
+                      "document_type": "",
+                      "field_of_study": null,
+                      "language": null,
+                      "publisher": "Bloomsbury Academic (In Press)",
+                      "doi": "",
+                      "arxiv_id": null,
+                      "pubmed_id": null,
+                      "mag_id": null,
+                      "oai_ids": [
+                        "oai:oro.open.ac.uk:110533"
+                      ],
+                      "identifiers": {
+                        "doi": null,
+                        "oai": "oai:oro.open.ac.uk:110533"
+                      },
+                      "journals": [],
+                      "citation_count": null,
+                      "references": [],
+                      "download_url": null,
+                      "source_fulltext_urls": [
+                        "https://oro.open.ac.uk/110533/1/Chapter%2027_Benatti_rev_02.docx"
+                      ],
+                      "links": [
+                        {
+                          "type": "display",
+                          "url": "https://core.ac.uk/outputs/750693293"
+                        }
+                      ],
+                      "url": "https://core.ac.uk/outputs/750693293",
+                      "data_provider": {
+                        "id": 86,
+                        "name": "Open Research Online (Open)",
+                        "url": "https://core.ac.uk/data-providers/86",
+                        "logo": "https://api.core.ac.uk/data-providers/86/logo"
+                      },
+                      "repositories": [],
+                      "repository_document": {
+                        "id": 750693293,
+                        "depositedDate": "",
+                        "publishedDate": "2027-01-01T00:00:00+00:00",
+                        "updatedDate": "",
+                        "acceptedDate": "",
+                        "createdDate": ""
+                      },
+                      "set_specs": [],
+                      "tags": [],
+                      "subjects": [],
+                      "full_text_identifier": null,
+                      "urls": [
+                        {
+                          "url": "https://oro.open.ac.uk/110533/1/Chapter%2027_Benatti_rev_02.docx",
+                          "type": "fulltext"
+                        }
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/core/v1/data-providers": {
+      "get": {
+        "operationId": "coreDataProviders",
+        "summary": "CORE data provider search",
+        "description": "Search the repositories and journals CORE harvests (data providers) by name or with CORE's query language: id, name, type, institution, ROR id, OpenDOAR id, OAI-PMH endpoint, contact address, software, metadata format, country and location. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/core-data-providers",
+        "tags": [
+          "CORE"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search terms, such as a university name.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "oxford"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, up to 100 (default 10).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "10"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-based).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "oxford",
+                  "total": 2,
+                  "page": 1,
+                  "count": 2,
+                  "items": [
+                    {
+                      "id": 93,
+                      "name": "Oxford Brookes University: RADAR",
+                      "type": "REPOSITORY",
+                      "institution": "Oxford Brookes University",
+                      "ror_id": null,
+                      "opendoar_id": 1680,
+                      "homepage": "https://radar.brookes.ac.uk",
+                      "oai_pmh_url": "https://radar.brookes.ac.uk/radar/oai",
+                      "email": "name@example.com",
+                      "software": null,
+                      "metadata_format": "oai_dc",
+                      "country": "GB",
+                      "latitude": 51.793,
+                      "longitude": -1.2115,
+                      "created": "2011-07-07T15:11:00+01:00",
+                      "aliases": [],
+                      "other_identifiers": [],
+                      "url": "https://core.ac.uk/data-providers/93",
+                      "logo": "https://api.core.ac.uk/data-providers/93/logo"
+                    },
+                    {
+                      "id": 88,
+                      "name": "Oxford University Research Archive",
+                      "type": "REPOSITORY",
+                      "institution": "University of Oxford ",
+                      "ror_id": null,
+                      "opendoar_id": 1064,
+                      "homepage": "https://ora.ox.ac.uk",
+                      "oai_pmh_url": "https://ora.ox.ac.uk/oai2",
+                      "email": "name@example.com",
+                      "software": null,
+                      "metadata_format": "rioxx_terms_v3",
+                      "country": "GB",
+                      "latitude": 51.7466,
+                      "longitude": -1.2709,
+                      "created": "2011-07-01T15:54:00+01:00",
+                      "aliases": [],
+                      "other_identifiers": [],
+                      "url": "https://core.ac.uk/data-providers/88",
+                      "logo": "https://api.core.ac.uk/data-providers/88/logo"
+                    }
+                  ],
+                  "next_page": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/core/v1/discover": {
+      "get": {
+        "operationId": "coreDiscover",
+        "summary": "Free full-text link for a DOI",
+        "description": "Where the free, legal full text of a paper can be read, looked up by DOI in CORE and other open-access sources: the link and its source, or `found: false`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/core-discover",
+        "tags": [
+          "CORE"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "doi",
+            "in": "query",
+            "required": true,
+            "description": "DOI of the paper.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10.1038/nature14539"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "doi": "10.1038/nature14539",
+                  "found": true,
+                  "full_text_url": "http://core.ac.uk/labs/oadiscovery/redirect?url=https%3A%2F%2Fcore.ac.uk%2Freader%2F334198542&key=917E665D42AFA8CC641B98761016D212",
+                  "source": "From CORE",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/core/v1/journal": {
+      "get": {
+        "operationId": "coreJournal",
+        "summary": "CORE journal by ISSN",
+        "description": "A journal as CORE lists it, by ISSN: title, identifiers, publisher, subjects and language.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/core-journal",
+        "tags": [
+          "CORE"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "issn",
+            "in": "query",
+            "required": true,
+            "description": "ISSN, such as 2041-1723.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2041-1723"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "title": "Nature Communications",
+                  "identifiers": [
+                    "2041-1723"
+                  ],
+                  "issn": [
+                    "2041-1723"
+                  ],
+                  "publisher": null,
+                  "subjects": [
+                    "General Biochemistry"
+                  ],
+                  "language": null,
+                  "data_provider_id": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/core/v1/output": {
+      "get": {
+        "operationId": "coreOutput",
+        "summary": "CORE output (repository copy)",
+        "description": "One output: a paper as one repository holds it, with its title, authors, abstract, dates, document type, identifiers, data provider (repository), repository record details, subjects, tags and links to the free full text. Full texts are not included.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/core-output",
+        "tags": [
+          "CORE"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "CORE output id or core.ac.uk/outputs link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "344091623"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 344091623,
+                  "kind": "output",
+                  "title": "Brazilian journal of biometrics",
+                  "authors": [],
+                  "contributors": [],
+                  "abstract": null,
+                  "year": "2022",
+                  "published": null,
+                  "accepted": null,
+                  "deposited": "2020-11-09T17:43:05+00:00",
+                  "created": "2023-10-10T18:50:07+01:00",
+                  "updated": null,
+                  "document_type": "",
+                  "field_of_study": null,
+                  "language": null,
+                  "publisher": "Universidade Federal de Lavras, Departamento de Estatística",
+                  "doi": "",
+                  "arxiv_id": null,
+                  "pubmed_id": null,
+                  "mag_id": null,
+                  "oai_ids": [
+                    "oai:juser.fz-juelich.de:886931"
+                  ],
+                  "identifiers": {
+                    "doi": null,
+                    "oai": "oai:juser.fz-juelich.de:886931"
+                  },
+                  "journals": [],
+                  "citation_count": null,
+                  "references": [],
+                  "download_url": null,
+                  "source_fulltext_urls": [
+                    "https://repository.gsi.de/record/235670"
+                  ],
+                  "links": [
+                    {
+                      "type": "display",
+                      "url": "https://core.ac.uk/outputs/344091623"
+                    }
+                  ],
+                  "url": "https://core.ac.uk/outputs/344091623",
+                  "data_provider": {
+                    "id": 1501,
+                    "name": "GSI Repository",
+                    "url": "https://core.ac.uk/data-providers/1501",
+                    "logo": "https://api.core.ac.uk/data-providers/1501/logo"
+                  },
+                  "repositories": [],
+                  "repository_document": {
+                    "id": 344091623,
+                    "depositedDate": "",
+                    "publishedDate": "",
+                    "updatedDate": "",
+                    "acceptedDate": "",
+                    "createdDate": ""
+                  },
+                  "set_specs": [],
+                  "tags": [
+                    "info:eu-repo/semantics/publishedVersion"
+                  ],
+                  "subjects": [
+                    "info:eu-repo/semantics/publishedVersion"
+                  ],
+                  "full_text_identifier": null,
+                  "urls": [
+                    {
+                      "url": "https://repository.gsi.de/record/235670",
+                      "type": "fulltext"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/core/v1/recommend": {
+      "get": {
+        "operationId": "coreRecommend",
+        "summary": "CORE similar-paper recommendations",
+        "description": "Open-access papers related to a piece of text, a title and abstract, or a CORE record, from CORE's recommender. Each item has the paper's id, title, authors, abstract, year, identifiers and links.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/core-recommend",
+        "tags": [
+          "CORE"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": false,
+            "description": "Free text describing the topic.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "deep learning for protein structure prediction"
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "description": "A paper title.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "abstract",
+            "in": "query",
+            "required": false,
+            "description": "A paper abstract.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "A CORE id to find papers like it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Up to 50 (default 10).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "10"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "text": "deep learning for protein structure prediction",
+                  "title": null,
+                  "id": null,
+                  "count": 3,
+                  "items": [
+                    {
+                      "id": 655734159,
+                      "kind": "output",
+                      "title": "Protein structure prediction via deep learning: an in-depth review",
+                      "authors": [
+                        "Yajie Meng",
+                        "Zhuang Zhang",
+                        "… 8 more"
+                      ],
+                      "contributors": [],
+                      "abstract": "The application of deep learning algorithms in protein structure prediction has greatly influenced drug discovery and development. Accurate …",
+                      "year": "2025",
+                      "published": null,
+                      "accepted": null,
+                      "deposited": "2025-04-03T06:13:05+01:00",
+                      "created": "2025-08-20T04:07:20+01:00",
+                      "updated": null,
+                      "document_type": [
+                        "research article"
+                      ],
+                      "field_of_study": null,
+                      "language": null,
+                      "publisher": "Frontiers Media S.A.",
+                      "doi": "10.3389/fphar.2025.1498662",
+                      "arxiv_id": null,
+                      "pubmed_id": null,
+                      "mag_id": null,
+                      "oai_ids": [
+                        "oai:doaj.org/article:60c98d0c858d4ec5b68710ea2bc10d29"
+                      ],
+                      "identifiers": {
+                        "doi": "10.3389/fphar.2025.1498662",
+                        "oai": "oai:doaj.org/article:60c98d0c858d4ec5b68710ea2bc10d29"
+                      },
+                      "journals": [
+                        {
+                          "title": null,
+                          "identifiers": []
+                        }
+                      ],
+                      "citation_count": null,
+                      "references": [],
+                      "download_url": "https://core.ac.uk/download/655734159.pdf",
+                      "source_fulltext_urls": [
+                        "https://doaj.org/article/60c98d0c858d4ec5b68710ea2bc10d29"
+                      ],
+                      "links": [
+                        {
+                          "type": "download",
+                          "url": "https://core.ac.uk/download/655734159.pdf"
+                        },
+                        {
+                          "type": "reader",
+                          "url": "https://core.ac.uk/reader/655734159"
+                        },
+                        "… 4 more"
+                      ],
+                      "url": "https://core.ac.uk/outputs/655734159",
+                      "data_provider": {
+                        "id": 645,
+                        "name": "Directory of Open Access Journals",
+                        "url": "https://core.ac.uk/data-providers/645",
+                        "logo": "https://api.core.ac.uk/data-providers/645/logo"
+                      },
+                      "repositories": [],
+                      "repository_document": {
+                        "id": 655734159,
+                        "depositedDate": "",
+                        "publishedDate": "",
+                        "updatedDate": "",
+                        "acceptedDate": "",
+                        "createdDate": ""
+                      },
+                      "set_specs": [],
+                      "tags": [
+                        "article"
+                      ],
+                      "subjects": [
+                        "article"
+                      ],
+                      "full_text_identifier": null,
+                      "urls": [
+                        {
+                          "url": "https://doaj.org/article/60c98d0c858d4ec5b68710ea2bc10d29",
+                          "type": "fulltext"
+                        }
+                      ]
+                    },
+                    {
+                      "id": 334435519,
+                      "kind": "output",
+                      "title": "Deep learning methods in protein structure prediction",
+                      "authors": [
+                        "Torrisi, Mirko",
+                        "Pollastri, Gianluca",
+                        "… 1 more"
+                      ],
+                      "contributors": [],
+                      "abstract": "Protein Structure Prediction is a central topic in Structural Bioinformatics. Since the ’60s statistical methods, followed by increasingly c…",
+                      "year": "2020",
+                      "published": "2020-01-01T00:00:00+00:00",
+                      "accepted": null,
+                      "deposited": "2020-09-23T00:01:08+01:00",
+                      "created": "2020-09-25T13:24:59+01:00",
+                      "updated": null,
+                      "document_type": [
+                        "journal article"
+                      ],
+                      "field_of_study": null,
+                      "language": null,
+                      "publisher": "Elsevier",
+                      "doi": "10.1016/j.csbj.2019.12.011",
+                      "arxiv_id": null,
+                      "pubmed_id": null,
+                      "mag_id": null,
+                      "oai_ids": [
+                        "oai:researchrepository.ucd.ie:10197/11583"
+                      ],
+                      "identifiers": {
+                        "doi": "10.1016/j.csbj.2019.12.011",
+                        "oai": "oai:researchrepository.ucd.ie:10197/11583"
+                      },
+                      "journals": [],
+                      "citation_count": null,
+                      "references": [],
+                      "download_url": "https://core.ac.uk/download/334435519.pdf",
+                      "source_fulltext_urls": [
+                        "http://hdl.handle.net/10197/11583"
+                      ],
+                      "links": [
+                        {
+                          "type": "download",
+                          "url": "https://core.ac.uk/download/334435519.pdf"
+                        },
+                        {
+                          "type": "reader",
+                          "url": "https://core.ac.uk/reader/334435519"
+                        },
+                        "… 4 more"
+                      ],
+                      "url": "https://core.ac.uk/outputs/334435519",
+                      "data_provider": {
+                        "id": 611,
+                        "name": "Research Repository UCD",
+                        "url": "https://core.ac.uk/data-providers/611",
+                        "logo": "https://api.core.ac.uk/data-providers/611/logo"
+                      },
+                      "repositories": [],
+                      "repository_document": {
+                        "id": 334435519,
+                        "depositedDate": "",
+                        "publishedDate": "2020-01-01T00:00:00+00:00",
+                        "updatedDate": "",
+                        "acceptedDate": "",
+                        "createdDate": ""
+                      },
+                      "set_specs": [],
+                      "tags": [
+                        "Journal Article"
+                      ],
+                      "subjects": [
+                        "Journal Article"
+                      ],
+                      "full_text_identifier": null,
+                      "urls": [
+                        {
+                          "url": "http://hdl.handle.net/10197/11583",
+                          "type": "fulltext"
+                        }
+                      ]
+                    },
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/core/v1/search": {
+      "get": {
+        "operationId": "coreSearch",
+        "summary": "CORE open-access paper search",
+        "description": "Search CORE's index of open-access research papers from repositories and journals worldwide. Works are papers merged across repositories; outputs are each repository's copy. Free text or CORE's query language in `q` (fields such as title:, authors:, doi:, yearPublished>=2020, AND/OR), plus filters for title, author, abstract, DOI, publisher, document type, field of study, language and year range. Each record has the CORE id, title, authors, abstract, year and dates, document type, language, publisher, DOI, arXiv, PubMed and OAI ids, journals, data providers, references, links to the free full text and the CORE page. Full texts are not included. `applied_filters` and `core_query` echo what was searched. Pass `next_page` back as `page`; null on the last page (CORE serves the first 10,000 results).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/core-search",
+        "tags": [
+          "CORE"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search terms or a CORE query.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "climate adaptation"
+          },
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "description": "works (default) or outputs (repository copies).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "works",
+                "outputs"
+              ]
+            },
+            "example": "works"
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "description": "Words in the title.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "required": false,
+            "description": "Author name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "abstract",
+            "in": "query",
+            "required": false,
+            "description": "Words in the abstract.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "doi",
+            "in": "query",
+            "required": false,
+            "description": "DOI.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "publisher",
+            "in": "query",
+            "required": false,
+            "description": "Publisher name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "document_type",
+            "in": "query",
+            "required": false,
+            "description": "Document type as CORE records it, such as `research article`, `thesis`, `report`, `journal article`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field_of_study",
+            "in": "query",
+            "required": false,
+            "description": "Field of study, such as `biology`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter language code, such as `en`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year_from",
+            "in": "query",
+            "required": false,
+            "description": "Earliest publication year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "year_to",
+            "in": "query",
+            "required": false,
+            "description": "Latest publication year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), newest or oldest (by publication year; records without a year are left out).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "oldest"
+              ]
+            },
+            "example": "relevance"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, up to 50 (default 10).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "10"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-based).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "entity": "works",
+                  "query": "climate adaptation",
+                  "applied_filters": {},
+                  "core_query": "climate adaptation",
+                  "sort": "relevance",
+                  "total": 3033041,
+                  "page": 1,
+                  "count": 10,
+                  "items": [
+                    {
+                      "id": 290966060,
+                      "kind": "work",
+                      "title": "The Economics of Climate Change in Zanzibar: Vulnerability, Impacts and Adaptation",
+                      "authors": [
+                        "Global Climate Adaptation Partnership"
+                      ],
+                      "contributors": [],
+                      "abstract": "The study has undertaken a review and initial climate change assessment of vulnerability, impacts and\r\nadaptation on Zanzibar. These finding…",
+                      "year": 2012,
+                      "published": null,
+                      "accepted": null,
+                      "deposited": "2021-06-24T08:19:16+01:00",
+                      "created": "2021-06-24T08:19:16+01:00",
+                      "updated": null,
+                      "document_type": null,
+                      "field_of_study": "Technical Report",
+                      "language": null,
+                      "publisher": "Global Climate Adaptation Partnership (GCAP)",
+                      "doi": null,
+                      "arxiv_id": null,
+                      "pubmed_id": null,
+                      "mag_id": null,
+                      "oai_ids": [
+                        "oai:www.taccire.sua.ac.tz:123456789/206"
+                      ],
+                      "identifiers": [
+                        {
+                          "identifier": "647861342",
+                          "type": "core_id"
+                        },
+                        {
+                          "identifier": "oai:www.taccire.sua.ac.tz:123456789/206",
+                          "type": "oai_id"
+                        },
+                        "… 1 more"
+                      ],
+                      "journals": [],
+                      "citation_count": 0,
+                      "references": [],
+                      "download_url": null,
+                      "source_fulltext_urls": [],
+                      "links": [
+                        {
+                          "type": "display",
+                          "url": "https://core.ac.uk/works/290966060"
+                        }
+                      ],
+                      "url": "https://core.ac.uk/works/290966060",
+                      "data_providers": [
+                        {
+                          "id": 2218,
+                          "name": "TaCCIRe Tanzania Climate Change Information Repository",
+                          "url": "https://core.ac.uk/data-providers/2218",
+                          "logo": "https://api.core.ac.uk/data-providers/2218/logo"
+                        }
+                      ],
+                      "output_ids": [
+                        647861342
+                      ]
+                    },
+                    {
+                      "id": 6370030,
+                      "kind": "work",
+                      "title": "Decision-making for climate change adaptation: A systems thinking approach",
+                      "authors": [
+                        "Kambiz Maani",
+                        "Maani, Kambiz"
+                      ],
+                      "contributors": [],
+                      "abstract": "Abstract\n\nThe impacts of climate change are exacerbated by inefficient adaptation and mitigation decision making, due to the complexity of t…",
+                      "year": 2013,
+                      "published": "2013-01-01T00:00:00+00:00",
+                      "accepted": null,
+                      "deposited": "2016-01-05T00:00:00+00:00",
+                      "created": "2016-01-05T00:00:00+00:00",
+                      "updated": null,
+                      "document_type": null,
+                      "field_of_study": "Book",
+                      "language": {
+                        "code": "en",
+                        "name": "English"
+                      },
+                      "publisher": "National Climate Change Adaptation Research Facility",
+                      "doi": null,
+                      "arxiv_id": null,
+                      "pubmed_id": null,
+                      "mag_id": null,
+                      "oai_ids": [
+                        "oai:espace.library.uq.edu.au:uq:307087",
+                        "oai:apo.org.au:34598"
+                      ],
+                      "identifiers": [
+                        {
+                          "identifier": "15165820",
+                          "type": "core_id"
+                        },
+                        {
+                          "identifier": "oai:espace.library.uq.edu.au:uq:307087",
+                          "type": "oai_id"
+                        },
+                        "… 4 more"
+                      ],
+                      "journals": [],
+                      "citation_count": 0,
+                      "references": [
+                        {
+                          "id": "15310811",
+                          "title": "24 attendees in total: Business/industry 2, State government 2, Council 1, Conservation 4, natural resource management 3, individuals 6, ind…",
+                          "authors": [],
+                          "date": "2010",
+                          "doi": null
+                        },
+                        {
+                          "id": "15310812",
+                          "title": "27 attendees in total:",
+                          "authors": [],
+                          "date": "2010",
+                          "doi": null
+                        },
+                        "… 25 more"
+                      ],
+                      "download_url": "https://core.ac.uk/download/30676626.pdf",
+                      "source_fulltext_urls": [
+                        "https://core.ac.uk/download/30676626.pdf"
+                      ],
+                      "links": [
+                        {
+                          "type": "download",
+                          "url": "https://core.ac.uk/download/30676626.pdf"
+                        },
+                        {
+                          "type": "reader",
+                          "url": "https://core.ac.uk/reader/30676626"
+                        },
+                        "… 3 more"
+                      ],
+                      "url": "https://core.ac.uk/works/6370030",
+                      "data_providers": [
+                        {
+                          "id": 713,
+                          "name": "Analysis and Policy Observatory (APO)",
+                          "url": "https://core.ac.uk/data-providers/713",
+                          "logo": "https://api.core.ac.uk/data-providers/713/logo"
+                        },
+                        {
+                          "id": 559,
+                          "name": "UQ eSpace  (University of Queensland)",
+                          "url": "https://core.ac.uk/data-providers/559",
+                          "logo": "https://api.core.ac.uk/data-providers/559/logo"
+                        }
+                      ],
+                      "output_ids": [
+                        15165820,
+                        30676626
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/core/v1/work": {
+      "get": {
+        "operationId": "coreWork",
+        "summary": "CORE work by id or DOI",
+        "description": "One CORE work (a paper merged across the repositories that hold it): title, authors, abstract, year and dates, document type, language, publisher, identifiers (DOI, arXiv, PubMed, OAI, MAG), journals, data providers, references, full-text links, and every repository copy (`outputs`) with its own record. Full texts are not included.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/core-work",
+        "tags": [
+          "CORE"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "CORE work id or core.ac.uk/works link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "42080012"
+          },
+          {
+            "name": "doi",
+            "in": "query",
+            "required": false,
+            "description": "A DOI instead of `id`: the CORE work that carries it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 42080012,
+                  "kind": "work",
+                  "title": "Brazilian journal of biometrics",
+                  "authors": [],
+                  "contributors": [],
+                  "abstract": null,
+                  "year": 2022,
+                  "published": null,
+                  "accepted": null,
+                  "deposited": "2020-11-09T17:43:05+00:00",
+                  "created": "2023-10-10T18:50:07+01:00",
+                  "updated": null,
+                  "document_type": null,
+                  "field_of_study": "info:eu-repo/semantics/publishedVersion",
+                  "language": null,
+                  "publisher": "Universidade Federal de Lavras, Departamento de Estatística",
+                  "doi": null,
+                  "arxiv_id": null,
+                  "pubmed_id": null,
+                  "mag_id": null,
+                  "oai_ids": [
+                    "oai:juser.fz-juelich.de:886931"
+                  ],
+                  "identifiers": [
+                    {
+                      "identifier": "344091623",
+                      "type": "core_id"
+                    },
+                    {
+                      "identifier": "oai:juser.fz-juelich.de:886931",
+                      "type": "oai_id"
+                    },
+                    "… 1 more"
+                  ],
+                  "journals": [],
+                  "citation_count": 0,
+                  "references": [],
+                  "download_url": null,
+                  "source_fulltext_urls": [],
+                  "links": [
+                    {
+                      "type": "display",
+                      "url": "https://core.ac.uk/works/42080012"
+                    }
+                  ],
+                  "url": "https://core.ac.uk/works/42080012",
+                  "data_providers": [
+                    {
+                      "id": 1501,
+                      "name": "GSI Repository",
+                      "url": "https://core.ac.uk/data-providers/1501",
+                      "logo": "https://api.core.ac.uk/data-providers/1501/logo"
+                    }
+                  ],
+                  "output_ids": [
+                    344091623
+                  ],
+                  "outputs": [
+                    {
+                      "id": 344091623,
+                      "kind": "output",
+                      "title": "Brazilian journal of biometrics",
+                      "authors": [],
+                      "contributors": [],
+                      "abstract": null,
+                      "year": "2022",
+                      "published": null,
+                      "accepted": null,
+                      "deposited": "2020-11-09T17:43:05+00:00",
+                      "created": "2023-10-10T18:50:07+01:00",
+                      "updated": null,
+                      "document_type": "",
+                      "field_of_study": null,
+                      "language": null,
+                      "publisher": "Universidade Federal de Lavras, Departamento de Estatística",
+                      "doi": "",
+                      "arxiv_id": null,
+                      "pubmed_id": null,
+                      "mag_id": null,
+                      "oai_ids": [
+                        "oai:juser.fz-juelich.de:886931"
+                      ],
+                      "identifiers": {
+                        "doi": null,
+                        "oai": "oai:juser.fz-juelich.de:886931"
+                      },
+                      "journals": [],
+                      "citation_count": null,
+                      "references": [],
+                      "download_url": null,
+                      "source_fulltext_urls": [
+                        "https://repository.gsi.de/record/235670"
+                      ],
+                      "links": [
+                        {
+                          "type": "display",
+                          "url": "https://core.ac.uk/outputs/344091623"
+                        }
+                      ],
+                      "url": "https://core.ac.uk/outputs/344091623",
+                      "data_provider": {
+                        "id": 1501,
+                        "name": "GSI Repository",
+                        "url": "https://core.ac.uk/data-providers/1501",
+                        "logo": "https://api.core.ac.uk/data-providers/1501/logo"
+                      },
+                      "repositories": [],
+                      "repository_document": {
+                        "id": 344091623,
+                        "depositedDate": "",
+                        "publishedDate": "",
+                        "updatedDate": "",
+                        "acceptedDate": "",
+                        "createdDate": ""
+                      },
+                      "set_specs": [],
+                      "tags": [
+                        "info:eu-repo/semantics/publishedVersion"
+                      ],
+                      "subjects": [
+                        "info:eu-repo/semantics/publishedVersion"
+                      ],
+                      "full_text_identifier": null,
+                      "urls": [
+                        {
+                          "url": "https://repository.gsi.de/record/235670",
+                          "type": "fulltext"
+                        }
+                      ]
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

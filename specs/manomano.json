@@ -1,0 +1,1854 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: ManoMano",
+    "version": "1.0.0",
+    "description": "The ManoMano API from API.SH: public ManoMano data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "ManoMano",
+      "description": "6 endpoints (e-commerce)",
+      "x-slug": "manomano",
+      "x-domains": [
+        "manomano.fr"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/manomano/v1/autocomplete": {
+      "get": {
+        "operationId": "manomanoAutocomplete",
+        "summary": "ManoMano search suggestions",
+        "description": "What ManoMano suggests while a shopper types: popular searches (with their category), matching categories (path for `category` in search) and brands (path for /manomano/v1/brand).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manomano-autocomplete",
+        "tags": [
+          "ManoMano"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The text typed so far.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "perc"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Market: fr (manomano.fr, default), es (manomano.es), it (manomano.it) or de (manomano.de). Ids, paths and filter values come from that market's own pages.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fr",
+                "es",
+                "it",
+                "de"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "perc",
+                  "country": "fr",
+                  "queries": [
+                    {
+                      "query": "perceuse visseuse perforateur burineur marteau piqueur",
+                      "category": {
+                        "id": 1146,
+                        "name": "Perceuse",
+                        "path": "perceuse-1146"
+                      }
+                    },
+                    {
+                      "query": "perceuse",
+                      "category": null
+                    },
+                    "… 8 more"
+                  ],
+                  "categories": [
+                    {
+                      "id": 4078,
+                      "name": "Perceuse magnétique",
+                      "path": "perceuse-magnetique-4078",
+                      "image": "https://cdn.manomano.com/images/C/cat_4078.jpg"
+                    },
+                    {
+                      "id": 4078,
+                      "name": "Perceuse magnétique",
+                      "path": "perceuse-magnetique-4078",
+                      "image": "https://cdn.manomano.com/images/C/cat_4078.jpg"
+                    },
+                    "… 8 more"
+                  ],
+                  "brands": [
+                    {
+                      "id": "100044470",
+                      "name": "PERCUSSION",
+                      "path": "percussion-100044470",
+                      "popularity": 46
+                    },
+                    {
+                      "id": "100011422",
+                      "name": "PERCKO",
+                      "path": "percko-100011422",
+                      "popularity": 26
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manomano/v1/brand": {
+      "get": {
+        "operationId": "manomanoBrand",
+        "summary": "ManoMano brand products",
+        "description": "A brand's products on ManoMano with the same fields, filters and sorts as search. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manomano-brand",
+        "tags": [
+          "ManoMano"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A brand path such as makita-16 (from a product's brand url or a suggestion) or a manomano.fr/marque/ link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "makita-16"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order: relevance (default), price_asc, price_desc, rating.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc",
+                "rating"
+              ]
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price in euros.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price in euros.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Only this brand, as the site writes it (e.g. MAKITA; a value from the brand filter).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_rating",
+            "in": "query",
+            "required": false,
+            "description": "Minimum star rating, 1-5.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "free_delivery",
+            "in": "query",
+            "required": false,
+            "description": "true for free delivery only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "relay_delivery",
+            "in": "query",
+            "required": false,
+            "description": "true for pickup-point delivery only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "express",
+            "in": "query",
+            "required": false,
+            "description": "true for ManoExpress (fast delivery) only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "promo",
+            "in": "query",
+            "required": false,
+            "description": "Only products in this promotion (a value from the promo filter, e.g. blackfriday).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "More filters as key:value pairs separated by `;`, keys and values from `filters` (e.g. cat_attr_84:Sans fil;cat_attr_14:18; ranges as min-max).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1 for the first. Pass back `next_page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Market: fr (manomano.fr, default), es (manomano.es), it (manomano.it) or de (manomano.de). Ids, paths and filter values come from that market's own pages.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fr",
+                "es",
+                "it",
+                "de"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "brand": "makita-16",
+                  "applied_filters": {
+                    "sort": "relevance",
+                    "page": 1
+                  },
+                  "total": 20019,
+                  "page": 1,
+                  "pages": 100,
+                  "per_page": 60,
+                  "count": 60,
+                  "next_page": 2,
+                  "category": null,
+                  "items": [
+                    {
+                      "article_id": "51289800",
+                      "product_id": "54379681",
+                      "model_id": "53194792",
+                      "title": "Makita – Perceuse visseuse à percussion 18V 42 Nm avec 2 batteries 2Ah – Mandrin auto-serrant 13 mm – Couple 42 Nm – HP488DAEX1",
+                      "url": "https://www.manomano.fr/p/perceuse-visseuse-a-percussion-18v-42-nm-makita-2-battbl1820g-chargeur-74-pieces-hp488daex1-51289800",
+                      "brand": "MAKITA",
+                      "brand_id": 16,
+                      "price": 119,
+                      "price_without_vat": 99.17,
+                      "currency": "EUR",
+                      "was_price": 135,
+                      "discount_percent": 11,
+                      "rating": 4.51,
+                      "reviews_count": 2368,
+                      "seller": {
+                        "id": "5307819",
+                        "name": "Maxoutil.",
+                        "pro_seller": false
+                      },
+                      "delivery": null,
+                      "free_delivery": false,
+                      "image": "https://cdn.manomano.com/pim-media/images/medium/4cd26490cffea739ea73403a6ce557c829075e33.jpg",
+                      "images": [
+                        "https://cdn.manomano.com/pim-media/images/medium/4cd26490cffea739ea73403a6ce557c829075e33.jpg",
+                        "https://cdn.manomano.com/pim-media/images/medium/81d3513e929c3a9fdb75da66e1a69405b5f9f5de.jpg",
+                        "… 3 more"
+                      ],
+                      "category": "Perceuse",
+                      "category_id": 1146,
+                      "promo": "blackfriday",
+                      "promo_ends": "2026-11-30T22:59:00.000Z",
+                      "variants_count": 1,
+                      "second_hand": false,
+                      "top_sales": true,
+                      "sponsored": false,
+                      "sellable": true
+                    },
+                    {
+                      "article_id": "910412",
+                      "product_id": "35185933",
+                      "model_id": "56023621",
+                      "title": "Coffret empilable MAKITA Makpac Taille 3 - 821551-8",
+                      "url": "https://www.manomano.fr/p/makita-coffret-mak-pac-taille-1-821549-5-910412",
+                      "brand": "MAKITA",
+                      "brand_id": 16,
+                      "price": 22,
+                      "price_without_vat": 18.33,
+                      "currency": "EUR",
+                      "was_price": 47.74,
+                      "discount_percent": 53,
+                      "rating": 4.6,
+                      "reviews_count": 2569,
+                      "seller": {
+                        "id": "5307819",
+                        "name": "Maxoutil.",
+                        "pro_seller": false
+                      },
+                      "delivery": null,
+                      "free_delivery": false,
+                      "image": "https://cdn.manomano.com/pim-media/images/medium/7da56089999c2c0e781e86a127a636e4d3a01aa9.jpg",
+                      "images": [
+                        "https://cdn.manomano.com/pim-media/images/medium/7da56089999c2c0e781e86a127a636e4d3a01aa9.jpg",
+                        "https://cdn.manomano.com/pim-media/images/medium/36f47002ca469b0264bc192234ee721afaa816b6.jpg",
+                        "… 8 more"
+                      ],
+                      "category": "Boite et casier de rangement pour outils",
+                      "category_id": 1314,
+                      "promo": null,
+                      "promo_ends": null,
+                      "variants_count": 4,
+                      "second_hand": false,
+                      "top_sales": true,
+                      "sponsored": false,
+                      "sellable": true
+                    },
+                    "… 58 more"
+                  ],
+                  "filters": [
+                    {
+                      "key": "promo",
+                      "name": "Promotions",
+                      "type": "checkbox",
+                      "values": [
+                        {
+                          "value": "blackfriday",
+                          "label": "blackfriday",
+                          "count": 769,
+                          "selected": false
+                        },
+                        {
+                          "value": "promo",
+                          "label": "promo",
+                          "count": 769,
+                          "selected": false
+                        },
+                        "… 1 more"
+                      ]
+                    },
+                    {
+                      "key": "category_names",
+                      "name": "Catégories",
+                      "type": "checkbox",
+                      "values": [
+                        {
+                          "value": "Balai charbon",
+                          "label": "Balai charbon",
+                          "count": 1426,
+                          "selected": false
+                        },
+                        {
+                          "value": "Perceuse",
+                          "label": "Perceuse",
+                          "count": 746,
+                          "selected": false
+                        },
+                        "… 48 more"
+                      ]
+                    },
+                    "… 5 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manomano/v1/product": {
+      "get": {
+        "operationId": "manomanoProduct",
+        "summary": "ManoMano product",
+        "description": "One ManoMano product: ids, title, EAN, manufacturer and seller references, brand, price with and without VAT, price before discount, eco fee, seller (with link), how many other sellers offer it, promotion, description, all attributes, images, documents, category path, rating with its star breakdown, the top reviews, questions and answers, and the buying guide.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manomano-product",
+        "tags": [
+          "ManoMano"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A product link (manomano.fr/p/...) or its last part, e.g. perceuse-visseuse-lxt-makita-18-v-3-ah-84523637.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "perceuse-visseuse-lxt-makita-18-v-3-ah-84523637"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Market: fr (manomano.fr, default), es (manomano.es), it (manomano.it) or de (manomano.de). Ids, paths and filter values come from that market's own pages.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fr",
+                "es",
+                "it",
+                "de"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "article_id": "84523637",
+                  "product_id": "158588345",
+                  "model_id": "89580210",
+                  "offer_id": "f85116da-cfef-4467-8e38-a71a5b08aa37",
+                  "title": "Makita – Perceuse-visseuse 18V DDF482SFE – 2 batteries 3Ah – Moteur Brushless – Couple 64Nm – Coffret avec chargeur",
+                  "url": "https://www.manomano.fr/p/perceuse-visseuse-lxt-makita-18-v-3-ah-84523637",
+                  "ean": "0088381804882",
+                  "manufacturer_sku": "DDF482SFE",
+                  "seller_sku": "MAK1582",
+                  "reference": "ME89580210",
+                  "brand": {
+                    "id": 16,
+                    "name": "MAKITA",
+                    "url": "https://www.manomano.fr/marque/makita-16",
+                    "logo": "https://cdn.manomano.com/images/brands/028c5538-0219-446e-8b80-574e9cd93a1a.png"
+                  },
+                  "price": 189,
+                  "price_without_vat": 157.5,
+                  "currency": "EUR",
+                  "was_price": 208.27,
+                  "discount_percent": 9,
+                  "unit_price": null,
+                  "eco_fee": null,
+                  "seller": {
+                    "id": "12",
+                    "name": "Maxoutil",
+                    "country": "FR",
+                    "url": "https://www.manomano.fr/marchand-12"
+                  },
+                  "other_sellers_count": 6,
+                  "sellable": true,
+                  "second_hand": false,
+                  "pro_product": false,
+                  "top_sales": false,
+                  "promo": "blackfriday",
+                  "promo_ends": "2026-11-30T22:58:00.000Z",
+                  "minimum_quantity": 1,
+                  "weight_kg": 4.68,
+                  "description": "Description générale La perceuse visseuse 18V 3Ah DDF482SFE de Makita est un outil puissant et compact, idéal pour les travaux quotidiens. E…",
+                  "description_html": "<article><section><h4>Description générale</h4><p>La perceuse visseuse 18V 3Ah DDF482SFE de Makita est un outil puissant et compact, idéal p…",
+                  "attributes": [
+                    {
+                      "id": 11714,
+                      "name": "Couple max",
+                      "value": "64 nm",
+                      "unit": null
+                    },
+                    {
+                      "id": 18786,
+                      "name": "Batterie ou pile incluse",
+                      "value": "Oui",
+                      "unit": null
+                    },
+                    "… 26 more"
+                  ],
+                  "images": [
+                    "https://cdn.manomano.com/pim-media/images/large/9c7e21d66ddc6c646bd8aab8aa145e620dcb2cac.jpg",
+                    "https://cdn.manomano.com/pim-media/images/large/ad48936960fe258b0238dd386721d35ba8115b88.jpg",
+                    "… 1 more"
+                  ],
+                  "videos": [],
+                  "documents": [
+                    {
+                      "type": "safety",
+                      "url": "https://cdn.manomano.com/pim-media/docs/pdfs/80bbe41d52785c11fcd60c8e1dba56fdf9c9d9a8.pdf"
+                    }
+                  ],
+                  "breadcrumbs": [
+                    {
+                      "id": 463,
+                      "name": "Outillage",
+                      "url": "https://www.manomano.fr/hub/outillage-463"
+                    },
+                    {
+                      "id": 464,
+                      "name": "Outillage électroportatif",
+                      "url": "https://www.manomano.fr/hub/outillage-electroportatif-464"
+                    },
+                    "… 2 more"
+                  ],
+                  "rating": 4.57,
+                  "reviews_count": 7,
+                  "rating_distribution": {
+                    "1": 0,
+                    "2": 0,
+                    "3": 1,
+                    "4": 1,
+                    "5": 5
+                  },
+                  "top_reviews": [
+                    {
+                      "id": 28916167,
+                      "rating": 5,
+                      "text": "Increvable! C'est ma deuxième, ce qui évite de démonter continuellement les embouts. La première à pas mal d'années et fonctionne comme au p…",
+                      "date": "2026-09-30T15:10:55",
+                      "author": "Nicolas",
+                      "author_country": "FR",
+                      "pro_buyer": false,
+                      "votes": 0,
+                      "pictures": [],
+                      "source": null
+                    },
+                    {
+                      "id": 28804040,
+                      "rating": 4,
+                      "text": "J'ai déjà des appareils de la marque, rien à dire sur la qualité. Le coffret est plus pratique que les anciens.",
+                      "date": "2026-08-19T09:53:34",
+                      "author": "Jean-henri",
+                      "author_country": "FR",
+                      "pro_buyer": false,
+                      "votes": 0,
+                      "pictures": [],
+                      "source": "first_reminder"
+                    },
+                    "… 3 more"
+                  ],
+                  "more_reviews": true,
+                  "…": "5 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manomano/v1/reviews": {
+      "get": {
+        "operationId": "manomanoReviews",
+        "summary": "ManoMano product reviews",
+        "description": "Every customer review of a ManoMano product, newest first by default: review id, star rating, text, date, reviewer first name and country, professional-buyer flag, helpful votes, photos and the shop the review was written on. Sort by date or rating; only professional buyers; leave out reviews translated from other countries. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manomano-reviews",
+        "tags": [
+          "ManoMano"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A product link, its last part (perceuse-...-14307908) or the article id at its end.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "14307908"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Market: fr (default), es, it or de.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fr",
+                "es",
+                "it",
+                "de"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order of the reviews.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "oldest",
+                "highest",
+                "lowest"
+              ],
+              "default": "newest"
+            }
+          },
+          {
+            "name": "pro_only",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews from professional buyers.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "exclude_translated",
+            "in": "query",
+            "required": false,
+            "description": "Leave out reviews translated from another country's shop.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page, 1-50 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass back `next_page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manomano/v1/search": {
+      "get": {
+        "operationId": "manomanoSearch",
+        "summary": "Search ManoMano products",
+        "description": "ManoMano product search or a category listing with every filter the site offers: article id, product and model ids, title, link, brand, price and price before discount, rating and review count, seller, delivery label, images, category, promotion and its end date, sponsored flag. `filters` lists the price range, ratings, promotions, brands, delivery options and the category's technical attributes with counts (pass keys and values back). Searches that match a category are answered with that category's listing (see `category`). Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manomano-search",
+        "tags": [
+          "ManoMano"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search keywords (optional when category is given).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "perceuse sans fil"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "A category path such as perceuse-1146 (from `category`, a suggestion or a manomano.fr category link).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order: relevance (default), price_asc, price_desc, rating.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc",
+                "rating"
+              ]
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price in euros.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price in euros.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Only this brand, as the site writes it (e.g. MAKITA; a value from the brand filter).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_rating",
+            "in": "query",
+            "required": false,
+            "description": "Minimum star rating, 1-5.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "free_delivery",
+            "in": "query",
+            "required": false,
+            "description": "true for free delivery only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "relay_delivery",
+            "in": "query",
+            "required": false,
+            "description": "true for pickup-point delivery only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "express",
+            "in": "query",
+            "required": false,
+            "description": "true for ManoExpress (fast delivery) only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "promo",
+            "in": "query",
+            "required": false,
+            "description": "Only products in this promotion (a value from the promo filter, e.g. blackfriday).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "More filters as key:value pairs separated by `;`, keys and values from `filters` (e.g. cat_attr_84:Sans fil;cat_attr_14:18; ranges as min-max).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1 for the first. Pass back `next_page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Market: fr (manomano.fr, default), es (manomano.es), it (manomano.it) or de (manomano.de). Ids, paths and filter values come from that market's own pages.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fr",
+                "es",
+                "it",
+                "de"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "perceuse sans fil",
+                  "applied_filters": {
+                    "sort": "relevance",
+                    "page": 1
+                  },
+                  "total": 259,
+                  "page": 1,
+                  "pages": 5,
+                  "per_page": 56,
+                  "count": 56,
+                  "next_page": 2,
+                  "category": null,
+                  "items": [
+                    {
+                      "article_id": "36632752",
+                      "product_id": "35216628",
+                      "model_id": "11170692",
+                      "title": "Dewalt – Perceuse visseuse sans fil 18V avec 2 batteries 4.0Ah – Moteur Brushless – Couple réglable – Coffret de transport DCD777M2T-QW",
+                      "url": "https://www.manomano.fr/p/perceuse-visseuse-compact-18v-xr-40ah-dewalt-dcd777m2t-36632752",
+                      "brand": "DEWALT",
+                      "brand_id": 3,
+                      "price": 194.9,
+                      "price_without_vat": 162.42,
+                      "currency": "EUR",
+                      "was_price": 223.08,
+                      "discount_percent": 12,
+                      "rating": 4.64,
+                      "reviews_count": 137,
+                      "seller": {
+                        "id": "5307819",
+                        "name": "Maxoutil.",
+                        "pro_seller": false
+                      },
+                      "delivery": null,
+                      "free_delivery": false,
+                      "image": "https://cdn.manomano.com/pim-media/images/medium/3af29ee0582ecc461174ae7b83d53a6952d891b8.jpg",
+                      "images": [
+                        "https://cdn.manomano.com/pim-media/images/medium/3af29ee0582ecc461174ae7b83d53a6952d891b8.jpg",
+                        "https://cdn.manomano.com/pim-media/images/medium/f2d5ef9e8d35a423f1f2e0ca628de674570348ba.jpg",
+                        "… 5 more"
+                      ],
+                      "category": "Perceuse",
+                      "category_id": 1146,
+                      "promo": "blackfriday",
+                      "promo_ends": "2026-11-30T22:59:00.000Z",
+                      "variants_count": 1,
+                      "second_hand": false,
+                      "top_sales": false,
+                      "sponsored": true,
+                      "sellable": true
+                    },
+                    {
+                      "article_id": "73863383",
+                      "product_id": "46488100",
+                      "model_id": "52288330",
+                      "title": "Dewalt – Perceuse à percussion 18V XR – Moteur sans charbon – Mandrin 13 mm tout métal – 15 réglages de couple – Coffret T-STAK",
+                      "url": "https://www.manomano.fr/p/dewalt-perceuse-visseuse-a-percussion-18v-li-ion-2x2ah-70-nm-dcd796d2-73863383",
+                      "brand": "DEWALT",
+                      "brand_id": 3,
+                      "price": 115.9,
+                      "price_without_vat": 96.58,
+                      "currency": "EUR",
+                      "was_price": 121.7,
+                      "discount_percent": 4,
+                      "rating": 4.53,
+                      "reviews_count": 236,
+                      "seller": {
+                        "id": "10194229",
+                        "name": "Cotebrico MF",
+                        "pro_seller": false
+                      },
+                      "delivery": null,
+                      "free_delivery": false,
+                      "image": "https://cdn.manomano.com/pim-media/images/medium/a01667c167074d1182c0741882e07fe9ac991dbf.jpg",
+                      "images": [
+                        "https://cdn.manomano.com/pim-media/images/medium/a01667c167074d1182c0741882e07fe9ac991dbf.jpg",
+                        "https://cdn.manomano.com/pim-media/images/medium/00fbed5d2193b8c21a0379eb970b4b235de6fadc.jpg",
+                        "… 8 more"
+                      ],
+                      "category": "Perceuse",
+                      "category_id": 1146,
+                      "promo": null,
+                      "promo_ends": null,
+                      "variants_count": 3,
+                      "second_hand": false,
+                      "top_sales": false,
+                      "sponsored": true,
+                      "sellable": true
+                    },
+                    "… 54 more"
+                  ],
+                  "filters": [
+                    {
+                      "key": "price",
+                      "name": "Prix (€)",
+                      "type": "range",
+                      "min": 29.12,
+                      "max": 693,
+                      "values": []
+                    },
+                    {
+                      "key": "rating",
+                      "name": "Notes",
+                      "type": "checkbox",
+                      "min": 1,
+                      "max": 5,
+                      "values": [
+                        {
+                          "value": "4",
+                          "label": "4",
+                          "count": 101,
+                          "selected": false
+                        },
+                        {
+                          "value": "4.5",
+                          "label": "4.5",
+                          "count": 93,
+                          "selected": false
+                        },
+                        "… 6 more"
+                      ]
+                    },
+                    "… 13 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manomano/v1/seller": {
+      "get": {
+        "operationId": "manomanoSeller",
+        "summary": "ManoMano seller",
+        "description": "A ManoMano seller's public shop profile: company name, city and country, logo, about text, company registration details, delivery costs and methods, returns policy, tax information and the terms document.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manomano-seller",
+        "tags": [
+          "ManoMano"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Seller id (e.g. 12, from a product's seller) or a manomano.fr/marchand-<id> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "12"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Market: fr (manomano.fr, default), es (manomano.es), it (manomano.it) or de (manomano.de). Ids, paths and filter values come from that market's own pages.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fr",
+                "es",
+                "it",
+                "de"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "12",
+                  "name": "Maxoutil",
+                  "url": "https://www.manomano.fr/marchand-12",
+                  "city": "Rodez (12)",
+                  "country": "FR",
+                  "platform": "FR",
+                  "logo": "https://cdn.manomano.com/seller-contracts/medias/12/logo-medium-c873b3e01fdc0d4d52cd14b87e658a19.jpg",
+                  "about": "Maxoutil est une entreprise familiale indépendante basée à Rodez (Aveyron). Nous proposons des gammes d’outils professionnels, de la quincai…",
+                  "company_info": "Numéro de TVA intracommunautaire : FR26433830015",
+                  "delivery_costs": "Frais de port Commande supérieure à 100€ TTC → Livraison France métropolitaine offerte - DPD(domicile ou relais-colis) Commande inférieure à…",
+                  "shipping": "La livraison Afin de livrer vos commandes dans les meilleures conditions, merci de bien respecter ces différents points : Veuillez inscrire …",
+                  "returns": "Si vous changez d’avis Vous avez 14 jours pour retourner vos produits. Les frais de retour seront à votre charge. Vous serez remboursé au pl…",
+                  "taxes": "Les produits présentés sont affichés toutes taxes comprises (T.V.A. 20 %). De plus, les prix affichés s’entendent port, emballage et assuran…",
+                  "privacy": "Les données personnelles Conformément à la loi « Informatique et Libertés » du 6 janvier 1978, les clients disposent d’un droit d’accès, de …",
+                  "terms_pdf": "https://s3.eu-west-3.amazonaws.com/prd-ms-seller-legal-storage-eu-west-3/termsandconditions/12/terms_file_60e327829d498.pdf?X-Amz-Algorithm=…",
+                  "links": [],
+                  "products_url": "https://www.manomano.fr/marchand-12",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

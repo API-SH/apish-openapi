@@ -1,0 +1,1045 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Flippa",
+    "version": "1.0.0",
+    "description": "The Flippa API from API.SH: public Flippa data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Flippa",
+      "description": "2 endpoints (real estate)",
+      "x-slug": "flippa",
+      "x-domains": [
+        "flippa.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flippa/v1/listing": {
+      "get": {
+        "operationId": "flippaListing",
+        "summary": "Flippa listing",
+        "description": "One Flippa listing: title, summary, category, price type and asking price or bid with currency, business location, site age, monthly profit and revenue, profit margin, page views, profit and revenue multiples, views, watchers, flags (verified, editor's choice, managed by Flippa...), what the vetting team verified, connected data integrations, the public \"About the Business\" text and the broker or seller's public profile (name, location, verification, feedback and transaction record). Financials and seller notes behind the site's sign-in or NDA are not included. Pass `latest=true` with search filters to open the newest matching listing. Also `metrics` (every label and value of the listing's header block, e.g. subscribers and churn), the bid count, whether the reserve is met, the time left, the Buy It Now price and `financials_public` (false when the site shows financials to signed-in users only). `about_sections` splits the seller's write-up into its headed sections (heading, text, bullet items); `monetization`, `tech_stack`, `growth_opportunities` and `reason_for_selling` pick those sections when the seller wrote them (null otherwise), and `members_only_sections` names the detail panels the site shows to signed-in members only (e.g. monetization methods, products and services, traffic).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flippa-listing",
+        "tags": [
+          "Flippa"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Listing id (the number in flippa.com/<id>-...). Or give `url`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A flippa.com listing link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "true: open the first current result of a search made with the other filter params given here (the same as the search route's, e.g. category), instead of `id`/`url`.",
+            "schema": {
+              "type": "boolean"
+            },
+            "example": "true"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "With `latest`: the search's `category` filter.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "saas"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "11816135",
+                  "url": "https://flippa.com/11816135-social-media-entertainment-business-founded-in-2014-generating-2m-in-revenue-with-a-33-profit-margin-operates-mu…",
+                  "title": "Social media entertainment business founded in 2014, generating $2M in revenue with a 33% profit margin. Operates multiple websites in the o…",
+                  "summary": "Social media entertainment business founded in 2014, generating $2M in revenue with a 33% profit margin. Operates multiple websites in the o…",
+                  "category": "Saas",
+                  "category_line": "SaaS | Internet",
+                  "price_type": "Asking Price (Classified)",
+                  "price": 2520000,
+                  "currency": "USD",
+                  "availability": "https://schema.org/InStock",
+                  "business_location": "Canada",
+                  "site_age": "12 years",
+                  "monthly_profit": 51720,
+                  "monthly_revenue": null,
+                  "profit_margin": "32%",
+                  "page_views": null,
+                  "profit_multiple": "4.1x",
+                  "revenue_multiple": "1.3x",
+                  "comments": null,
+                  "views": 11257,
+                  "watchers": 349,
+                  "flags": [
+                    "Verified Listing",
+                    "Editors Choice",
+                    "… 4 more"
+                  ],
+                  "verified_items": [
+                    "Revenue",
+                    "Primary Expenses",
+                    "… 2 more"
+                  ],
+                  "integrations": [],
+                  "about": "The online dating platform, founded in 2014, is an established service focusing on relationship-based dating, primarily targeting Latin Amer…",
+                  "broker": {
+                    "role": "broker",
+                    "name": "Nick Carlucci",
+                    "location": "United States",
+                    "bio": "Hi, I’m Nick Carlucci, an AM&AA Certified Broker based in Texas. I specialize in broker...",
+                    "positive_feedback": "80.0%",
+                    "transactions": "649 transactions totalling USD $288,211,788",
+                    "verified": [
+                      "Email address",
+                      "Phone number",
+                      "… 1 more"
+                    ]
+                  },
+                  "image": "https://static2.flippa.com/blurred_thumbnail_9f233fa4-4740-40b7-5b58-5178788db5b7.png",
+                  "metrics": {
+                    "Business Location": "Canada",
+                    "Site Age": "12 years",
+                    "Monthly Profit": "USD $51,720 /mo",
+                    "Profit Margin": "32%",
+                    "Profit Multiple": "4.1x",
+                    "Revenue Multiple": "1.3x",
+                    "Total Active Subscribers": "26,396",
+                    "Overall Churn": "60%"
+                  },
+                  "bids_count": null,
+                  "reserve_met": null,
+                  "time_left": null,
+                  "buy_it_now_price": null,
+                  "financials_public": false,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flippa/v1/search": {
+      "get": {
+        "operationId": "flippaSearch",
+        "summary": "Flippa businesses for sale",
+        "description": "Online businesses, websites, apps, domains and channels for sale on Flippa with the site's filters: category, industry, asking price, monthly revenue and profit, profit and revenue multiples, age, monthly uniques, page views and downloads, sale method, status, who manages the sale, keyword and sort. Each result has id, link, category, title, broker, flags, location, price type and asking price or bid, monthly revenue and profit, multiples, age, type, industry and connected data integrations. 50 per page; pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flippa-search",
+        "tags": [
+          "Flippa"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Categories, comma-separated: ai-apps-and-tools, amazon-fba, amazon-kdp, android-apps, content, crypto-and-blockchain, digital-agencies, domain, ecommerce, ios-apps, marketplaces, newsletters, other, plugins-and-extensions, projects-and-concepts, saas, services, social-media-accounts, youtube-channels.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "saas"
+          },
+          {
+            "name": "industry",
+            "in": "query",
+            "required": false,
+            "description": "Industries, comma-separated: automotive, business, design-and-style, education, electronics, entertainment, food-and-drink, general-knowledge, health-and-beauty, hobbies-and-games, home-and-garden, internet, lifestyle, sports-and-outdoor, travel.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keyword.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price (USD).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price (USD).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "monthly_revenue_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum monthly revenue.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "monthly_revenue_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum monthly revenue.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "monthly_profit_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum monthly profit.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "monthly_profit_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum monthly profit.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "profit_multiple_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum profit multiple.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "profit_multiple_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum profit multiple.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "revenue_multiple_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum revenue multiple.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "revenue_multiple_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum revenue multiple.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "age_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum age (years).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "age_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum age (years).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "monthly_uniques_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum monthly unique visitors.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "monthly_page_views_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum monthly page views.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "monthly_downloads_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum monthly downloads (apps).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sale_method",
+            "in": "query",
+            "required": false,
+            "description": "auction or classified (comma-separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "open (default) or won (sold).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "managed_by",
+            "in": "query",
+            "required": false,
+            "description": "flippa_broker, partner_broker or owner (comma-separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "lowest_price",
+                "highest_price",
+                "most_profitable",
+                "most_active",
+                "ending_soonest"
+              ]
+            },
+            "example": "relevance"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, starting at 1. Pass `next_page` back as `page`; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "total": 672,
+                  "page": 1,
+                  "count": 50,
+                  "next_page": 2,
+                  "applied_filters": {
+                    "filter[listing_category][]": "saas",
+                    "filter[status][]": "open"
+                  },
+                  "results": [
+                    {
+                      "id": "11816135",
+                      "url": "https://flippa.com/11816135-social-media-entertainment-business-founded-in-2014-generating-2m-in-revenue-with-a-33-profit-margin-operates-mu…",
+                      "category": "SaaS | Internet",
+                      "title": "Social media entertainment business founded in 2014, generating $2M in revenue with a 33% profit margin. Operates multiple websites in the o…",
+                      "brokered": "Brokered by Flippa",
+                      "flags": [],
+                      "location": "Canada",
+                      "price_type": "Asking price",
+                      "price": 2520000,
+                      "currency": "USD",
+                      "price_text": "USD $2,520,000",
+                      "monthly_revenue": 160000,
+                      "monthly_profit": 51700,
+                      "profit_multiple": "4.1x",
+                      "revenue_multiple": null,
+                      "age": "12 years",
+                      "type": "SaaS",
+                      "industry": "Internet",
+                      "monetization": null,
+                      "bids": null,
+                      "ends": null,
+                      "integrations": [],
+                      "image": "https://static2.flippa.com/avatar_d0c1ebb2-2967-4742-86e8-86dddc5e0c2d.png"
+                    },
+                    {
+                      "id": "13365450",
+                      "url": "https://flippa.com/13365450-google-maps-rank-tracker-ai-ranking-coach-for-local-seo-agencies-273k-arr-71-margins-and-522-active-subscribers-…",
+                      "category": "SaaS | Internet",
+                      "title": "Google Maps rank tracker + AI Ranking Coach for local SEO agencies. $273K ARR, 71% margins, and 522 active subscribers, with approximately 7…",
+                      "brokered": "Brokered by Flippa",
+                      "flags": [
+                        "Data Verified"
+                      ],
+                      "location": "FL, United States",
+                      "price_type": "Asking price",
+                      "price": 575000,
+                      "currency": "USD",
+                      "price_text": "USD $575,000",
+                      "monthly_revenue": 19100,
+                      "monthly_profit": 15200,
+                      "profit_multiple": "3.1x",
+                      "revenue_multiple": null,
+                      "age": "1 year",
+                      "type": "SaaS",
+                      "industry": "Internet",
+                      "monetization": null,
+                      "bids": null,
+                      "ends": null,
+                      "integrations": [
+                        "Stripe"
+                      ],
+                      "image": "https://static2.flippa.com/avatar_d0c1ebb2-2967-4742-86e8-86dddc5e0c2d.png"
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

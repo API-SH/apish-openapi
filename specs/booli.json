@@ -1,0 +1,2581 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Booli",
+    "version": "1.0.0",
+    "description": "The Booli API from API.SH: public Booli data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Booli",
+      "description": "10 endpoints (real estate)",
+      "x-slug": "booli",
+      "x-domains": [
+        "booli.se"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/booli/v1/agency": {
+      "get": {
+        "operationId": "booliAgency",
+        "summary": "Booli estate agency",
+        "description": "An estate agency on Booli: name, logo, offices, agents (rating, reviews) and current listings, optionally for one area. 24 listings per page; pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/booli-agency",
+        "tags": [
+          "Booli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "The agency's slug as in booli.se/maklarbyra/<slug>, or that link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "alicia-edelman-fastighetsmakleri"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Same as slug (either one).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "area_slug",
+            "in": "query",
+            "required": false,
+            "description": "Only this area (e.g. stockholm).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "next_cursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/booli/v1/agent": {
+      "get": {
+        "operationId": "booliAgent",
+        "summary": "Booli estate agent",
+        "description": "An estate agent's public profile on Booli: name, photo, business phone and email, rating, review count, recommendations, listing statistics for the last six months, agency, and the agent's current listings (24 per page). Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/booli-agent",
+        "tags": [
+          "Booli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "The agent's slug as in booli.se/maklare/<slug>, or that link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "evelinn.akerman"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Same as slug (either one).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page of current listings.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/booli/v1/agents": {
+      "get": {
+        "operationId": "booliAgents",
+        "summary": "Booli estate agents in an area",
+        "description": "Estate agents active in an area as ranked on Booli's agent pages: name, agency, photo, rating, review count, whether sellers' favourite, listings published, recommendations and total value published. 25 per page; pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/booli-agents",
+        "tags": [
+          "Booli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "area_slug",
+            "in": "query",
+            "required": true,
+            "description": "The area as in booli.se/maklare/<area>, e.g. stockholm, goteborg, malmo, uppsala.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "stockholm"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "next_cursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/booli/v1/area-stats": {
+      "get": {
+        "operationId": "booliAreaStats",
+        "summary": "Booli area market statistics",
+        "description": "Housing market statistics for an area on Booli for apartments or houses: average sold price, sold price per m², bidders per sale, share of homes with price cuts, price premium over list price, supply, upcoming sales and days on market, each for the last month and the last 12 months, plus the site's short text about the area.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/booli-area-stats",
+        "tags": [
+          "Booli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "area",
+            "in": "query",
+            "required": true,
+            "description": "A Booli area id (see /booli/v1/suggest) or a place name.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1"
+          },
+          {
+            "name": "object_type",
+            "in": "query",
+            "required": false,
+            "description": "apartment (default) or house.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "apartment",
+                "house"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "area_id": 1,
+                  "area": {
+                    "name": "Stockholms kommun",
+                    "type": "Kommun",
+                    "parent": "Stockholms län"
+                  },
+                  "object_type": "apartment",
+                  "period_start": "2025-10-01",
+                  "stats": {
+                    "days_on_market": {
+                      "last_12_months": null,
+                      "last_month": null,
+                      "unit": null
+                    },
+                    "bidders_per_sale": {
+                      "last_12_months": 2.8,
+                      "last_month": 3.1,
+                      "unit": "st"
+                    },
+                    "price_decrease_share_pct": {
+                      "last_12_months": 14.5,
+                      "last_month": 12.9,
+                      "unit": "%"
+                    },
+                    "upcoming_sales": {
+                      "last_12_months": null,
+                      "last_month": null,
+                      "unit": null
+                    },
+                    "supply": {
+                      "last_12_months": null,
+                      "last_month": null,
+                      "unit": null
+                    },
+                    "sold_sqm_price_sek": {
+                      "last_12_months": null,
+                      "last_month": null,
+                      "unit": null
+                    },
+                    "sold_price_mean_sek": {
+                      "last_12_months": null,
+                      "last_month": null,
+                      "unit": null
+                    },
+                    "price_premium_pct": {
+                      "last_12_months": null,
+                      "last_month": null,
+                      "unit": null
+                    }
+                  },
+                  "about": {
+                    "title": "Bostäder till salu i Stockholm",
+                    "text": "Stockholms kommun är ett område i Stockholms län. I Stockholms kommun är snittutropspriset 5 090 000 kr. Det tar 17 dagar i genomsnitt att s…"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/booli/v1/housing-coop": {
+      "get": {
+        "operationId": "booliHousingCoop",
+        "summary": "Booli housing cooperative",
+        "description": "A Swedish housing cooperative (bostadsrättsförening) on Booli: name, organisation number, description, summary facts (construction year, number of units, land), economy figures with Booli's assessment, annual report and other documents, addresses, and its homes (address, apartment number, rooms, living area, floor, monthly fee).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/booli-housing-coop",
+        "tags": [
+          "Booli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A housing cooperative id or a booli.se/bostadsrattsforening/<id> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "48781"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Same as id (either one).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "48781",
+                  "name": "HSB BRF Lurö i Stockholm",
+                  "org_number": "702001-3251",
+                  "url": "https://www.booli.se/bostadsrattsforening/48781",
+                  "website": "https://www.booli.se/bostadsrattsforening/48781",
+                  "has_valid_annual_report": true,
+                  "description": "HSB BRF Lurö i Stockholm är en äkta bostadsrättsförening i Stockholm med 197 bostäder. Föreningen är tomträttshavare av marken.",
+                  "summary": [
+                    {
+                      "key": "constructionYear",
+                      "label": "Byggår",
+                      "value": "1959",
+                      "note": null
+                    },
+                    {
+                      "key": "numberOfHousingCoopUnits",
+                      "label": "Antal bostadsrätter",
+                      "value": "197 st",
+                      "note": null
+                    },
+                    "… 4 more"
+                  ],
+                  "economy_note": "Booli läser föreningens årsredovisning och presenterar ett litet urval. Det är viktigt att du förstår föreningens ekonomi och de risker som …",
+                  "economy": [
+                    {
+                      "key": "totalLoan",
+                      "label": "Lån",
+                      "value": "37 156 044 kr",
+                      "note": null
+                    },
+                    {
+                      "key": "debtToLivingArea",
+                      "label": "Belåning per kvm",
+                      "value": "",
+                      "note": "Ett enkelt sätt att jämföra bostadsrättsföreningar är att se hur stora skulderna är i förhållande till boytan, alltså belåning per kvadratme…"
+                    },
+                    "… 5 more"
+                  ],
+                  "documents": [
+                    {
+                      "id": 3908908,
+                      "type": "annualreport",
+                      "label": "Årsredovisning",
+                      "url": ""
+                    },
+                    {
+                      "id": 3571902,
+                      "type": "energideklaration",
+                      "label": "Energideklaration",
+                      "url": ""
+                    },
+                    "… 1 more"
+                  ],
+                  "addresses": [
+                    {
+                      "street": "Nykroppagatan 19",
+                      "post_code": 12332,
+                      "city": "Nykroppagatan 19",
+                      "latitude": 59.24248,
+                      "longitude": 18.08229
+                    },
+                    {
+                      "street": "Nykroppagatan 21",
+                      "post_code": 12332,
+                      "city": "Nykroppagatan 21",
+                      "latitude": 59.24255302,
+                      "longitude": 18.08199957
+                    },
+                    "… 24 more"
+                  ],
+                  "homes_count": 197,
+                  "homes": [
+                    {
+                      "id": "688104",
+                      "url": "https://www.booli.se/bostad/688104",
+                      "address": "Nykroppagatan 19",
+                      "apartment_number": "Lgh 0901",
+                      "rooms": null,
+                      "living_area": "37 m²",
+                      "floor": "vån -1",
+                      "monthly_fee_sek": null,
+                      "object_type": "Lägenhet",
+                      "latitude": 59.24248,
+                      "longitude": 18.08229
+                    },
+                    {
+                      "id": "688105",
+                      "url": "https://www.booli.se/bostad/688105",
+                      "address": "Nykroppagatan 19",
+                      "apartment_number": "Lgh 1001",
+                      "rooms": null,
+                      "living_area": "109 m²",
+                      "floor": "BV",
+                      "monthly_fee_sek": null,
+                      "object_type": "Radhus",
+                      "latitude": 59.24248,
+                      "longitude": 18.08229
+                    },
+                    "… 195 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/booli/v1/listing": {
+      "get": {
+        "operationId": "booliListing",
+        "summary": "Booli listing details",
+        "description": "One Booli listing (for sale, coming soon, sold or removed): address, apartment number, area tree, coordinates, home type, tenure, status, list price and price changes, price per m², rooms, living/additional/plot area, floor and building floors, monthly fee, operating cost, construction year, heating, mortgage deeds, amenities, Booli's price estimate with range, upcoming viewings, agent and agency, the broker's own listing link, housing cooperative id, the sale result when sold, earlier sales of the same home, the listing's history on Booli (price changes, status changes), fact lines and all photos.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/booli-listing",
+        "tags": [
+          "Booli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A Booli listing id or a booli.se/annons/<id> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "6333341"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Same as id (either one).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "6333341",
+                  "url": "https://www.booli.se/annons/6333341",
+                  "address": "Ehrensvärdsgatan 4",
+                  "apartment_number": "Lgh 1501",
+                  "area": "Norr Mälarstrand",
+                  "municipality": "Stockholm",
+                  "named_areas": [
+                    "Norr Mälarstrand"
+                  ],
+                  "areas": [],
+                  "latitude": 59.3283253,
+                  "longitude": 18.0343596,
+                  "object_type": "Lägenhet",
+                  "tenure": "Bostadsrätt",
+                  "status": "removed",
+                  "statuses": [
+                    "Borttagen"
+                  ],
+                  "phase": "Till salu",
+                  "upcoming_sale": false,
+                  "new_construction": false,
+                  "bidding_open": false,
+                  "list_price": null,
+                  "price_display": null,
+                  "price_label": null,
+                  "list_sqm_price": null,
+                  "list_price_change": null,
+                  "list_price_change_pct": null,
+                  "rooms": 2,
+                  "living_area_m2": 41,
+                  "additional_area_m2": null,
+                  "plot_area_m2": null,
+                  "floor": 5,
+                  "building_floors": 6,
+                  "monthly_fee_sek": 2326,
+                  "operating_cost_sek_month": 533,
+                  "construction_year": 1931,
+                  "heating": "Fjärrvärme",
+                  "mortgage_deeds_sek": null,
+                  "amenities": [
+                    "Hiss"
+                  ],
+                  "estimate": {
+                    "price": 5490000,
+                    "low": 5210000,
+                    "high": 5760000
+                  },
+                  "published": "2026-11-02 18:26:19",
+                  "showings": [],
+                  "agent": {
+                    "id": "13376",
+                    "name": "Evelinn Åkerman",
+                    "url": "https://www.booli.se/maklare/evelinn.akerman"
+                  },
+                  "…": "14 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/booli/v1/property": {
+      "get": {
+        "operationId": "booliProperty",
+        "summary": "Booli property sale history",
+        "description": "Every recorded sale of one home (a booli.se/bostad/<id> property, or the home behind a listing id): sale date, sold price, list price, price change, price per m², rooms, living area, area, municipality, agent and agency.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/booli-property",
+        "tags": [
+          "Booli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A Booli property id or a booli.se/bostad/<id> link (a booli.se/annons/<id> link also works).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1545797"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Same as id (either one).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1545797",
+                  "id_type": "property",
+                  "property_id": "1545797",
+                  "url": "https://www.booli.se/bostad/1545797",
+                  "count": 4,
+                  "sales": [
+                    {
+                      "id": "6338246",
+                      "url": "https://www.booli.se/bostad/1545797",
+                      "address": "Djupdalsvägen 99",
+                      "object_type": "Villa",
+                      "sold_date": "2026-11-05",
+                      "sold_price": 16450000,
+                      "sold_price_type": "Slutpris",
+                      "list_price": null,
+                      "price_change": null,
+                      "price_change_pct": null,
+                      "sqm_price": 153738,
+                      "rooms": 7,
+                      "living_area_m2": 107,
+                      "area": null,
+                      "municipality": "Stockholm",
+                      "agent": {
+                        "id": "7930",
+                        "name": "Sara Sällström",
+                        "url": "https://www.booli.se/maklare/sara.sallstrom"
+                      },
+                      "agency": {
+                        "id": "32",
+                        "name": "SkandiaMäklarna"
+                      }
+                    },
+                    {
+                      "id": "5752945",
+                      "url": "https://www.booli.se/bostad/1545797",
+                      "address": "Djupdalsvägen 99",
+                      "object_type": "Villa",
+                      "sold_date": "2025-06-09",
+                      "sold_price": 13800000,
+                      "sold_price_type": "Lagfart",
+                      "list_price": null,
+                      "price_change": null,
+                      "price_change_pct": null,
+                      "sqm_price": 146809,
+                      "rooms": null,
+                      "living_area_m2": 94,
+                      "area": "Olovslund",
+                      "municipality": "Stockholm",
+                      "agent": {
+                        "id": "14067",
+                        "name": "Emilie Van Der Vliet",
+                        "url": "https://www.booli.se/maklare/emilie.van.der.vliet"
+                      },
+                      "agency": {
+                        "id": "26",
+                        "name": "Mäklarhuset"
+                      }
+                    },
+                    "… 2 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/booli/v1/search": {
+      "get": {
+        "operationId": "booliSearch",
+        "summary": "Booli homes for sale",
+        "description": "Homes for sale in Sweden on Booli for an area, with every filter the site offers (home type, rooms, living and plot area, price, price per m², monthly fee, construction year, floor, balcony/fireplace/elevator, tenure, days on Booli, viewings, distance to water, new construction, upcoming sales, price cuts) and every sort. Each result has id, link, address, area, home type, list price, rooms, living area, floor, monthly fee or plot area, municipality, county, coordinates, amenities, up to 5 photos, status (e.g. next viewing) and the presenting agency. Also returns the total, the applied filters as Booli describes them and related searches. Pass `next_page` back as `page`; null on the last page. Or pass any booli.se/sok/till-salu link as url.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/booli-search",
+        "tags": [
+          "Booli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "area",
+            "in": "query",
+            "required": false,
+            "description": "A Booli area id (1 = Stockholm municipality, 2 = Stockholm county; ids from /booli/v1/suggest), several ids comma-separated, or a place name (the site's best match is used and returned as resolved_area). Required unless url is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A booli.se/sok/till-salu search link with its filters (instead of area and filters).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "object_type",
+            "in": "query",
+            "required": false,
+            "description": "Home type, comma-separated: apartment, villa, townhouse, holiday_home, plot, farm (or the site's Swedish names).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "apartment"
+          },
+          {
+            "name": "min_rooms",
+            "in": "query",
+            "required": false,
+            "description": "Minimum rooms.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_rooms",
+            "in": "query",
+            "required": false,
+            "description": "Maximum rooms.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_living_area",
+            "in": "query",
+            "required": false,
+            "description": "Minimum living area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_living_area",
+            "in": "query",
+            "required": false,
+            "description": "Maximum living area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_plot_area",
+            "in": "query",
+            "required": false,
+            "description": "Minimum plot area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_plot_area",
+            "in": "query",
+            "required": false,
+            "description": "Maximum plot area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_construction_year",
+            "in": "query",
+            "required": false,
+            "description": "Built in or after.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_construction_year",
+            "in": "query",
+            "required": false,
+            "description": "Built in or before.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_sqm_price",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price per m², SEK.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_sqm_price",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price per m², SEK.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "amenities",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: balcony, fireplace, elevator.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenure",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: cooperative (bostadsrätt), freehold (äganderätt), site_leasehold, lease, owner_apartment, share.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "extend_km",
+            "in": "query",
+            "required": false,
+            "description": "Widen the area by this many km: 0, 1, 2, 3, 4, 5, 10, 15, 20, 25 or 30.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Minimum list price, SEK.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Maximum list price, SEK.",
+            "schema": {
+              "type": "number"
+            },
+            "example": "5000000"
+          },
+          {
+            "name": "max_monthly_fee",
+            "in": "query",
+            "required": false,
+            "description": "Maximum monthly fee to the cooperative, SEK.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "floor",
+            "in": "query",
+            "required": false,
+            "description": "Floor: bottom, above_bottom or top.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "bottom",
+                "above_bottom",
+                "top"
+              ]
+            }
+          },
+          {
+            "name": "days_active",
+            "in": "query",
+            "required": false,
+            "description": "Listed on Booli within this many days: 1, 3, 7 or 30.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "3",
+                "7",
+                "30"
+              ]
+            }
+          },
+          {
+            "name": "showing",
+            "in": "query",
+            "required": false,
+            "description": "Viewings: today_onwards, this_weekend or next_7_days.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today_onwards",
+                "this_weekend",
+                "next_7_days"
+              ]
+            }
+          },
+          {
+            "name": "max_distance_to_water",
+            "in": "query",
+            "required": false,
+            "description": "Maximum distance to water, metres.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "new_construction",
+            "in": "query",
+            "required": false,
+            "description": "include (default), only, exclude, or projects (new-build projects).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "include",
+                "only",
+                "exclude",
+                "projects"
+              ]
+            }
+          },
+          {
+            "name": "upcoming_sale",
+            "in": "query",
+            "required": false,
+            "description": "include (default), only or exclude homes coming soon.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "include",
+                "only",
+                "exclude"
+              ]
+            }
+          },
+          {
+            "name": "price_decreased",
+            "in": "query",
+            "required": false,
+            "description": "true: only homes whose price was cut.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), newest, oldest, price_asc, price_desc, rooms_desc, area_desc, area_asc, fee_asc, sqm_price_asc, sqm_price_desc, plot_desc, plot_asc, address_asc, address_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "oldest",
+                "price_asc",
+                "price_desc",
+                "rooms_desc",
+                "area_desc",
+                "area_asc",
+                "fee_asc",
+                "sqm_price_asc",
+                "sqm_price_desc",
+                "plot_desc",
+                "plot_asc",
+                "address_asc",
+                "address_desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-based).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, up to 50 (default 35).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "area_ids": [
+                    1
+                  ],
+                  "resolved_area": null,
+                  "total": 5361,
+                  "page": 1,
+                  "limit": 35,
+                  "count": 36,
+                  "next_page": 2,
+                  "title": "Lägenheter till salu i Stockholms kommun",
+                  "summary": "",
+                  "applied_filters": [
+                    {
+                      "key": "objectType",
+                      "value": "Lägenhet",
+                      "label": "Lägenhet"
+                    },
+                    {
+                      "key": "maxListPrice",
+                      "value": "5000000",
+                      "label": "Utropspris upp till 5 000 000 kr"
+                    }
+                  ],
+                  "sort": "relevance",
+                  "related_searches": [],
+                  "results": [
+                    {
+                      "id": "6338919",
+                      "is_project": false,
+                      "booli_id": 6338919,
+                      "origin_id": "listing:6338919",
+                      "url": "https://www.booli.se/annons/6338919",
+                      "title": "Bandhagsplan 16",
+                      "subtitle": "Lägenhet · Bandhagen · Stockholm",
+                      "object_type": "Lägenhet",
+                      "sale_type": "succession",
+                      "status": null,
+                      "status_key": null,
+                      "secondary_status": "Sön 15 nov kl 11:30",
+                      "price": 1950000,
+                      "price_display": "1 950 000 kr",
+                      "price_type": "list",
+                      "price_remark": null,
+                      "date": "Inkommet idag",
+                      "living_area_m2": 37,
+                      "living_area_display": "37 m²",
+                      "rooms": 1,
+                      "floor": null,
+                      "monthly_fee_sek": 3014,
+                      "plot_area_m2": null,
+                      "sqm_price_sek": null,
+                      "municipality": "Stockholm",
+                      "county": "Stockholms län",
+                      "latitude": 59.2693293,
+                      "longitude": 18.0499337,
+                      "amenities": [
+                        "Hiss",
+                        "Balkong"
+                      ],
+                      "labels": [],
+                      "images": [
+                        {
+                          "id": "57418181",
+                          "url": "https://bcdn.se/images/cache/57418181_4000x2667.jpg",
+                          "label": "interior",
+                          "alt": "Interiörbild",
+                          "width": 4000,
+                          "height": 2667
+                        },
+                        {
+                          "id": "57418182",
+                          "url": "https://bcdn.se/images/cache/57418182_4000x2667.jpg",
+                          "label": "interior",
+                          "alt": "Interiörbild",
+                          "width": 4000,
+                          "height": 2667
+                        },
+                        "… 3 more"
+                      ],
+                      "presenter": "Properties & Partners",
+                      "data_points": {
+                        "livingArea": "37 m²",
+                        "rooms": "1 rum",
+                        "rentOrPlotAreaText": "3 014 kr/mån"
+                      }
+                    },
+                    {
+                      "id": "6338903",
+                      "is_project": false,
+                      "booli_id": 6338903,
+                      "origin_id": "listing:6338903",
+                      "url": "https://www.booli.se/annons/6338903",
+                      "title": "Ölmevägen 30",
+                      "subtitle": "Lägenhet · Farsta Centrum · Stockholm",
+                      "object_type": "Lägenhet",
+                      "sale_type": "succession",
+                      "status": null,
+                      "status_key": null,
+                      "secondary_status": "Tor 12 nov kl 17:00",
+                      "price": 2995000,
+                      "price_display": "2 995 000 kr",
+                      "price_type": "list",
+                      "price_remark": null,
+                      "date": "Inkommet igår",
+                      "living_area_m2": 96,
+                      "living_area_display": "96 m²",
+                      "rooms": 4,
+                      "floor": "vån 2",
+                      "monthly_fee_sek": 6750,
+                      "plot_area_m2": null,
+                      "sqm_price_sek": null,
+                      "municipality": "Stockholm",
+                      "county": "Stockholms län",
+                      "latitude": 59.2420792,
+                      "longitude": 18.0837426,
+                      "amenities": [
+                        "Balkong"
+                      ],
+                      "labels": [],
+                      "images": [
+                        {
+                          "id": "57417954",
+                          "url": "https://bcdn.se/images/cache/57417954_1920x1281.jpg",
+                          "label": "interior",
+                          "alt": "Interiörbild",
+                          "width": 1920,
+                          "height": 1281
+                        },
+                        {
+                          "id": "57417955",
+                          "url": "https://bcdn.se/images/cache/57417955_1920x1281.jpg",
+                          "label": "interior",
+                          "alt": "Interiörbild",
+                          "width": 1920,
+                          "height": 1281
+                        },
+                        "… 3 more"
+                      ],
+                      "presenter": null,
+                      "data_points": {
+                        "livingArea": "96 m²",
+                        "rooms": "4 rum",
+                        "floor": "vån 2",
+                        "rentOrPlotAreaText": "6 750 kr/mån"
+                      }
+                    },
+                    "… 34 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/booli/v1/sold": {
+      "get": {
+        "operationId": "booliSold",
+        "summary": "Booli sold prices",
+        "description": "Final sale prices (slutpriser) in Sweden on Booli for an area, with the site's filters (home type, rooms, living and plot area, sold price, price per m², construction year, amenities, tenure, sale date range) and sorts. Each result has id, link, address, area, home type, sold price, sale date, price per m², rooms, living area, floor or plot area, coordinates, photos and municipality. Pass `next_page` back as `page`; null on the last page. Or pass any booli.se/sok/slutpriser link as url.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/booli-sold",
+        "tags": [
+          "Booli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "area",
+            "in": "query",
+            "required": false,
+            "description": "A Booli area id (1 = Stockholm municipality, 2 = Stockholm county; ids from /booli/v1/suggest), several ids comma-separated, or a place name (the site's best match is used and returned as resolved_area). Required unless url is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A booli.se/sok/slutpriser search link with its filters (instead of area and filters).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "object_type",
+            "in": "query",
+            "required": false,
+            "description": "Home type, comma-separated: apartment, villa, townhouse, holiday_home, plot, farm (or the site's Swedish names).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "apartment"
+          },
+          {
+            "name": "min_rooms",
+            "in": "query",
+            "required": false,
+            "description": "Minimum rooms.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_rooms",
+            "in": "query",
+            "required": false,
+            "description": "Maximum rooms.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_living_area",
+            "in": "query",
+            "required": false,
+            "description": "Minimum living area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_living_area",
+            "in": "query",
+            "required": false,
+            "description": "Maximum living area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_plot_area",
+            "in": "query",
+            "required": false,
+            "description": "Minimum plot area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_plot_area",
+            "in": "query",
+            "required": false,
+            "description": "Maximum plot area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_construction_year",
+            "in": "query",
+            "required": false,
+            "description": "Built in or after.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_construction_year",
+            "in": "query",
+            "required": false,
+            "description": "Built in or before.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_sqm_price",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price per m², SEK.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_sqm_price",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price per m², SEK.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "amenities",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: balcony, fireplace, elevator.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenure",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: cooperative (bostadsrätt), freehold (äganderätt), site_leasehold, lease, owner_apartment, share.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "extend_km",
+            "in": "query",
+            "required": false,
+            "description": "Widen the area by this many km: 0, 1, 2, 3, 4, 5, 10, 15, 20, 25 or 30.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Minimum sold price, SEK.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Maximum sold price, SEK.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sold_from",
+            "in": "query",
+            "required": false,
+            "description": "Sold on or after (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2025-01-01"
+          },
+          {
+            "name": "sold_to",
+            "in": "query",
+            "required": false,
+            "description": "Sold on or before (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2025-03-31"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "newest (default, by sale date), oldest, recently_added, price_change_desc, price_change_asc, price_asc, price_desc, rooms_desc, area_desc, area_asc, sqm_price_asc, sqm_price_desc, plot_desc, plot_asc, address_asc, address_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "oldest",
+                "recently_added",
+                "price_change_desc",
+                "price_change_asc",
+                "price_asc",
+                "price_desc",
+                "rooms_desc",
+                "area_desc",
+                "area_asc",
+                "sqm_price_asc",
+                "sqm_price_desc",
+                "plot_desc",
+                "plot_asc",
+                "address_asc",
+                "address_desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-based).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, up to 50 (default 35).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "area_ids": [
+                    1
+                  ],
+                  "resolved_area": null,
+                  "total": 5743,
+                  "page": 1,
+                  "limit": 35,
+                  "count": 35,
+                  "next_page": 2,
+                  "title": "Slutpriser för lägenheter i Stockholms kommun",
+                  "summary": "",
+                  "applied_filters": [
+                    {
+                      "key": "objectType",
+                      "value": "Lägenhet",
+                      "label": "Lägenhet"
+                    },
+                    {
+                      "key": "minSoldDate",
+                      "value": "2025-01-01",
+                      "label": "Sålt efter 2025-01-01"
+                    },
+                    "… 1 more"
+                  ],
+                  "sort": "newest",
+                  "related_searches": [],
+                  "results": [
+                    {
+                      "id": "5675454",
+                      "is_project": false,
+                      "booli_id": 5675454,
+                      "origin_id": "sold:maklare:5675454",
+                      "url": "https://www.booli.se/bostad/739634",
+                      "title": "Slipgatan 9",
+                      "subtitle": "Lägenhet · Södermalm · Stockholm",
+                      "object_type": "Lägenhet",
+                      "sale_type": "sold",
+                      "status": "Slutpris",
+                      "status_key": "soldViamaklare",
+                      "secondary_status": null,
+                      "price": 5700000,
+                      "price_display": "5 700 000 kr",
+                      "price_type": "sold",
+                      "price_remark": null,
+                      "date": "2025-03-31",
+                      "living_area_m2": 51,
+                      "living_area_display": "51 m²",
+                      "rooms": 3,
+                      "floor": "vån 5",
+                      "monthly_fee_sek": null,
+                      "plot_area_m2": null,
+                      "sqm_price_sek": 111800,
+                      "municipality": "Stockholm",
+                      "county": "Stockholms län",
+                      "latitude": 59.31739226,
+                      "longitude": 18.02775031,
+                      "amenities": [],
+                      "labels": [],
+                      "images": [],
+                      "presenter": null,
+                      "data_points": {
+                        "livingArea": "51 m²",
+                        "rooms": "3 rum",
+                        "floor": "vån 5",
+                        "soldSqmPrice": "111 800 kr/m²"
+                      }
+                    },
+                    {
+                      "id": "5666389",
+                      "is_project": false,
+                      "booli_id": 5666389,
+                      "origin_id": "sold:maklare:5666389",
+                      "url": "https://www.booli.se/annons/5666389",
+                      "title": "Holbergsgatan 69",
+                      "subtitle": "Lägenhet · Bromma · Stockholm",
+                      "object_type": "Lägenhet",
+                      "sale_type": "sold",
+                      "status": "Slutpris",
+                      "status_key": "soldViamaklare",
+                      "secondary_status": null,
+                      "price": 3800000,
+                      "price_display": "3 800 000 kr",
+                      "price_type": "sold",
+                      "price_remark": null,
+                      "date": "2025-03-31",
+                      "living_area_m2": 69,
+                      "living_area_display": "69 m²",
+                      "rooms": 3,
+                      "floor": "vån 2",
+                      "monthly_fee_sek": null,
+                      "plot_area_m2": null,
+                      "sqm_price_sek": 55100,
+                      "municipality": "Stockholm",
+                      "county": "Stockholms län",
+                      "latitude": 59.34606012,
+                      "longitude": 17.88300273,
+                      "amenities": [],
+                      "labels": [],
+                      "images": [],
+                      "presenter": null,
+                      "data_points": {
+                        "livingArea": "69 m²",
+                        "rooms": "3 rum",
+                        "floor": "vån 2",
+                        "soldSqmPrice": "55 100 kr/m²"
+                      }
+                    },
+                    "… 33 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/booli/v1/suggest": {
+      "get": {
+        "operationId": "booliSuggest",
+        "summary": "Booli area suggestions",
+        "description": "The areas Booli suggests for what was typed (municipalities, counties, districts, streets and named areas), each with its id for the search routes, type and parent area.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/booli-suggest",
+        "tags": [
+          "Booli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "A place name, part of one, or a street.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "sundbyberg"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "sundbyberg",
+                  "count": 9,
+                  "suggestions": [
+                    {
+                      "id": "95",
+                      "name": "Sundbyberg",
+                      "display_name": "Sundbybergs kommun",
+                      "type": "Kommun",
+                      "parent": "Stockholms län",
+                      "parent_type": "Län",
+                      "parent_id": "2"
+                    },
+                    {
+                      "id": "1009835",
+                      "name": "Sundbybergs Strandpromenad",
+                      "display_name": "Sundbybergs Strandpromenad",
+                      "type": "Område",
+                      "parent": "Sundbybergs kommun",
+                      "parent_type": "Kommun",
+                      "parent_id": "95"
+                    },
+                    "… 7 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

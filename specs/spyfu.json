@@ -1,0 +1,2339 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: SpyFu",
+    "version": "1.0.0",
+    "description": "The SpyFu API from API.SH: public SpyFu data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "SpyFu",
+      "description": "10 endpoints (search & seo)",
+      "x-slug": "spyfu",
+      "x-domains": [
+        "spyfu.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spyfu/v1/backlinks": {
+      "get": {
+        "operationId": "spyfuBacklinks",
+        "summary": "SpyFu backlinks",
+        "description": "Backlinks pointing to a domain, or to the pages that rank for a keyword: linking URL and domain, domain strength, the linking domain's and page's monthly organic clicks, keywords the page ranks for and its outbound links. Pass either `domain` or `keyword`. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/spyfu-backlinks",
+        "tags": [
+          "SpyFu"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": false,
+            "description": "Domain to find backlinks for (or pass `keyword`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "nike.com"
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "description": "Keyword whose ranking pages' backlinks to list (or pass `domain`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country database: US (default), UK (GB accepted), AR, AT, AU, BE, BR, CA, CH, CL, CZ, DE, DK, ES, FI, FR, IE, IN, IT, JP, MX, NL, NO, NZ, PL, PT, SE, SG, TR, UA, VE, ZA.",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            },
+            "example": "US"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Rows to return (1-50, default 20).",
+            "schema": {
+              "type": "integer",
+              "default": "20"
+            },
+            "example": "20"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Rows to skip; pass `next_offset` back here. Null on the last page.",
+            "schema": {
+              "type": "integer",
+              "default": "0"
+            },
+            "example": "0"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "domain": "nike.com",
+                  "country": "US",
+                  "total": 180124,
+                  "offset": 0,
+                  "count": 20,
+                  "backlinks": [
+                    {
+                      "url": "https://denisonbigred.com/sports/womens-basketball/roster/hannah-wynn/8165",
+                      "domain": "denisonbigred.com",
+                      "domain_strength": 39,
+                      "domain_monthly_organic_clicks": 465000,
+                      "page_monthly_organic_clicks": 1,
+                      "ranked_keywords": 1,
+                      "outbound_links_count": 12,
+                      "outbound_links": [
+                        "denison.kindful.com",
+                        "denisonathleticsphotos.smugmug.com",
+                        "… 6 more"
+                      ]
+                    },
+                    {
+                      "url": "https://www.liverpoolfc.com/news/first-team/330211-jurgen-klopp-liverpool-transfers-harry-wilson",
+                      "domain": "liverpoolfc.com",
+                      "domain_strength": 42,
+                      "domain_monthly_organic_clicks": 5900000,
+                      "page_monthly_organic_clicks": 1,
+                      "ranked_keywords": 1,
+                      "outbound_links_count": 40,
+                      "outbound_links": [
+                        "nesn.com",
+                        "reachsportshop.com",
+                        "… 27 more"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "next_offset": 20,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/spyfu/v1/competitors": {
+      "get": {
+        "operationId": "spyfuCompetitors",
+        "summary": "SpyFu competitors",
+        "description": "A domain's top organic (SEO) or paid (PPC) competitors with the number of keywords they share and an overlap score.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/spyfu-competitors",
+        "tags": [
+          "SpyFu"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "description": "Website domain or link, e.g. `nike.com`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "nike.com"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country database: US (default), UK (GB accepted), AR, AT, AU, BE, BR, CA, CH, CL, CZ, DE, DK, ES, FI, FR, IE, IN, IT, JP, MX, NL, NO, NZ, PL, PT, SE, SG, TR, UA, VE, ZA.",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            },
+            "example": "US"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Organic (SEO) or paid (PPC) competitors.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "organic",
+                "paid"
+              ],
+              "default": "organic"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "domain": "nike.com",
+                  "country": "US",
+                  "type": "organic",
+                  "count": 4,
+                  "competitors": [
+                    {
+                      "domain": "footlocker.com",
+                      "common_keywords": 132377,
+                      "overlap": 0.02564
+                    },
+                    {
+                      "domain": "dickssportinggoods.com",
+                      "common_keywords": 195853,
+                      "overlap": 0.024377
+                    },
+                    "… 2 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/spyfu/v1/domain": {
+      "get": {
+        "operationId": "spyfuDomain",
+        "summary": "SpyFu domain overview",
+        "description": "A domain's latest SEO and PPC numbers from SpyFu: organic keywords, estimated monthly organic clicks and their value, average organic rank, paid keywords, monthly paid clicks, estimated monthly Google Ads budget, average ad position and domain strength; counts of newly ranked, gained and lost keywords; the countries SpyFu has data for; and the top organic and paid competitors with shared keywords. Unknown domains answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/spyfu-domain",
+        "tags": [
+          "SpyFu"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "description": "Website domain or link, e.g. `nike.com`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "nike.com"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country database: US (default), UK (GB accepted), AR, AT, AU, BE, BR, CA, CH, CL, CZ, DE, DK, ES, FI, FR, IE, IN, IT, JP, MX, NL, NO, NZ, PL, PT, SE, SG, TR, UA, VE, ZA.",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "domain": "nike.com",
+                  "country": "US",
+                  "url": "https://www.spyfu.com/overview/domain?query=nike.com",
+                  "latest": {
+                    "month": "2026-10",
+                    "organic_keywords": 3607000,
+                    "monthly_organic_clicks": 6525000,
+                    "monthly_organic_value": 8135000,
+                    "average_organic_rank": 32,
+                    "paid_keywords": 78300,
+                    "monthly_paid_clicks": 5006000,
+                    "monthly_ppc_budget": 1457000,
+                    "average_ad_rank": 1.6,
+                    "domain_strength": 69
+                  },
+                  "keyword_movement": [
+                    {
+                      "type": "NewlyRanked",
+                      "keywords": 678643
+                    },
+                    {
+                      "type": "GainedRanks",
+                      "keywords": 422023
+                    },
+                    "… 1 more"
+                  ],
+                  "countries_with_data": [
+                    {
+                      "country": "AR",
+                      "has_ad_history": true,
+                      "has_rank_history": true
+                    },
+                    {
+                      "country": "AT",
+                      "has_ad_history": true,
+                      "has_rank_history": true
+                    },
+                    "… 30 more"
+                  ],
+                  "organic_competitors": [
+                    {
+                      "domain": "footlocker.com",
+                      "common_keywords": 132377,
+                      "overlap": 0.02564
+                    },
+                    {
+                      "domain": "dickssportinggoods.com",
+                      "common_keywords": 195853,
+                      "overlap": 0.024377
+                    },
+                    "… 3 more"
+                  ],
+                  "paid_competitors": [
+                    {
+                      "domain": "dickssportinggoods.com",
+                      "common_keywords": 11124,
+                      "overlap": 0.004951
+                    },
+                    {
+                      "domain": "stockx.com",
+                      "common_keywords": 6718,
+                      "overlap": 0.004311
+                    },
+                    "… 3 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/spyfu/v1/domain-history": {
+      "get": {
+        "operationId": "spyfuDomainHistory",
+        "summary": "SpyFu domain history (monthly)",
+        "description": "Every month SpyFu has recorded for a domain (back to 2006 for large sites): organic keywords, organic clicks and value, average organic rank, paid keywords, paid clicks, Google Ads budget, average ad position and domain strength.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/spyfu-domain-history",
+        "tags": [
+          "SpyFu"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "description": "Website domain or link, e.g. `nike.com`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "nike.com"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country database: US (default), UK (GB accepted), AR, AT, AU, BE, BR, CA, CH, CL, CZ, DE, DK, ES, FI, FR, IE, IN, IT, JP, MX, NL, NO, NZ, PL, PT, SE, SG, TR, UA, VE, ZA.",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "domain": "nike.com",
+                  "country": "US",
+                  "count": 245,
+                  "first_month": "2006-06",
+                  "last_month": "2026-10",
+                  "months": [
+                    {
+                      "month": "2006-06",
+                      "organic_keywords": 9283,
+                      "monthly_organic_clicks": 19609.65,
+                      "monthly_organic_value": 4409.68,
+                      "average_organic_rank": 17.1,
+                      "paid_keywords": 6961,
+                      "monthly_paid_clicks": 156416.59,
+                      "monthly_ppc_budget": 189742.16,
+                      "average_ad_rank": 11.3,
+                      "domain_strength": 39
+                    },
+                    {
+                      "month": "2006-07",
+                      "organic_keywords": 0,
+                      "monthly_organic_clicks": 0,
+                      "monthly_organic_value": 0,
+                      "average_organic_rank": 0,
+                      "paid_keywords": 0,
+                      "monthly_paid_clicks": 0,
+                      "monthly_ppc_budget": 0,
+                      "average_ad_rank": 0,
+                      "domain_strength": 0
+                    },
+                    "… 243 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/spyfu/v1/keyword": {
+      "get": {
+        "operationId": "spyfuKeyword",
+        "summary": "SpyFu keyword overview",
+        "description": "One keyword's numbers: monthly search volume (local, global, live), difficulty, cost per click and monthly cost (broad, phrase, exact), clicks per month and their split (mobile/desktop, paid/organic/no click), number of advertisers, homepages ranking, SERP features, first organic result, and the top paid and organic domains. Keywords SpyFu has no record of answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/spyfu-keyword",
+        "tags": [
+          "SpyFu"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "description": "Search keyword, e.g. `running shoes`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "running shoes"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country database: US (default), UK (GB accepted), AR, AT, AU, BE, BR, CA, CH, CL, CZ, DE, DK, ES, FI, FR, IE, IN, IT, JP, MX, NL, NO, NZ, PL, PT, SE, SG, TR, UA, VE, ZA.",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "keyword": "running shoes",
+                  "term_id": "1329705",
+                  "search_volume": 73200,
+                  "live_search_volume": 82900,
+                  "rank": null,
+                  "rank_change": null,
+                  "url": "https://www.spyfu.com/keyword/overview?query=running%20shoes",
+                  "seo_clicks": null,
+                  "seo_clicks_change": null,
+                  "difficulty": 44,
+                  "total_monthly_clicks": 38300,
+                  "cpc_broad": 1.61,
+                  "cpc_phrase": 1.79,
+                  "cpc_exact": 1.96,
+                  "monthly_cost_broad": 106485.3,
+                  "monthly_cost_phrase": 81103.5,
+                  "monthly_cost_exact": 15297.6,
+                  "percent_mobile": 0.48,
+                  "percent_desktop": 0.52,
+                  "percent_not_clicked": 0.48,
+                  "percent_paid_clicks": 0.31,
+                  "percent_organic_clicks": 0.69,
+                  "paid_competitors": 127,
+                  "ranking_homepages": 0,
+                  "serp_features": [
+                    "Maps"
+                  ],
+                  "serp_first_result": "runnersworld.com",
+                  "is_question": false,
+                  "is_transactional": false,
+                  "ad_position": null,
+                  "country": "US",
+                  "global_search_volume": 673000,
+                  "local_search_volume": 246000,
+                  "serp_has": {
+                    "images": false,
+                    "map": true,
+                    "news": false,
+                    "shopping": false,
+                    "video": false
+                  },
+                  "top_paid_domains": [
+                    "revolve.com",
+                    "nike.com",
+                    "… 3 more"
+                  ],
+                  "top_organic_domains": [
+                    "brooksrunning.com",
+                    "newbalance.com",
+                    "… 3 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/spyfu/v1/organic-keywords": {
+      "get": {
+        "operationId": "spyfuOrganicKeywords",
+        "summary": "SpyFu organic keywords of a domain",
+        "description": "The keywords a domain ranks for in Google: keyword, position and change, ranking URL, search volume, estimated SEO clicks and change, difficulty, cost per click, click split (mobile/desktop, paid/organic/no click), SERP features. Lists: most valuable, newly ranked, gained or lost ranks, gained or lost clicks, just made page one, just fell off page one, almost there (positions 11-20). Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/spyfu-organic-keywords",
+        "tags": [
+          "SpyFu"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "description": "Website domain or link, e.g. `nike.com`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "nike.com"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country database: US (default), UK (GB accepted), AR, AT, AU, BE, BR, CA, CH, CL, CZ, DE, DK, ES, FI, FR, IE, IN, IT, JP, MX, NL, NO, NZ, PL, PT, SE, SG, TR, UA, VE, ZA.",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            },
+            "example": "US"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Which keyword list.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "most_valuable",
+                "newly_ranked",
+                "gained_ranks",
+                "lost_ranks",
+                "gained_clicks",
+                "lost_clicks",
+                "just_made_it",
+                "just_fell_off",
+                "almost_there"
+              ],
+              "default": "most_valuable"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort field (`default` keeps the site's order).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "default",
+                "search_volume",
+                "rank",
+                "rank_change",
+                "seo_clicks",
+                "seo_clicks_change",
+                "cpc",
+                "difficulty",
+                "total_clicks"
+              ],
+              "default": "default"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "desc",
+                "asc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Rows to return (1-50, default 20).",
+            "schema": {
+              "type": "integer",
+              "default": "20"
+            },
+            "example": "20"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Rows to skip; pass `next_offset` back here. Null on the last page.",
+            "schema": {
+              "type": "integer",
+              "default": "0"
+            },
+            "example": "0"
+          },
+          {
+            "name": "adult",
+            "in": "query",
+            "required": false,
+            "description": "Include adult keywords (default false).",
+            "schema": {
+              "type": "boolean",
+              "default": "false"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "domain": "nike.com",
+                  "country": "US",
+                  "applied_filters": {
+                    "type": "most_valuable",
+                    "sort": "default",
+                    "order": "desc",
+                    "adult": false
+                  },
+                  "total": 3582882,
+                  "total_search_volume": 329925770,
+                  "total_seo_clicks": 6626469,
+                  "offset": 0,
+                  "count": 20,
+                  "keywords": [
+                    {
+                      "keyword": "nike shoes",
+                      "term_id": "1080587",
+                      "search_volume": 225000,
+                      "live_search_volume": null,
+                      "rank": 1,
+                      "rank_change": null,
+                      "url": "https://www.nike.com/w/shoes-y7ok",
+                      "seo_clicks": 36900,
+                      "seo_clicks_change": null,
+                      "difficulty": 7,
+                      "total_monthly_clicks": 143000,
+                      "cpc_broad": 8.01,
+                      "cpc_phrase": 5.61,
+                      "cpc_exact": 6.58,
+                      "monthly_cost_broad": 669514.2,
+                      "monthly_cost_phrase": 44057.38,
+                      "monthly_cost_exact": 227860.04,
+                      "percent_mobile": 0.53,
+                      "percent_desktop": 0.47,
+                      "percent_not_clicked": 0.37,
+                      "percent_paid_clicks": 0.55,
+                      "percent_organic_clicks": 0.45,
+                      "paid_competitors": 205,
+                      "ranking_homepages": 0,
+                      "serp_features": [],
+                      "serp_first_result": null,
+                      "is_question": null,
+                      "is_transactional": null,
+                      "ad_position": null
+                    },
+                    {
+                      "keyword": "air force 1",
+                      "term_id": "75096",
+                      "search_volume": 223000,
+                      "live_search_volume": null,
+                      "rank": 1,
+                      "rank_change": 0,
+                      "url": "https://www.nike.com/w/air-force-1-shoes-5sj3yzy7ok",
+                      "seo_clicks": 36600,
+                      "seo_clicks_change": 0,
+                      "difficulty": 22,
+                      "total_monthly_clicks": 86100,
+                      "cpc_broad": 0.42,
+                      "cpc_phrase": 0.42,
+                      "cpc_exact": 0.43,
+                      "monthly_cost_broad": 1361.1,
+                      "monthly_cost_phrase": 1308.9,
+                      "monthly_cost_exact": 302.4,
+                      "percent_mobile": 0.59,
+                      "percent_desktop": 0.41,
+                      "percent_not_clicked": 0.61,
+                      "percent_paid_clicks": 0.42,
+                      "percent_organic_clicks": 0.58,
+                      "paid_competitors": 29,
+                      "ranking_homepages": 0,
+                      "serp_features": [],
+                      "serp_first_result": null,
+                      "is_question": null,
+                      "is_transactional": null,
+                      "ad_position": null
+                    },
+                    "… 18 more"
+                  ],
+                  "next_offset": 20,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/spyfu/v1/paid-keywords": {
+      "get": {
+        "operationId": "spyfuPaidKeywords",
+        "summary": "SpyFu paid (Google Ads) keywords of a domain",
+        "description": "The keywords a domain buys Google Ads on: keyword, ad position, search volume, cost per click (broad, phrase, exact) and estimated monthly cost, click split, number of advertisers, SERP features and the advertisers at each ad position. Lists: most successful or newly bought. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/spyfu-paid-keywords",
+        "tags": [
+          "SpyFu"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "description": "Website domain or link, e.g. `nike.com`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "nike.com"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country database: US (default), UK (GB accepted), AR, AT, AU, BE, BR, CA, CH, CL, CZ, DE, DK, ES, FI, FR, IE, IN, IT, JP, MX, NL, NO, NZ, PL, PT, SE, SG, TR, UA, VE, ZA.",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            },
+            "example": "US"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Most successful or newly bought keywords.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "most_successful",
+                "new"
+              ],
+              "default": "most_successful"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort field (`default` keeps the site's order).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "default",
+                "search_volume",
+                "rank",
+                "rank_change",
+                "seo_clicks",
+                "seo_clicks_change",
+                "cpc",
+                "difficulty",
+                "total_clicks"
+              ],
+              "default": "default"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "desc",
+                "asc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Rows to return (1-30, default 20).",
+            "schema": {
+              "type": "integer",
+              "default": "20"
+            },
+            "example": "20"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Rows to skip; pass `next_offset` back here. Null on the last page.",
+            "schema": {
+              "type": "integer",
+              "default": "0"
+            },
+            "example": "0"
+          },
+          {
+            "name": "adult",
+            "in": "query",
+            "required": false,
+            "description": "Include adult keywords (default false).",
+            "schema": {
+              "type": "boolean",
+              "default": "false"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "domain": "nike.com",
+                  "country": "US",
+                  "applied_filters": {
+                    "type": "most_successful",
+                    "sort": "default",
+                    "order": "desc"
+                  },
+                  "total": 79294,
+                  "total_search_volume": 39214419,
+                  "total_monthly_clicks": null,
+                  "monthly_budget": null,
+                  "offset": 0,
+                  "count": 20,
+                  "keywords": [
+                    {
+                      "keyword": "jobs near me",
+                      "term_id": "27629224",
+                      "search_volume": 7660000,
+                      "live_search_volume": 10700000,
+                      "rank": null,
+                      "rank_change": null,
+                      "url": null,
+                      "seo_clicks": null,
+                      "seo_clicks_change": null,
+                      "difficulty": 58,
+                      "total_monthly_clicks": 4130000,
+                      "cpc_broad": 0.2,
+                      "cpc_phrase": 0.19,
+                      "cpc_exact": 0.16,
+                      "monthly_cost_broad": 2903.4,
+                      "monthly_cost_phrase": 3967.2,
+                      "monthly_cost_exact": 3131.4,
+                      "percent_mobile": 0.56,
+                      "percent_desktop": 0.44,
+                      "percent_not_clicked": 0.46,
+                      "percent_paid_clicks": 0.4,
+                      "percent_organic_clicks": 0.6,
+                      "paid_competitors": 127,
+                      "ranking_homepages": 6,
+                      "serp_features": [
+                        "People Also Ask"
+                      ],
+                      "serp_first_result": "bakersfieldcity.us",
+                      "is_question": false,
+                      "is_transactional": true,
+                      "ad_position": null
+                    },
+                    {
+                      "keyword": "jobs hiring near me",
+                      "term_id": "36444144",
+                      "search_volume": 2830000,
+                      "live_search_volume": 3230000,
+                      "rank": null,
+                      "rank_change": null,
+                      "url": null,
+                      "seo_clicks": null,
+                      "seo_clicks_change": null,
+                      "difficulty": 8,
+                      "total_monthly_clicks": 1650000,
+                      "cpc_broad": 0.89,
+                      "cpc_phrase": 0.87,
+                      "cpc_exact": 0.85,
+                      "monthly_cost_broad": 137085.9,
+                      "monthly_cost_phrase": 20715.3,
+                      "monthly_cost_exact": 14935.5,
+                      "percent_mobile": 0.45,
+                      "percent_desktop": 0.55,
+                      "percent_not_clicked": 0.42,
+                      "percent_paid_clicks": 0.43,
+                      "percent_organic_clicks": 0.57,
+                      "paid_competitors": 127,
+                      "ranking_homepages": 1,
+                      "serp_features": [
+                        "People Also Ask"
+                      ],
+                      "serp_first_result": "amazon.com",
+                      "is_question": false,
+                      "is_transactional": true,
+                      "ad_position": null
+                    },
+                    "… 18 more"
+                  ],
+                  "next_offset": 20,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/spyfu/v1/related-keywords": {
+      "get": {
+        "operationId": "spyfuRelatedKeywords",
+        "summary": "SpyFu related keywords",
+        "description": "Keyword ideas for a keyword with their search volume, difficulty, cost per click and clicks: phrase matches, questions, transactional (buying-intent) keywords, keywords the same sites also rank for, and keywords the same advertisers also buy. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/spyfu-related-keywords",
+        "tags": [
+          "SpyFu"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "description": "Search keyword, e.g. `running shoes`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "running shoes"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country database: US (default), UK (GB accepted), AR, AT, AU, BE, BR, CA, CH, CL, CZ, DE, DK, ES, FI, FR, IE, IN, IT, JP, MX, NL, NO, NZ, PL, PT, SE, SG, TR, UA, VE, ZA.",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            },
+            "example": "US"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Which list of related keywords.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "phrase",
+                "questions",
+                "transactional",
+                "also_ranks_for",
+                "also_buys_ads"
+              ],
+              "default": "phrase"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort field (`default` keeps the site's order).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "default",
+                "search_volume",
+                "rank",
+                "rank_change",
+                "seo_clicks",
+                "seo_clicks_change",
+                "cpc",
+                "difficulty",
+                "total_clicks"
+              ],
+              "default": "default"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "desc",
+                "asc"
+              ],
+              "default": "desc"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Rows to return (1-50, default 20).",
+            "schema": {
+              "type": "integer",
+              "default": "20"
+            },
+            "example": "20"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Rows to skip; pass `next_offset` back here. Null on the last page.",
+            "schema": {
+              "type": "integer",
+              "default": "0"
+            },
+            "example": "0"
+          },
+          {
+            "name": "adult",
+            "in": "query",
+            "required": false,
+            "description": "Include adult keywords (default false).",
+            "schema": {
+              "type": "boolean",
+              "default": "false"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "keyword": "running shoes",
+                  "country": "US",
+                  "applied_filters": {
+                    "type": "phrase",
+                    "sort": "default",
+                    "order": "desc"
+                  },
+                  "total": 206659,
+                  "total_search_volume": 6488035,
+                  "offset": 0,
+                  "count": 20,
+                  "keywords": [
+                    {
+                      "keyword": "running shoes",
+                      "term_id": "1329705",
+                      "search_volume": 73200,
+                      "live_search_volume": 82900,
+                      "rank": null,
+                      "rank_change": null,
+                      "url": null,
+                      "seo_clicks": null,
+                      "seo_clicks_change": null,
+                      "difficulty": 44,
+                      "total_monthly_clicks": 38300,
+                      "cpc_broad": 1.61,
+                      "cpc_phrase": 1.79,
+                      "cpc_exact": 1.96,
+                      "monthly_cost_broad": 106485.3,
+                      "monthly_cost_phrase": 81103.5,
+                      "monthly_cost_exact": 15297.6,
+                      "percent_mobile": 0.48,
+                      "percent_desktop": 0.52,
+                      "percent_not_clicked": 0.48,
+                      "percent_paid_clicks": 0.31,
+                      "percent_organic_clicks": 0.69,
+                      "paid_competitors": 127,
+                      "ranking_homepages": 0,
+                      "serp_features": [
+                        "Maps"
+                      ],
+                      "serp_first_result": "runnersworld.com",
+                      "is_question": false,
+                      "is_transactional": true,
+                      "ad_position": null
+                    },
+                    {
+                      "keyword": "brooks running shoes",
+                      "term_id": "225963",
+                      "search_volume": 56800,
+                      "live_search_volume": 64700,
+                      "rank": null,
+                      "rank_change": null,
+                      "url": null,
+                      "seo_clicks": null,
+                      "seo_clicks_change": null,
+                      "difficulty": 23,
+                      "total_monthly_clicks": 45600,
+                      "cpc_broad": 0.46,
+                      "cpc_phrase": 0.28,
+                      "cpc_exact": 0.29,
+                      "monthly_cost_broad": 67.5,
+                      "monthly_cost_phrase": 18.9,
+                      "monthly_cost_exact": 1075.8,
+                      "percent_mobile": 0.49,
+                      "percent_desktop": 0.51,
+                      "percent_not_clicked": 0.2,
+                      "percent_paid_clicks": 0.49,
+                      "percent_organic_clicks": 0.51,
+                      "paid_competitors": 57,
+                      "ranking_homepages": 0,
+                      "serp_features": [
+                        "Images",
+                        "People Also Ask"
+                      ],
+                      "serp_first_result": "fleetfeet.com",
+                      "is_question": false,
+                      "is_transactional": true,
+                      "ad_position": null
+                    },
+                    "… 18 more"
+                  ],
+                  "next_offset": 20,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/spyfu/v1/serp": {
+      "get": {
+        "operationId": "spyfuSerp",
+        "summary": "SpyFu Google results for a keyword",
+        "description": "The organic Google results SpyFu recorded for a keyword (usually the top 50-100): position and change, domain, URL, page title, the domain's number of appearances, estimated monthly clicks and click value; plus a summary (difficulty, homepages, gov/edu sites, titles and URLs containing the keyword, domain diversity).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/spyfu-serp",
+        "tags": [
+          "SpyFu"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "description": "Search keyword, e.g. `running shoes`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "running shoes"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country database: US (default), UK (GB accepted), AR, AT, AU, BE, BR, CA, CH, CL, CZ, DE, DK, ES, FI, FR, IE, IN, IT, JP, MX, NL, NO, NZ, PL, PT, SE, SG, TR, UA, VE, ZA.",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "keyword": "running shoes",
+                  "country": "US",
+                  "term_id": "1329705",
+                  "search_volume": 73200,
+                  "difficulty": 44,
+                  "summary": {
+                    "homepages_in_top_100": 0,
+                    "gov_edu_mil_in_top_100": 0,
+                    "titles_containing_keyword": 1,
+                    "urls_containing_keyword": 43,
+                    "max_monthly_organic_clicks": 12000,
+                    "max_monthly_organic_value": 15720,
+                    "domain_diversity": 0.62
+                  },
+                  "count": 81,
+                  "results": [
+                    {
+                      "position": 1,
+                      "position_change": 0,
+                      "domain": "runnersworld.com",
+                      "url": "https://www.runnersworld.com/gear/a19663621/best-running-shoes/",
+                      "title": "The 15 Best Running Shoes of 2026",
+                      "domain_appearances": 2,
+                      "estimated_monthly_clicks": 12000,
+                      "estimated_click_value": 1.31
+                    },
+                    {
+                      "position": 2,
+                      "position_change": 0,
+                      "domain": "roadrunnersports.com",
+                      "url": "https://www.roadrunnersports.com/category/mens/shoes/running",
+                      "title": "Shop Men's Running Shoes",
+                      "domain_appearances": 1,
+                      "estimated_monthly_clicks": 6100,
+                      "estimated_click_value": 1.31
+                    },
+                    "… 79 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/spyfu/v1/suggest": {
+      "get": {
+        "operationId": "spyfuSuggest",
+        "summary": "SpyFu search suggestions",
+        "description": "Autocomplete from SpyFu's search box: domains and keywords that start with the text typed.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/spyfu-suggest",
+        "tags": [
+          "SpyFu"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Text typed so far.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "nik"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country database: US (default), UK (GB accepted), AR, AT, AU, BE, BR, CA, CH, CL, CZ, DE, DK, ES, FI, FR, IE, IN, IT, JP, MX, NL, NO, NZ, PL, PT, SE, SG, TR, UA, VE, ZA.",
+            "schema": {
+              "type": "string",
+              "default": "US"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "nik",
+                  "country": "US",
+                  "count": 5,
+                  "suggestions": [
+                    {
+                      "value": "nike.com",
+                      "type": "domain"
+                    },
+                    {
+                      "value": "nikonusa.com",
+                      "type": "domain"
+                    },
+                    "… 3 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

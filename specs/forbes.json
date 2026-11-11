@@ -1,0 +1,1276 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Forbes",
+    "version": "1.0.0",
+    "description": "The Forbes API from API.SH: public Forbes data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Forbes",
+      "description": "4 endpoints (finance & crypto)",
+      "x-slug": "forbes",
+      "x-domains": [
+        "forbes.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/forbes/v1/list": {
+      "get": {
+        "operationId": "forbesList",
+        "summary": "Forbes list rankings",
+        "description": "The rows of any Forbes ranking: The World's Billionaires, Real-Time Billionaires (`rtb`), Forbes 400, Global 2000, Cloud 100, Top Colleges, Power Women, Midas, best employers, best banks and the other lists. People lists return rank, name, net worth, age, citizenship, residence, source of wealth, industries, self-made flag, title and the Forbes bios; organization lists return rank, name, location, industry, revenue, profits, assets, market value, funding, employees, CEO and the list's own fields. The latest edition unless `year` is given. Filters (`country`, `industry`, `state`, `q`, `self_made`) search the whole list and return the main fields of each row. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/forbes-list",
+        "tags": [
+          "Forbes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "list",
+            "in": "query",
+            "required": true,
+            "description": "List id or forbes.com/lists link, e.g. `billionaires`, `rtb`, `forbes-400`, `global2000`, `cloud100`, `top-colleges`, `power-women` (see `/forbes/v1/lists`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "billionaires"
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Edition year, e.g. `2025`; default the latest.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "`person` or `organization`; detected when left out.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "person",
+                "organization"
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Rows to skip (the `next_offset` of the previous page).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Rows per page, 1-100 (default 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Only rows from this country (residence or citizenship), e.g. `Germany`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "industry",
+            "in": "query",
+            "required": false,
+            "description": "Only rows whose industry contains this text, e.g. `Technology`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Only rows from this US state, e.g. `California`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only rows whose name contains this text.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "self_made",
+            "in": "query",
+            "required": false,
+            "description": "People lists: only self-made (`true`) or inherited (`false`) fortunes.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "wealth_history",
+            "in": "query",
+            "required": false,
+            "description": "`rtb` only: also return each person's net worth over the last day (10 rows per page).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "list": "billionaires",
+                  "list_name": "Billionaires",
+                  "list_description": "The World's Billionaires",
+                  "type": "person",
+                  "year": 2026,
+                  "list_url": "https://www.forbes.com/lists/billionaires/",
+                  "applied_filters": null,
+                  "fields": "full",
+                  "offset": 0,
+                  "count": 50,
+                  "total": 3428,
+                  "next_offset": 50,
+                  "items": [
+                    {
+                      "rank": 1,
+                      "position": 1,
+                      "uri": "elon-musk",
+                      "name": "Elon Musk",
+                      "first_name": "Elon",
+                      "last_name": "Musk",
+                      "net_worth_millions": 839000,
+                      "previous_net_worth_millions": null,
+                      "age": 54,
+                      "birth_date": "1971-06-28",
+                      "gender": "M",
+                      "country": "United States",
+                      "citizenship": "United States",
+                      "state": "Texas",
+                      "city": "Austin",
+                      "source": "Tesla, SpaceX",
+                      "industries": [
+                        "Technology"
+                      ],
+                      "category": "Technology",
+                      "self_made": true,
+                      "self_made_rank": 8,
+                      "organization": "Tesla",
+                      "title": "CEO",
+                      "bios": [
+                        "Elon Musk became the world's first trillionaire on June 12 when SpaceX went public.",
+                        "SpaceX opened its first day of trading as a public company at a valuation of nearly $2 trillion. Musk owns 38% of the company (including opt…",
+                        "… 4 more"
+                      ],
+                      "abouts": [
+                        "Musk, who says he's worried about population collapse, has fathered at least 14 children with four women, including triplets and two sets of…",
+                        "As a kid in South Africa, Musk taught himself to code; he sold his first game, Blastar, for about $500."
+                      ],
+                      "financial_assets": null,
+                      "wealth_history": null,
+                      "image": "https://specials-images.forbesimg.com/imageserve/62d700cd6094d2c180f269b9/416x416.jpg?background=000000&cropX1=0&cropX2=959&cropY1=0&cropY2=…",
+                      "profile_url": "https://www.forbes.com/profile/elon-musk/",
+                      "updated_at": "2026-07-15T16:59:19.918Z"
+                    },
+                    {
+                      "rank": 2,
+                      "position": 2,
+                      "uri": "larry-page",
+                      "name": "Larry Page",
+                      "first_name": "Larry",
+                      "last_name": "Page",
+                      "net_worth_millions": 257000,
+                      "previous_net_worth_millions": null,
+                      "age": 52,
+                      "birth_date": "1973-03-26",
+                      "gender": "M",
+                      "country": "United States",
+                      "citizenship": "United States",
+                      "state": "California",
+                      "city": "Palo Alto",
+                      "source": "Google",
+                      "industries": [
+                        "Technology"
+                      ],
+                      "category": "Technology",
+                      "self_made": true,
+                      "self_made_rank": 8,
+                      "organization": "Alphabet",
+                      "title": "Cofounder and board member",
+                      "bios": [
+                        "Larry Page stepped down as CEO of Alphabet, the parent company of Google, in 2019 but remains a board member and a controlling shareholder.",
+                        "He cofounded Google in 1998 with fellow Stanford Ph.D. student Sergey Brin.",
+                        "… 2 more"
+                      ],
+                      "abouts": [
+                        "Page has avoided public appearances since Sundar Pichai became Google's CEO, including Alphabet's 2019 shareholders meeting -- much to inves…",
+                        "Page is a clean energy advocate; his Palo Alto home uses fuel cells and geothermal energy."
+                      ],
+                      "financial_assets": null,
+                      "wealth_history": null,
+                      "image": "//specials-images.forbesimg.com/imageserve/5c76bcaaa7ea43100043c836/416x416.jpg?background=000000&cropX1=227&cropX2=2022&cropY1=22&cropY2=18…",
+                      "profile_url": "https://www.forbes.com/profile/larry-page/",
+                      "updated_at": "2026-10-12T12:36:31.912Z"
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/forbes/v1/lists": {
+      "get": {
+        "operationId": "forbesLists",
+        "summary": "Forbes list directory",
+        "description": "Every list in the forbes.com list directory (people, companies and places): name, category, link and the `list` id to pass to `/forbes/v1/list`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/forbes-lists",
+        "tags": [
+          "Forbes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Only this category: `People`, `Companies` or `Places`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "People"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "categories": [
+                    "People",
+                    "Companies",
+                    "… 1 more"
+                  ],
+                  "count": 23,
+                  "lists": [
+                    {
+                      "name": "The World's Most Powerful Women",
+                      "category": "People",
+                      "url": "https://www.forbes.com/lists/power-women/",
+                      "list": "power-women"
+                    },
+                    {
+                      "name": "The Midas List: Top 100 Venture Capitalists",
+                      "category": "People",
+                      "url": "https://www.forbes.com/lists/midas/",
+                      "list": "midas"
+                    },
+                    "… 21 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/forbes/v1/organization": {
+      "get": {
+        "operationId": "forbesOrganization",
+        "summary": "Forbes company or college profile",
+        "description": "The Forbes profile of a listed company or college: description, industry, ticker and exchange, CEO, employees, founding year, website, headquarters, key people, Forbes scores, every Forbes list it appears on with rank and figures per edition, and related companies and people.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/forbes-organization",
+        "tags": [
+          "Forbes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "uri",
+            "in": "query",
+            "required": true,
+            "description": "Profile id (the `uri` field of organization list rows) or a forbes.com/companies or /colleges link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "jpmorganchase"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "uri": "jpmorganchase",
+                  "name": "JPMorganChase",
+                  "type": "company",
+                  "description": "JPMorgan Chase & Co. is a financial holding company, which engages in the provision of financial and investment banking services. The firm f…",
+                  "industry": "Banking and Financial Services",
+                  "ticker": "JPM",
+                  "exchange": "NYSE",
+                  "ceo": "James Dimon",
+                  "ceo_title": "CEO and Chair",
+                  "employees": 185208,
+                  "year_founded": 2000,
+                  "website": "http://www.jpmorganchase.com",
+                  "country": "United States",
+                  "state": "New York",
+                  "city": "New York",
+                  "location": {
+                    "longitude": -73.975209,
+                    "latitude": 40.755693
+                  },
+                  "image": "https://images.forbes.com/media/lists/companies/jpmorganchase_416x416.jpg",
+                  "profile_url": "https://www.forbes.com/companies/jpmorganchase/",
+                  "scores": {
+                    "exchange": "NYSE",
+                    "ticker": "JPM",
+                    "uri": "jpmorgan-chase",
+                    "basket": "US Large Cap",
+                    "factorScore": "N",
+                    "technical": "C",
+                    "growth": "F",
+                    "momentumVolatility": "B",
+                    "qualityValue": "D",
+                    "naturalId": "quantalytics/NYSE/JPM",
+                    "timestamp": 1648962689000,
+                    "name": "Jpmorgan Chase & Co"
+                  },
+                  "key_people": [
+                    {
+                      "name": "Simon Drake",
+                      "title": null,
+                      "uri": "simon-drake"
+                    },
+                    {
+                      "name": "Mary Callahan Erdoes",
+                      "title": null,
+                      "uri": "mary-callahan-erdoes"
+                    },
+                    "… 2 more"
+                  ],
+                  "lists": [
+                    {
+                      "list": "best-employers-for-veterans",
+                      "list_name": "Best Employers for Veterans",
+                      "year": 2026,
+                      "month": 11,
+                      "rank": 54,
+                      "position": 54,
+                      "net_worth_millions": null,
+                      "bios": null,
+                      "abouts": null,
+                      "description": "JPMorgan Chase & Co. is a financial holding company, which engages in the provision of financial and investment banking services. The firm f…"
+                    },
+                    {
+                      "list": "kindest-companies",
+                      "list_name": "America's Kindest Companies",
+                      "year": 2026,
+                      "month": 11,
+                      "rank": 21,
+                      "position": 21,
+                      "net_worth_millions": null,
+                      "bios": null,
+                      "abouts": null,
+                      "description": "JPMorgan Chase & Co. is a financial holding company, which engages in the provision of financial and investment banking services. The firm f…"
+                    },
+                    "… 110 more"
+                  ],
+                  "related": [
+                    {
+                      "name": "Jennifer Piepszak",
+                      "type": "person",
+                      "uri": "jennifer-piepszak-1",
+                      "relationship": "Employed by Company"
+                    },
+                    {
+                      "name": "Northern Trust",
+                      "type": "organization",
+                      "uri": "northern-trust",
+                      "relationship": "Related by Industry: Banking and Financial Services"
+                    },
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/forbes/v1/person": {
+      "get": {
+        "operationId": "forbesPerson",
+        "summary": "Forbes person profile",
+        "description": "The Forbes profile of a listed person: net worth (from the newest list), source of wealth, industries, title and organization, self-made score, citizenship and residence, education, family, quote, every Forbes list the person appears on with rank, net worth and bios per edition, related people and companies, and gallery images.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/forbes-person",
+        "tags": [
+          "Forbes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "uri",
+            "in": "query",
+            "required": true,
+            "description": "Profile id (the `uri` field of list rows) or a forbes.com/profile link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "elon-musk"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "uri": "elon-musk",
+                  "name": "Elon Musk",
+                  "first_name": "Elon",
+                  "last_name": "Musk",
+                  "net_worth_millions": 1000000,
+                  "net_worth_list": "richest-in-each-state",
+                  "net_worth_date": "2026-10-14",
+                  "profile_net_worth_millions": 151000,
+                  "profile_net_worth_date": "2021-04-06",
+                  "source": "Tesla, SpaceX",
+                  "industries": [
+                    "Technology"
+                  ],
+                  "title": "CEO",
+                  "organization": "Tesla",
+                  "organization_uri": "companies/tesla",
+                  "self_made": true,
+                  "self_made_type": "self-made",
+                  "self_made_rank": 8,
+                  "gender": "M",
+                  "birth_date": "1971-06-28",
+                  "deceased": false,
+                  "birth_country": "South Africa",
+                  "citizenship": "United States",
+                  "country_of_residence": "United States",
+                  "state": "Texas",
+                  "city": "Austin",
+                  "marital_status": "Divorced",
+                  "children": 14,
+                  "education": [
+                    {
+                      "school": "University of Pennsylvania",
+                      "degree": "Bachelor of Arts/Science"
+                    }
+                  ],
+                  "quote": "I operate on the physics approach to analysis. You boil things down to the first principles or fundamental truths in a particular area and t…",
+                  "image": "https://specials-images.forbesimg.com/imageserve/62d700cd6094d2c180f269b9/416x416.jpg?background=000000&cropX1=0&cropX2=959&cropY1=0&cropY2=…",
+                  "profile_url": "https://www.forbes.com/profile/elon-musk/",
+                  "lists": [
+                    {
+                      "list": "richest-in-each-state",
+                      "list_name": "The Richest Person In Every State",
+                      "year": 2026,
+                      "month": 10,
+                      "rank": null,
+                      "position": 44,
+                      "net_worth_millions": 1000000,
+                      "bios": [
+                        "Elon Musk became the world's first trillionaire on June 12 when SpaceX went public.",
+                        "SpaceX opened its first day of trading as a public company at a valuation of nearly $2 trillion. Musk owns 38% of the company (including opt…",
+                        "… 4 more"
+                      ],
+                      "abouts": [
+                        "Musk, who says he's worried about population collapse, has fathered at least 14 children with four women, including triplets and two sets of…",
+                        "As a kid in South Africa, Musk taught himself to code; he sold his first game, Blastar, for about $500."
+                      ],
+                      "description": null
+                    },
+                    {
+                      "list": "forbes-400",
+                      "list_name": "Forbes 400",
+                      "year": 2026,
+                      "month": 9,
+                      "rank": 1,
+                      "position": 1,
+                      "net_worth_millions": 908000,
+                      "bios": [
+                        "Elon Musk became the world's first trillionaire on June 12 when SpaceX went public.",
+                        "SpaceX opened its first day of trading as a public company at a valuation of nearly $2 trillion. Musk owns 38% of the company (including opt…",
+                        "… 4 more"
+                      ],
+                      "abouts": [
+                        "Musk, who says he's worried about population collapse, has fathered at least 14 children with four women, including triplets and two sets of…",
+                        "As a kid in South Africa, Musk taught himself to code; he sold his first game, Blastar, for about $500."
+                      ],
+                      "description": null
+                    },
+                    "… 47 more"
+                  ],
+                  "related": [
+                    {
+                      "name": "Reid Hoffman",
+                      "type": "person",
+                      "uri": "reid-hoffman",
+                      "relationship": null
+                    },
+                    {
+                      "name": "Tesla",
+                      "type": "organization",
+                      "uri": "tesla",
+                      "relationship": "Holds stake in Tesla"
+                    },
+                    "… 4 more"
+                  ],
+                  "images": [
+                    {
+                      "url": "https://specials-images.forbesimg.com/imageserve/62d700cd6094d2c180f269b9/280x425.jpg?fit=scale&background=000000",
+                      "caption": "Elon Musk",
+                      "credit": "Martin Schoeller for Forbes"
+                    },
+                    {
+                      "url": "https://specials-images.forbesimg.com/imageserve/5f47d4de7637290765bce495/280x425.jpg?fit=scale&background=000000",
+                      "caption": "Elon Musk",
+                      "credit": "AP Photo/Jae C. Hong"
+                    },
+                    "… 43 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

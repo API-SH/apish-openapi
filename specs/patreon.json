@@ -1,0 +1,1566 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Patreon",
+    "version": "1.0.0",
+    "description": "The Patreon API from API.SH: public Patreon data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Patreon",
+      "description": "7 endpoints (content & communities)",
+      "x-slug": "patreon",
+      "x-domains": [
+        "patreon.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patreon/v1/collections": {
+      "get": {
+        "operationId": "patreonCollections",
+        "summary": "Creator collections",
+        "description": "A creator's post collections: title, description, post count, post ids, dates, thumbnail and link.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/patreon-collections",
+        "tags": [
+          "Patreon"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "creator",
+            "in": "query",
+            "required": false,
+            "description": "Creator vanity name (or `url`, or `campaign_id`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "kurzgesagt"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A patreon.com creator link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaign_id",
+            "in": "query",
+            "required": false,
+            "description": "Numeric campaign id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "campaign_id": "73401",
+                  "count": 7,
+                  "items": [
+                    {
+                      "id": "382995",
+                      "title": "Exclusive Product Updates",
+                      "description": null,
+                      "posts": 18,
+                      "post_ids": [
+                        140001212,
+                        137930882,
+                        "… 16 more"
+                      ],
+                      "created_at": "2024-02-13T18:05:00.000+00:00",
+                      "edited_at": "2025-09-29T12:21:43.745+00:00",
+                      "thumbnail": "https://c10.patreonusercontent.com/4/patreon-media/p/campaign/73401/257ddb2479e64b158926096d2ccc6f41/eyJ3Ijo2MjB9/1.png?token-hash=ZJT45xuoR…",
+                      "url": "https://www.patreon.com/collection/382995"
+                    },
+                    {
+                      "id": "382993",
+                      "title": "Behind the Scenes Videos",
+                      "description": null,
+                      "posts": 4,
+                      "post_ids": [
+                        128922434,
+                        121192501,
+                        "… 2 more"
+                      ],
+                      "created_at": "2024-02-13T18:03:50.000+00:00",
+                      "edited_at": "2025-05-14T09:40:58.626+00:00",
+                      "thumbnail": "https://c10.patreonusercontent.com/4/patreon-media/p/campaign/73401/2a747ddca1b54ccaacc70dad3cf373b5/eyJ3Ijo2MjB9/1.png?token-hash=QjPtFq3kK…",
+                      "url": "https://www.patreon.com/collection/382993"
+                    },
+                    "… 5 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/patreon/v1/creator": {
+      "get": {
+        "operationId": "patreonCreator",
+        "summary": "Patreon creator",
+        "description": "A creator's public Patreon page: name, what they create, tagline, about (text and HTML), post count, currency and billing, NSFW flag, creation date, intro video link, avatar, cover, the creator account (name, image) and the membership tiers (title, price, description, free flag, limits) and goals.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/patreon-creator",
+        "tags": [
+          "Patreon"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "creator",
+            "in": "query",
+            "required": false,
+            "description": "The name in patreon.com/<name>, e.g. `Kurzgesagt`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Kurzgesagt"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A patreon.com creator link, instead of `creator`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "73401",
+                  "name": "Kurzgesagt – In a Nutshell",
+                  "creation_name": "Creating Science Animation Videos",
+                  "tagline": "Science Videos made with Love.",
+                  "url": "https://www.patreon.com/Kurzgesagt",
+                  "about": "Hello! We are kurzgesagt, one of the largest sciency channels on YouTube.\n\nWe believe that nothing is boring if you tell a good story and we…",
+                  "about_html": "<p style=\"\"><strong><span style=\"color:#000000;\"><mark style=\"background-color:transparent;\">Hello! We are kurzgesagt, one of the largest sc…",
+                  "posts": 536,
+                  "patrons": null,
+                  "paid_members": null,
+                  "currency": "USD",
+                  "billing": "monthly",
+                  "nsfw": false,
+                  "created_at": "2013-08-30T16:09:54.000+00:00",
+                  "published_at": "2013-08-30T16:09:54.000+00:00",
+                  "video": "https://youtu.be/1x-i9z617z4",
+                  "avatar": "https://c10.patreonusercontent.com/4/patreon-media/p/campaign/73401/a290f30a993d4c52b21f551a2639ddf0/eyJ3Ijo2MjB9/1.jpeg?token-hash=iZF8gIV7…",
+                  "cover": "https://c10.patreonusercontent.com/4/patreon-media/p/campaign/73401/e648561d635d45e7abf9a3cb68098e83/eyJ3IjoxOTIwLCJ3ZSI6MX0%3D/1.png?token-…",
+                  "creator": {
+                    "id": "43579",
+                    "name": "Kurzgesagt – In a Nutshell",
+                    "image": "https://c10.patreonusercontent.com/4/patreon-media/p/campaign/73401/a290f30a993d4c52b21f551a2639ddf0/eyJ3IjoyMDB9/1.jpeg?token-hash=pelLgN4f…",
+                    "url": "https://www.patreon.com/Kurzgesagt"
+                  },
+                  "tiers": [
+                    {
+                      "id": "10010522",
+                      "title": "Free",
+                      "price_cents": 0,
+                      "currency": "USD",
+                      "description": null,
+                      "patrons": null,
+                      "free": true,
+                      "limit": null,
+                      "remaining": null,
+                      "published": true,
+                      "image": null
+                    },
+                    {
+                      "id": "22201322",
+                      "title": "Trainee Producer",
+                      "price_cents": 314,
+                      "currency": "USD",
+                      "description": "Perks:\nYou're helping ensure the survival of high-quality content!\nAdBlock absolution ❤️\nEarly access to special product launches (like our …",
+                      "patrons": null,
+                      "free": false,
+                      "limit": null,
+                      "remaining": null,
+                      "published": true,
+                      "image": "https://c10.patreonusercontent.com/4/patreon-media/p/reward/22201322/31d47e28e8c2452aad49bcfa664145a1/eyJ3Ijo0MDB9/1.png?token-hash=TgXXpzNr…"
+                    },
+                    "… 2 more"
+                  ],
+                  "goals": [],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/patreon/v1/goals": {
+      "get": {
+        "operationId": "patreonGoals",
+        "summary": "Creator goals",
+        "description": "A creator's goals (title, description, target, type, completion percentage, reached date) with patron and paid member counts.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/patreon-goals",
+        "tags": [
+          "Patreon"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "creator",
+            "in": "query",
+            "required": false,
+            "description": "Creator vanity name (or `url`, or `campaign_id`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "kurzgesagt"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A patreon.com creator link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaign_id",
+            "in": "query",
+            "required": false,
+            "description": "Numeric campaign id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/patreon/v1/post": {
+      "get": {
+        "operationId": "patreonPost",
+        "summary": "Post",
+        "description": "One Patreon post: title, type, dates, likes, comments, whether it is public, its text when public (teaser otherwise), embed, image, tags, the tiers that unlock it, poll, images, creator and author.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/patreon-post",
+        "tags": [
+          "Patreon"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "A patreon.com/posts/<title>-<id> link (or the id in `id`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.patreon.com/posts/173559830"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Post id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "173559830",
+                  "title": "NEW VIDEO: How I Survived Late-Stage Cancer (A Fun Story)",
+                  "type": "video_embed",
+                  "url": "https://www.patreon.com/Kurzgesagt/posts/new-video-how-i-173559830",
+                  "published_at": "2026-10-27T15:03:34.000+00:00",
+                  "edited_at": "2026-10-27T15:03:34.000+00:00",
+                  "created_at": "2026-10-27T14:57:20.000+00:00",
+                  "likes": 84,
+                  "comments": 5,
+                  "public": true,
+                  "paid": false,
+                  "min_cents_to_view": 0,
+                  "teaser": null,
+                  "text": "Back in 2018, Philipp Dettmer, the founder of kurzgesagt, was being treated for a stage 3 B testicular cancer. This was a very serious situa…",
+                  "embed": {
+                    "url": "https://youtu.be/5_Fayfx2NUM",
+                    "provider": "YouTube",
+                    "title": "How I Survived Late-Stage Cancer (A Fun Story)",
+                    "description": "Discover Odoo 👉 https://www.odoo.com/r/EgUR\nThe first app is free for life. Thanks to Odoo for sponsoring this video!\n\nSupport another year …"
+                  },
+                  "image": "https://www.patreon.com/media-u/v3/772414985",
+                  "video_preview": null,
+                  "tags": [],
+                  "tiers": [
+                    {
+                      "id": "-1",
+                      "title": null,
+                      "amount_cents": 0
+                    },
+                    {
+                      "id": "10010522",
+                      "title": "Free",
+                      "amount_cents": 0
+                    },
+                    "… 3 more"
+                  ],
+                  "images": [
+                    {
+                      "id": "772414985",
+                      "url": "https://www.patreon.com/media-u/v3/772414985",
+                      "file_name": "https://www.patreon.com/media-u/v3/772414985"
+                    }
+                  ],
+                  "poll": null,
+                  "creator": {
+                    "campaign_id": "73401",
+                    "name": "Kurzgesagt – In a Nutshell",
+                    "url": "https://www.patreon.com/Kurzgesagt"
+                  },
+                  "author": {
+                    "id": "43579",
+                    "name": "Kurzgesagt – In a Nutshell",
+                    "url": "https://www.patreon.com/Kurzgesagt",
+                    "image": "https://c10.patreonusercontent.com/4/patreon-media/p/campaign/73401/a290f30a993d4c52b21f551a2639ddf0/eyJ3IjoyMDB9/1.jpeg?token-hash=pelLgN4f…"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/patreon/v1/post-comments": {
+      "get": {
+        "operationId": "patreonPostComments",
+        "summary": "Post comments",
+        "description": "Comments on a public Patreon post with their replies: text, date, votes, creator/patron flags and author. Pass `next_cursor` back as `cursor`, null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/patreon-post-comments",
+        "tags": [
+          "Patreon"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "Post link (or `id`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.patreon.com/posts/173559830"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Post id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "oldest",
+                "top"
+              ]
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "description": "Comments per page (default 20, max 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "The `next_cursor` of the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "post_id": "173559830",
+                  "sort": "newest",
+                  "total": 5,
+                  "count": 4,
+                  "items": [
+                    {
+                      "id": "229326138",
+                      "body": "I really liked this video, but I really wish Kurzgesagt could seriously consider doing a video challenging the body shame that comes from Te…",
+                      "created_at": "2026-10-27T23:45:15.254+00:00",
+                      "votes": 2,
+                      "by_creator": false,
+                      "by_patron": true,
+                      "liked_by_creator": false,
+                      "author": {
+                        "id": "4563590",
+                        "name": "Adam Myers",
+                        "url": "https://www.patreon.com/user?u=4563590",
+                        "image": "https://c10.patreonusercontent.com/4/patreon-media/p/campaign/6768698/c27ffea94e1e4dd781339723a52ddbe9/eyJ3IjoyMDB9/3.jpg?token-hash=Nil0W9T…"
+                      },
+                      "replies": [
+                        {
+                          "id": "229716243",
+                          "body": "A really good point and I support your idea.  Kurzgesagt has such incredible reach, it could make a real difference.",
+                          "created_at": "2026-10-31T14:29:38.359+00:00",
+                          "votes": 0,
+                          "by_creator": false,
+                          "by_patron": true,
+                          "liked_by_creator": false,
+                          "author": {
+                            "…": "4 fields"
+                          },
+                          "replies": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "229296460",
+                      "body": "🤍",
+                      "created_at": "2026-10-27T18:40:01.508+00:00",
+                      "votes": 1,
+                      "by_creator": false,
+                      "by_patron": true,
+                      "liked_by_creator": false,
+                      "author": {
+                        "id": "227041818",
+                        "name": "Leon",
+                        "url": "https://www.patreon.com/user?u=227041818",
+                        "image": "https://c10.patreonusercontent.com/4/patreon-media/p/user/227041818/6390f66da1254cebaf4d1c5e199910b7/eyJ3IjoyMDB9/3.jpg?token-hash=4-Y4qE3bk…"
+                      },
+                      "replies": []
+                    },
+                    "… 2 more"
+                  ],
+                  "next_cursor": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/patreon/v1/posts": {
+      "get": {
+        "operationId": "patreonPosts",
+        "summary": "Patreon creator posts",
+        "description": "A creator's posts, newest first: id, title, type, link, publish and edit dates, likes, comments, whether anyone can view it, paid flag, minimum pledge to view, teaser, the text of public posts (locked posts come without text), embedded link (e.g. YouTube) and a thumbnail. Pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/patreon-posts",
+        "tags": [
+          "Patreon"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "creator",
+            "in": "query",
+            "required": false,
+            "description": "The name in patreon.com/<name>, e.g. `Kurzgesagt`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Kurzgesagt"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A patreon.com creator link, instead of `creator`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaign_id",
+            "in": "query",
+            "required": false,
+            "description": "The creator's campaign id (`id` from /patreon/v1/creator), instead of `creator`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "description": "Posts per page (1-50, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_cursor` from the previous response.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "campaign_id": "73401",
+                  "name": "Kurzgesagt – In a Nutshell",
+                  "total": 536,
+                  "count": 20,
+                  "next_cursor": "03:eyJ2IjoxLCJjIjoiMTYwMDMxNzU1IiwidCI6IiJ9:g6gkNVeQOT5vp5QKQItQKIUB",
+                  "posts": [
+                    {
+                      "id": "173559830",
+                      "title": "NEW VIDEO: How I Survived Late-Stage Cancer (A Fun Story)",
+                      "type": "video_embed",
+                      "url": "https://www.patreon.com/Kurzgesagt/posts/new-video-how-i-173559830",
+                      "published_at": "2026-10-27T15:03:34.000+00:00",
+                      "edited_at": "2026-10-27T15:03:34.000+00:00",
+                      "likes": 84,
+                      "comments": 5,
+                      "public": true,
+                      "paid": false,
+                      "min_cents_to_view": 0,
+                      "teaser": null,
+                      "text": "Back in 2018, Philipp Dettmer, the founder of kurzgesagt, was being treated for a stage 3 B testicular cancer. This was a very serious situa…",
+                      "embed": {
+                        "url": "https://youtu.be/5_Fayfx2NUM",
+                        "provider": "YouTube",
+                        "title": "How I Survived Late-Stage Cancer (A Fun Story)"
+                      },
+                      "image": "https://www.patreon.com/media-u/v3/772414985"
+                    },
+                    {
+                      "id": "172232513",
+                      "title": "The Fall of the Last Zulu King - New Nightshift Video",
+                      "type": "video_embed",
+                      "url": "https://www.patreon.com/Kurzgesagt/posts/fall-of-last-new-172232513",
+                      "published_at": "2026-10-23T14:29:30.000+00:00",
+                      "edited_at": "2026-10-23T14:29:30.000+00:00",
+                      "likes": 77,
+                      "comments": 1,
+                      "public": true,
+                      "paid": false,
+                      "min_cents_to_view": 0,
+                      "teaser": null,
+                      "text": "Video Description:In the early 19th century, Shaka Zulu transformed a small chiefdom in Southern Africa into one of the region’s most powerf…",
+                      "embed": {
+                        "url": "https://youtu.be/HfaO94_KZ3c",
+                        "provider": "YouTube",
+                        "title": "The Fall of the Last Zulu King"
+                      },
+                      "image": "https://www.patreon.com/media-u/v3/769886581"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/patreon/v1/search": {
+      "get": {
+        "operationId": "patreonSearch",
+        "summary": "Creator search",
+        "description": "Patreon creators matching a search: campaign id, name, what they create, summary, link, patrons, post count, avatar. Pass `next_page` back as `page`, null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/patreon-search",
+        "tags": [
+          "Patreon"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search text.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "art tutorials"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "art tutorials",
+                  "page": 1,
+                  "total": 188,
+                  "pages": 10,
+                  "count": 20,
+                  "items": [
+                    {
+                      "campaign_id": "8959342",
+                      "name": "Andrea Nelson",
+                      "creation_name": "Art Tutorials",
+                      "summary": null,
+                      "url": "https://www.patreon.com/andreanelson",
+                      "patrons": null,
+                      "posts": 479,
+                      "nsfw": false,
+                      "avatar": "https://c10.patreonusercontent.com/4/patreon-media/p/campaign/8959342/291bdc09d12a4e0abd27bee1935e0ddd/eyJ3IjoyNDB9/7.png?token-time=2145916…"
+                    },
+                    {
+                      "campaign_id": "4638557",
+                      "name": "samdoesarts",
+                      "creation_name": "Creating digital art, process videos, tutorials, wallpapers and ",
+                      "summary": null,
+                      "url": "https://www.patreon.com/samdoesarts",
+                      "patrons": 74980,
+                      "posts": 277,
+                      "nsfw": false,
+                      "avatar": "https://c10.patreonusercontent.com/4/patreon-media/p/campaign/4638557/780cdfb0a7c04c44a2358bd969884726/eyJ3IjoyNDB9/2.png?token-time=2145916…"
+                    },
+                    "… 18 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

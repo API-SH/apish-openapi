@@ -1,0 +1,1891 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Priceline",
+    "version": "1.0.0",
+    "description": "The Priceline API from API.SH: public Priceline data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Priceline",
+      "description": "4 endpoints (travel & events)",
+      "x-slug": "priceline",
+      "x-domains": [
+        "priceline.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/priceline/v1/autocomplete": {
+      "get": {
+        "operationId": "pricelineAutocomplete",
+        "summary": "Priceline location autocomplete",
+        "description": "The places Priceline suggests for a hotel search: cities, hotels, airports, neighborhoods and landmarks, each with type, id (a hotel id works with /priceline/v1/hotel), display lines, city id, city, state, country, address, ZIP code, coordinates, search radius and trending or popular flags.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/priceline-autocomplete",
+        "tags": [
+          "Priceline"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "A place, hotel name, airport or landmark.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "boston"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "boston",
+                  "count": 10,
+                  "results": [
+                    {
+                      "type": "city",
+                      "id": "3000008602",
+                      "name": "Boston, MA",
+                      "line1": "Boston",
+                      "line2": "Massachusetts, United States",
+                      "city_id": "3000008602",
+                      "city": "Boston",
+                      "state": "MA",
+                      "province": "Massachusetts",
+                      "country": "United States",
+                      "country_code": "US",
+                      "address": null,
+                      "zip": null,
+                      "latitude": 42.3583,
+                      "longitude": -71.0603,
+                      "radius_miles": 22,
+                      "trending": false,
+                      "popular": true,
+                      "hotel_url": null
+                    },
+                    {
+                      "type": "airport",
+                      "id": "BOS",
+                      "name": "Gen Edward Logan Intl Airport (BOS) , MA",
+                      "line1": "Boston (BOS - Gen Edward Logan Intl Airport)",
+                      "line2": "Massachusetts, United States",
+                      "city_id": "3000008602",
+                      "city": "Boston",
+                      "state": "MA",
+                      "province": "Massachusetts",
+                      "country": "United States",
+                      "country_code": "US",
+                      "address": null,
+                      "zip": null,
+                      "latitude": 42.367994414523366,
+                      "longitude": -71.00952433953857,
+                      "radius_miles": 22,
+                      "trending": false,
+                      "popular": false,
+                      "hotel_url": null
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/priceline/v1/hotel": {
+      "get": {
+        "operationId": "pricelineHotel",
+        "summary": "Priceline hotel, rooms and rates",
+        "description": "One Priceline hotel: name, star rating, full address, position, neighborhood with its description, brand, description, guest review summary, important information, amenities (also by category), policies (check-in, check-out, children, pets, payment), badges, top reasons to book, every photo by group. With `check_in` and `check_out`: every room (description, bedding, size, occupancy, amenities, facilities, photos) with each rate (nightly price, nightly with taxes and fees, total, taxes and fees, property fees, cancellation terms and deadline, payment option, price breakdown) and the lowest rate.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/priceline-hotel",
+        "tags": [
+          "Priceline"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Priceline hotel id (from a hotels answer), e.g. `33456504`, or a priceline.com/relax/at/<id> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "33456504"
+          },
+          {
+            "name": "check_in",
+            "in": "query",
+            "required": false,
+            "description": "Check-in date (YYYY-MM-DD) for rooms and rates.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "check_out",
+            "in": "query",
+            "required": false,
+            "description": "Check-out date (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "description": "Adults (default 2).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "required": false,
+            "description": "Children's ages, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rooms",
+            "in": "query",
+            "required": false,
+            "description": "Rooms (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Price currency, ISO code (default USD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "33456504",
+                  "name": "Holiday Inn Lower East Side By IHG",
+                  "url": "https://www.priceline.com/relax/at/33456504",
+                  "star_rating": 4,
+                  "star_level_text": "4-Star Hotel",
+                  "address": "150 Delancey Street, New York, NY",
+                  "city": "New York",
+                  "state": "New York",
+                  "country": "United States",
+                  "location_id": "3000016152",
+                  "latitude": 40.71829987,
+                  "longitude": -73.9862442,
+                  "neighborhood": "Lower East Side - Chinatown",
+                  "neighborhood_description": "Discover the vibrant heart of New York City in this captivating neighborhood. Immerse yourself in the area's rich history at iconic landmark…",
+                  "brand": "Holiday Inn",
+                  "brand_owner": "InterContinental Hotels Group",
+                  "brand_description": "Holiday Inn, owned by IHG, offers comfortable and reliable lodging experiences for travelers seeking convenience. Known for its approachable…",
+                  "description": "This New York City hotel is just 2 mi from the World Trade Center. Free Wi-Fi and on-site dining options are available. A 32-inch flat-scree…",
+                  "review_summary": "Guests praise the hotel's friendly staff, convenient location, and spotless rooms. There are mixed opinions about room size.",
+                  "important_info": "Guests are required to show a photo ID and credit card upon check-in. Please note that all Special Requests are subject to availability and …",
+                  "property_type": null,
+                  "recently_opened": null,
+                  "recently_renovated": null,
+                  "themes": [],
+                  "amenities": [
+                    "Coffee/tea maker",
+                    "Food delivery",
+                    "… 73 more"
+                  ],
+                  "amenity_categories": [
+                    {
+                      "category": "Room Amenities",
+                      "amenities": [
+                        "Coffee/tea maker",
+                        "Ironing amenities",
+                        "… 24 more"
+                      ]
+                    },
+                    {
+                      "category": "Food & Drinks",
+                      "amenities": [
+                        "Food delivery",
+                        "Bar",
+                        "… 3 more"
+                      ]
+                    },
+                    "… 11 more"
+                  ],
+                  "policies": [
+                    {
+                      "type": "CHECK_IN",
+                      "label": "Check-in",
+                      "description": {
+                        "highlight": "",
+                        "listHeader": "",
+                        "policyList": [
+                          "After 3:00 PM"
+                        ],
+                        "title": ""
+                      }
+                    },
+                    {
+                      "type": "CHECK_OUT",
+                      "label": "Check-out",
+                      "description": {
+                        "highlight": "",
+                        "listHeader": "",
+                        "policyList": [
+                          "Before 11:00 AM"
+                        ],
+                        "title": ""
+                      }
+                    },
+                    "… 4 more"
+                  ],
+                  "policy_summary": {
+                    "sections": [
+                      {
+                        "title": "Rates & Fees",
+                        "items": [
+                          {
+                            "…": "1 fields"
+                          },
+                          {
+                            "…": "1 fields"
+                          }
+                        ]
+                      },
+                      {
+                        "title": "Check-In Essentials",
+                        "items": [
+                          {
+                            "…": "1 fields"
+                          },
+                          {
+                            "…": "1 fields"
+                          }
+                        ]
+                      },
+                      "… 1 more"
+                    ]
+                  },
+                  "badges": [
+                    {
+                      "code": "TOP_BOOKED",
+                      "label": "Top Booked",
+                      "category": "CUSTOMER"
+                    },
+                    {
+                      "code": "FAMILY_FRIENDLY",
+                      "label": "Family Friendly",
+                      "category": "DEFAULT"
+                    }
+                  ],
+                  "top_reasons": [
+                    {
+                      "title": "TOP RATED STAFF",
+                      "description": "Guests rate the Staff 8.6/10",
+                      "type": "TOP_RATED"
+                    }
+                  ],
+                  "images": [
+                    {
+                      "url": "https://assets.pclncdn.com/bstatic/xdata/images/hotel/434035591.jpg?k=1ddcc14d84ea5296948680deb581cd1c7814eb71ebfd13b4c02bdb1dbe6fe8c1&o=&a=…",
+                      "alt": "A wide-angle view showcases the striking, white, angular interior of a modern building with a central skylight and multiple levels."
+                    },
+                    {
+                      "url": "https://assets.pclncdn.com/bstatic/xdata/images/hotel/434035587.jpg?k=60c9a44a1fc091e5312907b1c1f4cafa951c2d2a904b7688efd11961157a08d6&o=&a=…",
+                      "alt": "The Statue of Liberty stands tall on Liberty Island against a bright blue sky with scattered clouds."
+                    },
+                    "… 46 more"
+                  ],
+                  "image_groups": [
+                    {
+                      "group": "Property",
+                      "images": [
+                        "https://assets.pclncdn.com/bstatic/xdata/images/hotel/434035591.jpg?k=1ddcc14d84ea5296948680deb581cd1c7814eb71ebfd13b4c02bdb1dbe6fe8c1&o=&a=…",
+                        "https://assets.pclncdn.com/bstatic/xdata/images/hotel/246903083.jpg?k=1e0e41fb956e464b6985b3f88f1261495e4244e5dad551579c05f1ff0c8a822b&o=&a=…",
+                        "… 10 more"
+                      ]
+                    },
+                    {
+                      "group": "Rooms",
+                      "images": [
+                        "https://assets.pclncdn.com/bstatic/xdata/images/hotel/246902993.jpg?k=d18c758210ddebed1ee08e7f850359f7b825dcc5a4248bb15cd4a458bd75adce&o=&a=…",
+                        "https://assets.pclncdn.com/bstatic/xdata/images/hotel/17713545.jpg?k=ac339464c8708c30ede8203de5607dbd0483e02ba268804cd717ef357ec06f2f&o=&a=2…",
+                        "… 6 more"
+                      ]
+                    },
+                    "… 4 more"
+                  ],
+                  "check_in": null,
+                  "check_out": null,
+                  "adults": null,
+                  "children": null,
+                  "rooms_requested": null,
+                  "currency": null,
+                  "min_rate": null,
+                  "rate_filters": [],
+                  "…": "5 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/priceline/v1/hotel-reviews": {
+      "get": {
+        "operationId": "pricelineHotelReviews",
+        "summary": "Priceline hotel guest reviews",
+        "description": "Guest reviews of a Priceline hotel: id, date, overall rating and category scores, what the guest liked, disliked and wrote, reviewer first name, country and traveler type; plus the hotel's score summary and the review filters with counts. Filter by score band, traveler type and season; sort by recency or score. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/priceline-hotel-reviews",
+        "tags": [
+          "Priceline"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Priceline hotel id, e.g. `33456504`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "33456504"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default recent).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recent",
+                "highest",
+                "lowest"
+              ]
+            }
+          },
+          {
+            "name": "score",
+            "in": "query",
+            "required": false,
+            "description": "Score band.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "9,10",
+                "7,8",
+                "5,6",
+                "3,4",
+                "1,2"
+              ]
+            }
+          },
+          {
+            "name": "traveler_type",
+            "in": "query",
+            "required": false,
+            "description": "Traveler types, comma-separated: `group`, `business`, `solo`, `couple`, `family_with_young_children`, `family_with_teens`, `senior`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "description": "Months of the stay: spring, summer, autumn or winter.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "3,4,5",
+                "6,7,8",
+                "9,10,11",
+                "12,1,2"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page (default 25).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (`next_page` from the previous answer).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "33456504",
+                  "page": 1,
+                  "limit": 25,
+                  "sort": "recent",
+                  "total": 333,
+                  "total_pages": 14,
+                  "count": 25,
+                  "next_page": 2,
+                  "summary": {
+                    "scores": [
+                      {
+                        "type": "STAFF",
+                        "label": "Staff",
+                        "score": 8.6
+                      },
+                      {
+                        "type": "CLEANLINESS",
+                        "label": "Cleanliness",
+                        "score": 8.3
+                      },
+                      "… 2 more"
+                    ],
+                    "total": 922,
+                    "label": "922 Reviews"
+                  },
+                  "filters": {
+                    "sortOptions": [
+                      {
+                        "value": "MOST_RECENT",
+                        "label": "Most Recent"
+                      },
+                      {
+                        "value": "HIGHEST_SCORE",
+                        "label": "Highest Review"
+                      },
+                      "… 1 more"
+                    ],
+                    "filters": [
+                      {
+                        "filterType": "RATING",
+                        "title": "Score",
+                        "options": [
+                          {
+                            "…": "4 fields"
+                          },
+                          {
+                            "…": "4 fields"
+                          },
+                          "… 3 more"
+                        ]
+                      },
+                      {
+                        "filterType": "TIME_OF_YEAR",
+                        "title": "Time of Year",
+                        "options": [
+                          {
+                            "…": "4 fields"
+                          },
+                          {
+                            "…": "4 fields"
+                          },
+                          "… 2 more"
+                        ]
+                      },
+                      "… 1 more"
+                    ]
+                  },
+                  "reviews": [
+                    {
+                      "id": "5355300475",
+                      "date": "Oct 2026",
+                      "rating": 1,
+                      "scores": [
+                        {
+                          "type": "CLEANLINESS",
+                          "label": "Cleanliness",
+                          "score": 8
+                        },
+                        {
+                          "type": "STAFF",
+                          "label": "Staff",
+                          "score": 8
+                        },
+                        "… 2 more"
+                      ],
+                      "positive": "location",
+                      "negative": "I booked  for two beds room and we got 1 bed \nWe were told they will put a roll up bed and they never did\nMy son ended sleeping on the floor…",
+                      "text": "Will never go back here",
+                      "reviewer": "Johanna",
+                      "reviewer_location": "us",
+                      "traveler_type": "Traveling as a Couple",
+                      "traveler_type_code": "COUPLE"
+                    },
+                    {
+                      "id": "5346103799",
+                      "date": "Sep 2026",
+                      "rating": 7,
+                      "scores": [
+                        {
+                          "type": "CLEANLINESS",
+                          "label": "Cleanliness",
+                          "score": 8
+                        },
+                        {
+                          "type": "STAFF",
+                          "label": "Staff",
+                          "score": 8
+                        },
+                        "… 2 more"
+                      ],
+                      "positive": null,
+                      "negative": "When we booked it, we did not realize that Booking.com is a deceptive fraudulent enterprise. We encourage IHG and Holiday Inn to drop the re…",
+                      "text": null,
+                      "reviewer": "Overton",
+                      "reviewer_location": "us",
+                      "traveler_type": "Group Traveler",
+                      "traveler_type_code": "GROUP"
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/priceline/v1/hotels": {
+      "get": {
+        "operationId": "pricelineHotels",
+        "summary": "Priceline hotel search",
+        "description": "Hotels Priceline lists for a city, area, address, airport or landmark and a stay: id, name, star rating, brand, address, neighborhood, position, guest rating with category scores and review count, amenities, badges, photos, Express Deal flag (hotel revealed after booking), and the lowest rate (nightly price, total with taxes and fees, taxes, cancellation terms, payment option, price breakdown). Filter by star level, nightly budget, amenities, neighborhoods, brands, property types, guest rating, review categories, refundable or pay-later rates, deal type, beds, theme or nearby attraction (the `filters` list in each answer gives every value with its count). `total` is the number of matching hotels. 30 hotels per page: pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/priceline-hotels",
+        "tags": [
+          "Priceline"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "description": "City, area, address, airport or landmark, e.g. `New York, NY`, `Paris, France`, `Miami`, or a Priceline location id such as `3000016152`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "New York, NY"
+          },
+          {
+            "name": "check_in",
+            "in": "query",
+            "required": false,
+            "description": "Check-in date (YYYY-MM-DD). Without dates: a two-night stay 30 days from today.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "check_out",
+            "in": "query",
+            "required": false,
+            "description": "Check-out date (YYYY-MM-DD), after check_in.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "description": "Adults (default 2).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "required": false,
+            "description": "Children's ages, comma-separated, e.g. `5,9`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rooms",
+            "in": "query",
+            "required": false,
+            "description": "Rooms (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Price currency, ISO code (default USD), e.g. `EUR`, `GBP`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default recommended).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recommended",
+                "price",
+                "guest_rating",
+                "savings"
+              ]
+            }
+          },
+          {
+            "name": "star_rating",
+            "in": "query",
+            "required": false,
+            "description": "Star levels, comma-separated, e.g. `4,5`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Lowest nightly price.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Highest nightly price.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "amenities",
+            "in": "query",
+            "required": false,
+            "description": "Amenity codes, comma-separated, e.g. `FBRKFST` (free breakfast), `FPRKING` (free parking), `SPOOL` (pool), `PETALLOW`, `FITSPA`, `AIRSHUTTL`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "neighborhoods",
+            "in": "query",
+            "required": false,
+            "description": "Neighborhood ids from the `filters` list, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brands",
+            "in": "query",
+            "required": false,
+            "description": "Brand ids from the `filters` list, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "property_types",
+            "in": "query",
+            "required": false,
+            "description": "Property type ids, comma-separated: `1003` hotels, `1001` apartments, `1017` homestays, `1022` guesthouses, `1013` inns, `1002` hostels (more in the `filters` list).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "guest_rating",
+            "in": "query",
+            "required": false,
+            "description": "Lowest guest rating (out of 10).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "5",
+                "6",
+                "7",
+                "8",
+                "9"
+              ]
+            }
+          },
+          {
+            "name": "review_categories",
+            "in": "query",
+            "required": false,
+            "description": "Highly rated for, comma-separated: `LOCATION`, `CLEANLINESS`, `STAFF`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rate_options",
+            "in": "query",
+            "required": false,
+            "description": "Rate options, comma-separated: `FREE_CANCELLATION`, `PAY_LATER`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "deal_types",
+            "in": "query",
+            "required": false,
+            "description": "`RTL` (standard rates) or `SOPQ` (Express Deals), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "beds",
+            "in": "query",
+            "required": false,
+            "description": "Beds per room, comma-separated: `1`, `2`, `3,4,5,6,7`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "theme",
+            "in": "query",
+            "required": false,
+            "description": "Property theme id: `1` family friendly, `4` luxury, `5` comfort, `6` business friendly, `7` spa and wellness.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nearby_attraction",
+            "in": "query",
+            "required": false,
+            "description": "Attraction id from the `filters` list (hotels close to it).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (`next_page` from the previous answer).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "location": {
+                    "id": "3000016152",
+                    "name": "New York, NY",
+                    "city": "New York",
+                    "state": "New York",
+                    "country": "United States",
+                    "latitude": 40.759377,
+                    "longitude": -73.98513
+                  },
+                  "check_in": "2026-12-15",
+                  "check_out": "2026-12-17",
+                  "adults": 2,
+                  "children": [],
+                  "rooms": 1,
+                  "currency": "USD",
+                  "sort": "recommended",
+                  "applied_filters": {},
+                  "total": 936,
+                  "search_label": "936 hotels in New York, NY",
+                  "page": 1,
+                  "page_size": 30,
+                  "count": 30,
+                  "next_page": 2,
+                  "hotels": [
+                    {
+                      "id": "41563",
+                      "name": "ROW NYC",
+                      "express_deal": false,
+                      "express_deal_note": null,
+                      "star_rating": 4,
+                      "star_level_text": "4-Star Hotel",
+                      "brand": "highgate hotels",
+                      "brand_owner": "Highgate Hotels",
+                      "brand_id": "514304",
+                      "address": "700 8th Avenue, New York NY",
+                      "neighborhood": "Times Square - Theatre District",
+                      "neighborhood_id": "910051081",
+                      "city": "New York",
+                      "state": "NY",
+                      "country": "US",
+                      "location_id": "3000016152",
+                      "latitude": 40.758975,
+                      "longitude": -73.987909,
+                      "rating": 7,
+                      "review_scores": [
+                        {
+                          "label": "Location",
+                          "score": 9
+                        },
+                        {
+                          "label": "Staff",
+                          "score": 8
+                        },
+                        "… 2 more"
+                      ],
+                      "reviews_label": "424 Reviews",
+                      "reviews": 424,
+                      "short_description": "Modern rooms with blackout curtains, cable TV, and laptop safes; family- and pet-friendly near top dining, shopping, and city landmarks.",
+                      "amenities": [
+                        {
+                          "code": "FINTRNT",
+                          "name": "Free Internet Access"
+                        },
+                        {
+                          "code": "PETALLOW",
+                          "name": "Pets Allowed"
+                        },
+                        "… 3 more"
+                      ],
+                      "badges": [
+                        {
+                          "code": "FAMILY_FRIENDLY",
+                          "label": "Family Friendly",
+                          "category": "DEFAULT"
+                        },
+                        {
+                          "code": "LUXURY",
+                          "label": "Luxury",
+                          "category": "DEFAULT"
+                        },
+                        "… 3 more"
+                      ],
+                      "themes": [],
+                      "images": [
+                        "https://assets.pclncdn.com/bstatic/xdata/images/hotel/886290677.jpg?k=0c130744c0f7389496a181a44c8a7c2ea51e37a0452b0f895517ea1becdbe163&o=&a=…",
+                        "https://assets.pclncdn.com/bstatic/xdata/images/hotel/870603777.jpg?k=3d4c1de5972de9221af4f36c0260e55352f20a273466a96edb423ab98c8961ce&o=&a=…",
+                        "… 3 more"
+                      ],
+                      "distance": null,
+                      "sponsored": true,
+                      "rate": {
+                        "price": {
+                          "amount": 309.6,
+                          "currency": "USD",
+                          "display": "309",
+                          "prefix": "$",
+                          "description": "$619 for 2 nights",
+                          "strike_price": null,
+                          "savings": null,
+                          "savings_percent": "20"
+                        },
+                        "nightly_excluding_tax": {
+                          "amount": 349.61,
+                          "currency": "USD",
+                          "display": "349",
+                          "prefix": "$",
+                          "description": "Includes all fees",
+                          "strike_price": null,
+                          "savings": null,
+                          "savings_percent": null
+                        },
+                        "nightly_including_taxes_and_fees": null,
+                        "total": {
+                          "amount": 812.42,
+                          "currency": null,
+                          "display": "812",
+                          "prefix": "$",
+                          "description": "Total: $812 includes taxes & fees",
+                          "strike_price": null,
+                          "savings": null,
+                          "savings_percent": null
+                        },
+                        "total_excluding_tax": {
+                          "amount": 699.22,
+                          "currency": "USD",
+                          "display": "699",
+                          "prefix": "$",
+                          "description": "2 nights, 1 room",
+                          "strike_price": null,
+                          "savings": null,
+                          "savings_percent": null
+                        },
+                        "taxes_and_fees": null,
+                        "property_fees": null,
+                        "cancellation": "Fully Refundable Rates",
+                        "free_cancellation_until": null,
+                        "payment": "Pay Later Available",
+                        "upsell": "Sign in for a VIP-only discount",
+                        "summary_of_charges": [],
+                        "merchandising": [
+                          {
+                            "…": "4 fields"
+                          },
+                          {
+                            "…": "4 fields"
+                          }
+                        ],
+                        "amenities": [],
+                        "rate_id": "59BE050108C3091A407441AFF88C8AD2C57FC342F55C0C4D01598D8B06ABEB855C627B4A3D6BF0AD143475B1394A97EAEAF6A54CF6CED6145C1773F9D4BA94C7F00F0963D649…"
+                      },
+                      "url": "https://www.priceline.com/relax/at/41563"
+                    },
+                    {
+                      "id": "40622",
+                      "name": "Park Central Hotel New York",
+                      "express_deal": false,
+                      "express_deal_note": null,
+                      "star_rating": 4,
+                      "star_level_text": "4-Star Hotel",
+                      "brand": "Independent",
+                      "brand_owner": "Independent",
+                      "brand_id": "0",
+                      "address": "870 7th Avenue @ 56th Street",
+                      "neighborhood": "Central Park South",
+                      "neighborhood_id": "910003911",
+                      "city": "New York",
+                      "state": "NY",
+                      "country": "US",
+                      "location_id": "3000016152",
+                      "latitude": 40.764811,
+                      "longitude": -73.980591,
+                      "rating": 7.2,
+                      "review_scores": [
+                        {
+                          "label": "Location",
+                          "score": 9.3
+                        },
+                        {
+                          "label": "Staff",
+                          "score": 7.8
+                        },
+                        "… 2 more"
+                      ],
+                      "reviews_label": "4,316 Reviews",
+                      "reviews": 4316,
+                      "short_description": "Steps from Central Park with 24/7 fitness center, spacious rooms featuring 46\" TVs, onsite dining, and quick access to Broadway and top muse…",
+                      "amenities": [
+                        {
+                          "code": "FINTRNT",
+                          "name": "Free Internet Access"
+                        },
+                        {
+                          "code": "PETALLOW",
+                          "name": "Pets Allowed"
+                        },
+                        "… 4 more"
+                      ],
+                      "badges": [
+                        {
+                          "code": "FAMILY_FRIENDLY",
+                          "label": "Family Friendly",
+                          "category": "DEFAULT"
+                        },
+                        {
+                          "code": "LUXURY",
+                          "label": "Luxury",
+                          "category": "DEFAULT"
+                        },
+                        "… 2 more"
+                      ],
+                      "themes": [],
+                      "images": [
+                        "https://assets.pclncdn.com/bstatic/xdata/images/hotel/64662766.jpg?k=89bdc43fad92535e8af96c80f6ec8542775e52c5d16f5c9e3c624c7ae5372d8c&o=&a=2…",
+                        "https://assets.pclncdn.com/bstatic/xdata/images/hotel/320821043.jpg?k=df403c37c3b9f70826e3e4862bac4c81e809742c4cb768e76c80c7e6022c6936&o=&a=…",
+                        "… 3 more"
+                      ],
+                      "distance": null,
+                      "sponsored": true,
+                      "rate": {
+                        "price": {
+                          "amount": 454,
+                          "currency": "USD",
+                          "display": "454",
+                          "prefix": "$",
+                          "description": "$908 for 2 nights",
+                          "strike_price": null,
+                          "savings": null,
+                          "savings_percent": null
+                        },
+                        "nightly_excluding_tax": {
+                          "amount": 496.01,
+                          "currency": "USD",
+                          "display": "496",
+                          "prefix": "$",
+                          "description": "Includes all fees",
+                          "strike_price": null,
+                          "savings": null,
+                          "savings_percent": null
+                        },
+                        "nightly_including_taxes_and_fees": null,
+                        "total": {
+                          "amount": 1148.42,
+                          "currency": null,
+                          "display": "1,148",
+                          "prefix": "$",
+                          "description": "Total: $1,148 includes taxes & fees",
+                          "strike_price": null,
+                          "savings": null,
+                          "savings_percent": null
+                        },
+                        "total_excluding_tax": {
+                          "amount": 992.02,
+                          "currency": "USD",
+                          "display": "992",
+                          "prefix": "$",
+                          "description": "2 nights, 1 room",
+                          "strike_price": null,
+                          "savings": null,
+                          "savings_percent": null
+                        },
+                        "taxes_and_fees": null,
+                        "property_fees": null,
+                        "cancellation": "Fully Refundable Rates",
+                        "free_cancellation_until": null,
+                        "payment": null,
+                        "upsell": "Sign in for a VIP-only discount",
+                        "summary_of_charges": [],
+                        "merchandising": [
+                          {
+                            "…": "4 fields"
+                          },
+                          {
+                            "…": "4 fields"
+                          }
+                        ],
+                        "amenities": [],
+                        "rate_id": "13C85541F0C7268CF6683029132CD736C57FC342F55C0C4D059A183410F3837C607260A6B6109A2FEDD260D4E49B0FF483C6CF3B40AF4FB16EF9E4A1C9DD4D35F8DFBEB42ACF…"
+                      },
+                      "url": "https://www.priceline.com/relax/at/40622"
+                    },
+                    "… 28 more"
+                  ],
+                  "filters": [
+                    {
+                      "type": "NEIGHBORHOOD",
+                      "param": "neighborhoods",
+                      "title": "Neighborhoods",
+                      "options": [
+                        {
+                          "value": "910051081",
+                          "label": "Times Square - Theatre District",
+                          "count": 85
+                        },
+                        {
+                          "value": "910003909",
+                          "label": "Midtown West - Hell's Kitchen",
+                          "count": 21
+                        },
+                        "… 32 more"
+                      ]
+                    },
+                    {
+                      "type": "AMENITY",
+                      "param": "amenities",
+                      "title": "Amenities",
+                      "options": [
+                        {
+                          "value": "FBRKFST",
+                          "label": "Free Breakfast",
+                          "count": 130
+                        },
+                        {
+                          "value": "FPRKING",
+                          "label": "Free Parking",
+                          "count": 74
+                        },
+                        "… 15 more"
+                      ]
+                    },
+                    "… 13 more"
+                  ],
+                  "sort_options": [
+                    {
+                      "value": "recommended",
+                      "label": "Recommended"
+                    },
+                    {
+                      "value": "price",
+                      "label": "Lowest Price"
+                    },
+                    "… 2 more"
+                  ],
+                  "price_guidance": {
+                    "description": "Tue, Dec 15 - Thu, Dec 17",
+                    "label": "$320 avg. per night",
+                    "title": "New York, NY",
+                    "starLevelInsights": [
+                      {
+                        "description": "The average 1-Star retail hotel price is $150 per night for these dates",
+                        "label": "1-star",
+                        "priceRange": {
+                          "max": "$150",
+                          "median": "$150",
+                          "min": "$139"
+                        }
+                      },
+                      {
+                        "description": "The average 2-Star retail hotel price is $180 per night for these dates",
+                        "label": "2-stars",
+                        "priceRange": {
+                          "max": "$778",
+                          "median": "$180",
+                          "min": "$91"
+                        }
+                      },
+                      "… 3 more"
+                    ]
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

@@ -1,0 +1,877 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: VK",
+    "version": "1.0.0",
+    "description": "The VK API from API.SH: public VK data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "VK",
+      "description": "2 endpoints (social)",
+      "x-slug": "vk",
+      "x-domains": [
+        "vk.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vk/v1/community": {
+      "get": {
+        "operationId": "vkCommunity",
+        "summary": "VK community",
+        "description": "A public VK community (group, public page or event): id, screen name, name, type, description, status, members, verified flag, open/closed, age limit, website, creation date, business/government flags, main address, public contacts, photo, cover and content sections. Personal profiles are not supported (404).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/vk-community",
+        "tags": [
+          "VK"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Community screen name (e.g. `vk`), club/public id (e.g. `club1`) or numeric id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "vk"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A vk.com community link, instead of `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 22822305,
+                  "screen_name": "vk",
+                  "name": "ВКонтакте",
+                  "type": "public page",
+                  "url": "https://vk.com/vk",
+                  "description": "Это главное сообщество Команды ВКонтакте. Здесь вы можете узнать обо всех новостях из первых рук.\n\nПоддержка пользователей: vk.cc/cPqh9T",
+                  "status": "Социальная сеть",
+                  "members": 14146398,
+                  "verified": true,
+                  "closed": "open",
+                  "age_limit": 1,
+                  "site": "vk.ru/about",
+                  "created": "2011-01-03T10:00:53.000Z",
+                  "is_business": false,
+                  "government": false,
+                  "activity": null,
+                  "address": {
+                    "title": "Главный Штаб",
+                    "address": "Невский пр. 28",
+                    "city": "Saint Petersburg",
+                    "country": "Russia"
+                  },
+                  "contacts": [
+                    {
+                      "description": "Представителям прессы",
+                      "email": "name@example.com",
+                      "phone": null
+                    },
+                    {
+                      "description": "По вопросам рекламы",
+                      "email": "name@example.com",
+                      "phone": null
+                    }
+                  ],
+                  "photo": "https://sun1-20.userapi.com/s/v1/ig2/zDEG4UdMqCoj41uKsL1KQ3cepVDkLGH4V57MvA0NacpzvjOVtBy8uqRFnr-o-lMrZfiGQEBv8QCQCcwtERcsCQAd.jpg?quality=95…",
+                  "cover": "https://sun1-86.userapi.com/GpS187I_Jr5N3kerOIiSR1bSd2vlBzgQy81NlQ/STq6Yymvr0M.jpg",
+                  "sections": [
+                    "articles"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/vk/v1/user": {
+      "get": {
+        "operationId": "vkUser",
+        "summary": "VK user profile",
+        "description": "A public VK user profile: id, screen name, link, names, sex, birthday, city, country, home town, status, about, website, verified, closed and deactivated flags, followers, online and last seen, relationship, occupation, career, universities, schools, interests, personal views, profile photo and photo count, content tabs, gift, article and subscription counts, recent followers, and the latest videos (title, description, duration, views, likes, comments, reposts, date, link, image, player).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/vk-user",
+        "tags": [
+          "VK"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Screen name or @name, id123, a numeric user id, or a vk.com / vk.ru profile link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "durov"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 1,
+                  "screen_name": "durov",
+                  "url": "https://vk.com/durov",
+                  "first_name": "Pavel",
+                  "last_name": "Durov",
+                  "maiden_name": null,
+                  "nickname": null,
+                  "sex": "male",
+                  "birthday": "10.10.1984",
+                  "city": "Saint Petersburg",
+                  "country": "Russia",
+                  "home_town": null,
+                  "status": "道德經",
+                  "about": null,
+                  "site": "http://t.me/durov",
+                  "verified": true,
+                  "closed": false,
+                  "deactivated": null,
+                  "followers": 4515580,
+                  "online": false,
+                  "last_seen": "recently",
+                  "relation": null,
+                  "occupation": {
+                    "type": "work",
+                    "name": "Telegram"
+                  },
+                  "career": [
+                    {
+                      "company": null,
+                      "group_id": 22822305,
+                      "position": "Генеральный директор",
+                      "from": 2006,
+                      "until": 2014
+                    },
+                    {
+                      "company": "Telegram",
+                      "group_id": null,
+                      "position": "CEO",
+                      "from": 2014,
+                      "until": null
+                    }
+                  ],
+                  "universities": [
+                    {
+                      "name": "СПбГУ",
+                      "faculty": null,
+                      "chair": null,
+                      "graduation": 2006,
+                      "education_form": null
+                    }
+                  ],
+                  "schools": [
+                    {
+                      "name": "Scuola Elementare Coppino - Falletti di Barolo",
+                      "year_from": 1990,
+                      "year_to": 1992,
+                      "year_graduated": null,
+                      "class": null
+                    },
+                    {
+                      "name": "Академическая гимназия им. Д. К. Фаддеева СПбГУ",
+                      "year_from": 1996,
+                      "year_to": 2001,
+                      "year_graduated": 2001,
+                      "class": "о"
+                    }
+                  ],
+                  "interests": {
+                    "activities": null,
+                    "interests": null,
+                    "music": null,
+                    "movies": "12 Angry Men",
+                    "tv": null,
+                    "books": null,
+                    "games": null,
+                    "quotes": "Being free, being truly free consists of not being bound by the opinions that others choose to display in regards to the decisions that one …"
+                  },
+                  "personal": {
+                    "political": 9,
+                    "languages": [
+                      "Русский",
+                      "English",
+                      "… 6 more"
+                    ],
+                    "religion": "Laissez-faire",
+                    "inspired_by": "Steve Jobs",
+                    "people_main": 5,
+                    "life_main": 6,
+                    "smoking": 1,
+                    "alcohol": 1
+                  },
+                  "photo": "https://sun9-81.userapi.com/s/v1/ig1/36o_rXYV8irRb3HevhJemHEWX0J-MqFQSBXuIL9eVSUxNnbbsmmtQLxbNDJO6018NVaaMmfH.jpg?quality=96&crop=514,119,33…",
+                  "photo_count": 9,
+                  "content_tabs": [
+                    "photos",
+                    "videos",
+                    "… 6 more"
+                  ],
+                  "gifts_count": 317804,
+                  "articles_count": 0,
+                  "subscriptions_count": 0,
+                  "recent_followers": [
+                    {
+                      "id": 509911119,
+                      "name": "Bogdan Rakhimov",
+                      "photo": "https://sun1-23.userapi.com/s/v1/ig2/ayFrnNEKwf1MudQe1XbWE12DkC9y0tS17wm0eQ_yGhToyEeZHT_PBV1xzSlD-fCaX5uqUeyd9AUPx5Ph02nF-Rbf.jpg?quality=95…",
+                      "url": "https://vk.com/id509911119"
+                    },
+                    {
+                      "id": 858775845,
+                      "name": "Andrey Seferyan",
+                      "photo": "https://sun1-25.userapi.com/s/v1/ig2/MYy7KgRFw-1A5tGT6vUvmrwQmc8SvGkzD6OLjjFJ4pNkmI46gd_rQCijLCXatV29R3s_yytpocVgtSyqk3gqyFWT.jpg?quality=95…",
+                      "url": "https://vk.com/id858775845"
+                    },
+                    "… 1 more"
+                  ],
+                  "videos_count": 4,
+                  "videos": [
+                    {
+                      "id": "-29534144_456240620",
+                      "title": "Бундолёты",
+                      "description": "@ ruslanbas",
+                      "duration_s": 16,
+                      "views": 438833,
+                      "likes": 7355,
+                      "comments": 265,
+                      "reposts": 52,
+                      "date": "2018-04-30T11:44:40.000Z",
+                      "url": "https://vkvideo.ru/video-29534144_456240620",
+                      "image": "https://sun9-40.userapi.com/c840424/v840424364/7e822/YrbEBwxTTgA.jpg",
+                      "player": "https://vk.com/video_ext.php?oid=-29534144&id=456240620&hash=420a9ee7cecd7ebf&__ref=vk.web2"
+                    },
+                    {
+                      "id": "1_456239025",
+                      "title": "#sundaypaperplane",
+                      "description": "Видео, присланное сторонниками акции #sundaypaperplane",
+                      "duration_s": 59,
+                      "views": 4585996,
+                      "likes": 23238,
+                      "comments": 460,
+                      "reposts": 101,
+                      "date": "2018-04-29T13:52:39.000Z",
+                      "url": "https://vkvideo.ru/video1_456239025",
+                      "image": "https://sun9-7.userapi.com/c834302/v834302714/127271/aUePw7nN1Lg.jpg",
+                      "player": "https://vk.com/video_ext.php?oid=1&id=456239025&hash=daa9be938cb9985e&__ref=vk.web2"
+                    },
+                    "… 2 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

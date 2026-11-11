@@ -1,0 +1,1437 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Angi",
+    "version": "1.0.0",
+    "description": "The Angi API from API.SH: public Angi data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Angi",
+      "description": "5 endpoints (local services)",
+      "x-slug": "angi",
+      "x-domains": [
+        "angi.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/angi/v1/categories": {
+      "get": {
+        "operationId": "angiCategories",
+        "summary": "Angi services in a city",
+        "description": "The services Angi lists pros for in a US city: the service slug /angi/v1/pros takes, its name and the city's directory link.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/angi-categories",
+        "tags": [
+          "Angi"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "description": "Two-letter US state, e.g. tx.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tx"
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": true,
+            "description": "City name or slug, e.g. austin, los-angeles.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "austin"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "state": "tx",
+                  "city": "austin",
+                  "count": 166,
+                  "services": [
+                    {
+                      "service": "animal-removal",
+                      "name": "Animal Removal",
+                      "url": "https://www.angi.com/companylist/us/tx/austin/animal-removal.htm"
+                    },
+                    {
+                      "service": "tv-antenna",
+                      "name": "Antenna Repair",
+                      "url": "https://www.angi.com/companylist/us/tx/austin/tv-antenna.htm"
+                    },
+                    "… 164 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/angi/v1/cost-guide": {
+      "get": {
+        "operationId": "angiCostGuide",
+        "summary": "Angi cost guide",
+        "description": "An Angi cost guide for a home project: title, description, author, published and updated dates, the national average cost with the typical low and high and the number of projects behind them, the local price range the page shows (with its area), the guide's cost tables (by size, material and more) and its FAQs.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/angi-cost-guide",
+        "tags": [
+          "Angi"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "The guide's name as in angi.com/articles/<slug>.htm, e.g. how-much-does-roof-replacement-cost, or pass url.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "how-much-does-roof-replacement-cost"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "An angi.com/articles/how-much-... link, instead of slug.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "how-much-does-roof-replacement-cost",
+                  "url": "https://www.angi.com/articles/how-much-does-roof-replacement-cost.htm",
+                  "title": "How Much Does Roof Replacement Cost? [2026]",
+                  "description": "A new roof improves curb appeal, increases home value and keeps your living space protected from the elements. Learn about average roof repl…",
+                  "published": "2022-08-31T15:07:13.746Z",
+                  "updated": "2026-10-22T00:00-05:00",
+                  "author": "Mizuki Hisaka",
+                  "national_average": 9610,
+                  "typical_low": 5903,
+                  "typical_high": 13378,
+                  "projects": 32999,
+                  "currency": "USD",
+                  "local_range": {
+                    "area": "New York Tristate Area, NY",
+                    "min": 5505,
+                    "max": 11975
+                  },
+                  "tables": [
+                    {
+                      "caption": null,
+                      "columns": [
+                        "Roof Size",
+                        "Average Cost in 2026"
+                      ],
+                      "rows": [
+                        [
+                          "1,120 sq. ft.",
+                          "$4,900–$12,300"
+                        ],
+                        [
+                          "1,340 sq. ft.",
+                          "$5,800–$14,700"
+                        ],
+                        "… 11 more"
+                      ]
+                    },
+                    {
+                      "caption": null,
+                      "columns": [
+                        "Roof Material",
+                        "Average Cost Installed in 2026"
+                      ],
+                      "rows": [
+                        [
+                          "Asphalt Shingle",
+                          "$5,800–$20,000"
+                        ],
+                        [
+                          "Wood Shake Shingle",
+                          "$16,000–$27,000"
+                        ],
+                        "… 3 more"
+                      ]
+                    }
+                  ],
+                  "faq": [
+                    {
+                      "question": "What is the typical lifespan of a roof?",
+                      "answer": "A roof's lifespan can range from 15 to 200 years, with an average of 25 to 50 years, depending heavily on the material, quality of installat…"
+                    },
+                    {
+                      "question": "Do you need to replace gutters when you get a new roof?",
+                      "answer": "While not technically required, it’s a good idea. Replacing gutters, especially if they’re getting on in years, can sometimes even cost less…"
+                    },
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/angi/v1/pro": {
+      "get": {
+        "operationId": "angiPro",
+        "summary": "Angi pro profile",
+        "description": "One pro's Angi profile: id, name, logo, overall rating, review count and the star distribution, business phone, address, website, description, years in business, facts (emergency services, warranties ...), services offered with ids, licenses, bonded and insured flags, eco accreditations, paid-pro, corporate and Super Service Award flags, FAQ, breadcrumbs and the first 25 reviews (author, rating, date, text, verified, recommends, cost, photos, the pro's response). Page the reviews with /angi/v1/reviews.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/angi-pro",
+        "tags": [
+          "Angi"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "The pro's angi.com/companylist/us/<state>/<city>/<name>-reviews-<id>.htm profile link (from /angi/v1/pros).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.angi.com/companylist/us/tx/austin/cold-is-on-the-right-plumbing-reviews-6526384.htm"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "c8d17922-1c40-11ee-b010-12f6eb045c11",
+                  "name": "Cold is on the Right Plumbing",
+                  "url": "https://www.angi.com/companylist/us/tx/austin/cold-is-on-the-right-plumbing-reviews-6526384.htm",
+                  "logo": "https://cdn.homeadvisor.com/files/eid/158860000/158861273/20433170_original.jpg",
+                  "rating": 4.87,
+                  "reviews_count": 150,
+                  "rating_distribution": [
+                    {
+                      "stars": 1,
+                      "count": 1
+                    },
+                    {
+                      "stars": 2,
+                      "count": 1
+                    },
+                    "… 3 more"
+                  ],
+                  "phone": "+1 555 010 0000",
+                  "address": "PO Box 341505, Austin, TX 78734",
+                  "website": "http://www.coldisontheright.com",
+                  "description": "We're Committed. Cold is on the Right Plumbing is a service based plumbing provider that is committed to you and your home or business. Grow…",
+                  "years_in_business": 16,
+                  "facts": {
+                    "emergency_services": "Yes",
+                    "warranties": "Yes"
+                  },
+                  "services": [
+                    {
+                      "id": "60360",
+                      "name": "Plumbing for a Remodel or Addition - Install - For Business"
+                    },
+                    {
+                      "id": "60361",
+                      "name": "Faucets, Fixtures and Pipes - Repair or Replace - For Business"
+                    },
+                    "… 29 more"
+                  ],
+                  "quote_services": [
+                    {
+                      "id": "40107",
+                      "name": "Sewer Main - Clear"
+                    },
+                    {
+                      "id": "40109",
+                      "name": "Plumbing for a Remodel or Addition - Install"
+                    },
+                    "… 29 more"
+                  ],
+                  "licenses": [],
+                  "bonded": false,
+                  "insured": false,
+                  "eco_accreditations": {
+                    "energyStarPartner": false,
+                    "epaLeadSafeCertified": false,
+                    "greenProductWorkPracticeProfessional": false,
+                    "leedAccredited": false
+                  },
+                  "paid_pro": true,
+                  "corporate_account": false,
+                  "super_service_award": false,
+                  "faq": [
+                    {
+                      "question": "How is Cold is on the Right Plumbing overall rated?",
+                      "answer": "Cold is on the Right Plumbing is currently rated 4.9 overall out of 5."
+                    },
+                    {
+                      "question": "What payment options does Cold is on the Right Plumbing provide?",
+                      "answer": "Cold is on the Right Plumbing accepts the following forms of payment: CreditCard"
+                    },
+                    "… 4 more"
+                  ],
+                  "breadcrumbs": [
+                    {
+                      "name": "Angi",
+                      "url": "https://www.angi.com/"
+                    },
+                    {
+                      "name": "TX",
+                      "url": "https://www.angi.com/companylist/us/tx/"
+                    },
+                    "… 1 more"
+                  ],
+                  "reviews": [
+                    {
+                      "id": "e5950464-eedc-4a81-963c-de2228a1ffde",
+                      "author": "michael M.",
+                      "rating": 5,
+                      "date": "October 2022",
+                      "text": "Santiago and Jake were a pleasure to work with. The Dishwasher, faucet, and disposal installs all turned out great.",
+                      "verified": true,
+                      "recommends": true,
+                      "cost": "$1,000",
+                      "job": null,
+                      "photos": [],
+                      "photo_thumbnails": [],
+                      "more_photos": 0,
+                      "response": null,
+                      "response_by": null
+                    },
+                    {
+                      "id": "c56c1e49-5360-482e-832c-c965ce2754be",
+                      "author": "Mark S.",
+                      "rating": 4,
+                      "date": "August 2022",
+                      "text": "They got the difficult tasks done in just about 3 hours. Great job, too! Thanks for getting my water pressure back to normal,",
+                      "verified": true,
+                      "recommends": true,
+                      "cost": null,
+                      "job": null,
+                      "photos": [],
+                      "photo_thumbnails": [],
+                      "more_photos": 0,
+                      "response": null,
+                      "response_by": null
+                    },
+                    "… 23 more"
+                  ],
+                  "reviews_page": 1,
+                  "reviews_pages": 6,
+                  "reviews_next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/angi/v1/pros": {
+      "get": {
+        "operationId": "angiPros",
+        "summary": "Angi pros for a service in a city",
+        "description": "Home-service pros listed on Angi for a service in a US city: id, name, profile link, logo, description, overall rating with the six sub-ratings (quality, value, professionalism, punctuality, responsiveness), review count, recommended percentage, best review, years in business, service area, business address, emergency services, free estimates, warranties, veteran-owned, bilingual, small jobs and commercial flags, payment methods, service hours, contact options, services offered, awards, photos and the sponsored flag; plus the page's ZIP codes and the latest reviews in that city. `total` is the number of pros. 10 per page; pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/angi-pros",
+        "tags": [
+          "Angi"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "service",
+            "in": "query",
+            "required": false,
+            "description": "Service slug as in Angi's directory, e.g. `plumbing`, `electrical`, `roofing`, `house-cleaning`, `hvac`, `landscaping`, `painting`, `handyman-service`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "plumbing"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter US state, e.g. `tx`, `ca`, `ny`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tx"
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "City slug, e.g. `austin`, `los-angeles`, `new-york`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "austin"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "An angi.com/companylist/us/<state>/<city>/<service>.htm page instead of service, state and city.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "service": "plumbing",
+                  "title": "Top-Rated Plumbers in Austin - Updated Nov 2026",
+                  "category": "Plumber",
+                  "page": 1,
+                  "per_page": 10,
+                  "total": 888,
+                  "count": 10,
+                  "zip_codes": [
+                    "73301",
+                    "73344",
+                    "… 8 more"
+                  ],
+                  "pros": [
+                    {
+                      "id": "c8d17922-1c40-11ee-b010-12f6eb045c11",
+                      "legacy_id": "158861273",
+                      "name": "Cold is on the Right Plumbing",
+                      "url": "https://www.angi.com/companylist/us/tx/austin/cold-is-on-the-right-plumbing-reviews-6526384.htm",
+                      "logo": "https://cdn.homeadvisor.com/files/eid/158860000/158861273/20433170_original.jpg",
+                      "description": "We're Committed. Cold is on the Right Plumbing is a service based plumbing provider that is committed to you and your home or business. Grow…",
+                      "rating": 4.77,
+                      "reviews_count": 163,
+                      "recommended_percent": 96,
+                      "ratings": {
+                        "professionalism": 4.9,
+                        "punctuality": 4.89,
+                        "overall": 4.87,
+                        "responsiveness": 4.89,
+                        "quality": 4.86,
+                        "value": 4.63
+                      },
+                      "best_review": {
+                        "id": "9afad92a-5bee-4b08-9051-4772012ad2fb",
+                        "text": "I was very happy with the way scheduling was done and how professional they were. They were scheduled to come within 1.5 hours of when I cal…",
+                        "date": "2020-03-16T21:17:29Z"
+                      },
+                      "years_in_business": 16,
+                      "service_area": "Serving Austin, TX and surrounding areas",
+                      "response_rate": 1,
+                      "address": {
+                        "street": "PO Box 341505",
+                        "city": "Austin",
+                        "state": "TX",
+                        "postal_code": "78734",
+                        "country": "US"
+                      },
+                      "emergency_services": true,
+                      "free_estimates": false,
+                      "warranties": true,
+                      "veteran_owned": false,
+                      "bilingual": false,
+                      "small_jobs_welcome": false,
+                      "commercial_services": false,
+                      "payment_methods": [
+                        "credit_card"
+                      ],
+                      "hours": [],
+                      "contact_options": [
+                        "call_direct",
+                        "call_request",
+                        "… 2 more"
+                      ],
+                      "services": [
+                        "Drain Clog or Blockage - Clear",
+                        "Drain Clog or Blockage - Clear - For Business",
+                        "… 23 more"
+                      ],
+                      "awards": [],
+                      "photos": [],
+                      "sponsored": true,
+                      "advertiser": true,
+                      "corporate_account": false,
+                      "recent_leads": 0
+                    },
+                    {
+                      "id": "41ed1b3a-747e-1684-e063-fb42b30ab48d",
+                      "legacy_id": "56793148",
+                      "name": "Garrett's Plumbing",
+                      "url": "https://www.angi.com/companylist/us/tx/san-marcos/dale-batson-reviews-1.htm",
+                      "logo": "https://cdn.homeadvisor.com/files/eid/56790000/56793148/22220869_logo.jpg",
+                      "description": "Garrett’s Plumbing brings 27 years of hands-on plumbing experience rooted in four generations of trade professionals. We understand the valu…",
+                      "rating": 5,
+                      "reviews_count": 33,
+                      "recommended_percent": null,
+                      "ratings": {
+                        "professionalism": null,
+                        "punctuality": null,
+                        "overall": 5,
+                        "responsiveness": null,
+                        "quality": null,
+                        "value": null
+                      },
+                      "best_review": {
+                        "id": "f5e9eb77-e039-46ef-9d80-c15c12717959",
+                        "text": "we were having a plumbing issue Donald came and fixed the problem right away Donald Garrett’s Plumbing will always be the way to go when hav…",
+                        "date": "2026-07-05T09:03:13.643512Z"
+                      },
+                      "years_in_business": 11,
+                      "service_area": "Serving Austin, TX and surrounding areas",
+                      "response_rate": 0,
+                      "address": {
+                        "street": "PO Box 56",
+                        "city": "San Marcos",
+                        "state": "TX",
+                        "postal_code": "78667",
+                        "country": "US"
+                      },
+                      "emergency_services": false,
+                      "free_estimates": true,
+                      "warranties": true,
+                      "veteran_owned": false,
+                      "bilingual": false,
+                      "small_jobs_welcome": true,
+                      "commercial_services": true,
+                      "payment_methods": [
+                        "credit_card"
+                      ],
+                      "hours": [],
+                      "contact_options": [
+                        "call_direct",
+                        "call_request",
+                        "… 2 more"
+                      ],
+                      "services": [
+                        "Bathtub Install or Replace",
+                        "Faucets, Fixtures and Pipes - Repair or Replace",
+                        "… 14 more"
+                      ],
+                      "awards": [],
+                      "photos": [],
+                      "sponsored": true,
+                      "advertiser": true,
+                      "corporate_account": false,
+                      "recent_leads": 10
+                    },
+                    "… 8 more"
+                  ],
+                  "recent_reviews": [
+                    {
+                      "id": "162f5619-15d2-422b-8653-24f6ccb17c38",
+                      "pro_id": "005211d2-86f4-1583-e063-3383030a2c13",
+                      "pro_name": "JMR Services",
+                      "pro_url": "https://www.angi.com/companylist/us/tx/dale/jmr-services-reviews-1.htm",
+                      "author": "Michael M.",
+                      "rating": 5,
+                      "text": "Arrived on time as promised. Fast quality repair, and good cleanup on the work area. Also, polite and professional. On my next plumbing proj…",
+                      "date": "2026-02-10T10:25:19.828262"
+                    },
+                    {
+                      "id": "ed8b45c4-9a34-4758-85a2-e946e847c7ce",
+                      "pro_id": "10b82a8a-1c41-11ee-b010-12f6eb045c11",
+                      "pro_name": "We Plumb",
+                      "pro_url": "https://www.angi.com/companylist/us/tx/austin/we-plumb-reviews-10565886.htm",
+                      "author": "Jack Y.",
+                      "rating": 5,
+                      "text": "I had a couple of issues with my plumbing. Leaking faucets, slow drains, and a small leak in my master bedroom wall. Called We Plumb, Zach c…",
+                      "date": "2023-05-22T23:59:02.575"
+                    },
+                    "… 5 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/angi/v1/reviews": {
+      "get": {
+        "operationId": "angiReviews",
+        "summary": "Angi pro reviews",
+        "description": "A pro's Angi reviews, newest first, 25 a page: id, author (first name and initial), rating, date, text, verified flag, recommends, job cost, photos and thumbnails, and the pro's response. `total` and `pages` come from the site; pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/angi-reviews",
+        "tags": [
+          "Angi"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "The pro's angi.com profile link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.angi.com/companylist/us/tx/austin/cold-is-on-the-right-plumbing-reviews-6526384.htm"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "2"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.angi.com/companylist/us/tx/austin/cold-is-on-the-right-plumbing-reviews-6526384.htm",
+                  "pro_id": "c8d17922-1c40-11ee-b010-12f6eb045c11",
+                  "page": 1,
+                  "pages": 6,
+                  "total": 150,
+                  "per_page": 25,
+                  "count": 25,
+                  "reviews": [
+                    {
+                      "id": "e5950464-eedc-4a81-963c-de2228a1ffde",
+                      "author": "michael M.",
+                      "rating": 5,
+                      "date": "October 2022",
+                      "text": "Santiago and Jake were a pleasure to work with. The Dishwasher, faucet, and disposal installs all turned out great.",
+                      "verified": true,
+                      "recommends": true,
+                      "cost": "$1,000",
+                      "job": null,
+                      "photos": [],
+                      "photo_thumbnails": [],
+                      "more_photos": 0,
+                      "response": null,
+                      "response_by": null
+                    },
+                    {
+                      "id": "c56c1e49-5360-482e-832c-c965ce2754be",
+                      "author": "Mark S.",
+                      "rating": 4,
+                      "date": "August 2022",
+                      "text": "They got the difficult tasks done in just about 3 hours. Great job, too! Thanks for getting my water pressure back to normal,",
+                      "verified": true,
+                      "recommends": true,
+                      "cost": null,
+                      "job": null,
+                      "photos": [],
+                      "photo_thumbnails": [],
+                      "more_photos": 0,
+                      "response": null,
+                      "response_by": null
+                    },
+                    "… 23 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

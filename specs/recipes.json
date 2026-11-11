@@ -1,0 +1,1044 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Recipes",
+    "version": "1.0.0",
+    "description": "The Recipes API from API.SH: public Recipes data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Recipes",
+      "description": "2 endpoints (public data)",
+      "x-slug": "recipes",
+      "x-domains": []
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recipes/v1/recipe": {
+      "get": {
+        "operationId": "recipesRecipe",
+        "summary": "Recipe from any URL",
+        "description": "Reads a recipe page on any website (sites that publish schema.org Recipe data: BBC Good Food, Simply Recipes, Serious Eats, NYT Cooking previews, food blogs...): name, authors, description, image, prep/cook/total time, yield, ingredients (as written and split into quantity, unit, item and note), number of method steps, category, cuisine, keywords, nutrition, rating, review count, date and video. The method itself stays on the page (linked).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/recipes-recipe",
+        "tags": [
+          "Recipes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "Recipe page URL.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.bbcgoodfood.com/recipes/easy-pancakes"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country to read the page from (ISO-2), for region-locked sites.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.bbcgoodfood.com/recipes/easy-pancakes",
+                  "name": "Easy pancakes",
+                  "authors": [
+                    "Cassie Best"
+                  ],
+                  "description": "Learn how to make the perfect pancakes every time with our foolproof easy crêpe recipe – elaborate flip optional",
+                  "image": "https://images.immediate.co.uk/production/volatile/sites/30/2020/08/recipe-image-legacy-id-1273477_8-ad36e3b.jpg?resize=440,400",
+                  "prep_time": "PT10M",
+                  "cook_time": "PT20M",
+                  "total_time": "PT30M",
+                  "yield": "Makes 12",
+                  "ingredients": [
+                    "100g plain flour",
+                    "2 large eggs",
+                    "… 4 more"
+                  ],
+                  "ingredients_parsed": [
+                    {
+                      "text": "100g plain flour",
+                      "quantity": 100,
+                      "quantity_text": "100",
+                      "unit": "g",
+                      "item": "plain flour",
+                      "note": null
+                    },
+                    {
+                      "text": "2 large eggs",
+                      "quantity": 2,
+                      "quantity_text": "2",
+                      "unit": "large",
+                      "item": "eggs",
+                      "note": null
+                    },
+                    "… 4 more"
+                  ],
+                  "steps_count": 5,
+                  "category": [
+                    "Breakfast, Brunch, Main course"
+                  ],
+                  "cuisine": [
+                    "British"
+                  ],
+                  "keywords": [
+                    "Cassie Best",
+                    "Cook school",
+                    "… 13 more"
+                  ],
+                  "nutrition": {
+                    "calories": "61 calories",
+                    "fatContent": "2 grams fat",
+                    "saturatedFatContent": "1 grams saturated fat",
+                    "carbohydrateContent": "7 grams carbohydrates",
+                    "sugarContent": "1 grams sugar",
+                    "proteinContent": "3 grams protein",
+                    "sodiumContent": "0.1 milligram of sodium"
+                  },
+                  "rating": null,
+                  "review_count": null,
+                  "published_at": "2025-03-31T17:35:17+01:00",
+                  "video": null,
+                  "site": "bbcgoodfood.com",
+                  "note": "The method's steps are on the recipe page (url); they are counted here, not copied.",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/recipes/v1/search": {
+      "get": {
+        "operationId": "recipesSearch",
+        "summary": "Recipe search",
+        "description": "Searches BBC Good Food's recipes with its filters: cuisine, diet (vegetarian, vegan, gluten-free, healthy...), difficulty, meal type, total time or a maximum time in minutes, calories, servings, rating or a minimum star rating, and author; sort by relevance, newest, rating or quickest. Each recipe: id, title, link, author, rating and count, total time, difficulty, labels, image, video. `facets` lists every filter value with counts. With `site=allrecipes`, searches Allrecipes instead (24 per page: id, title, link, star rating, rating count, category tag, image; the BBC filters do not apply). Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/recipes-search",
+        "tags": [
+          "Recipes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Dish, ingredient or keywords.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lasagne"
+          },
+          {
+            "name": "site",
+            "in": "query",
+            "required": false,
+            "description": "bbcgoodfood (default) or allrecipes.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cuisine",
+            "in": "query",
+            "required": false,
+            "description": "e.g. `italian`, `indian`, `mexican` (values in `facets`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "diet",
+            "in": "query",
+            "required": false,
+            "description": "e.g. `vegetarian`, `vegan`, `gluten-free`, `healthy`, `low-calorie`, `high-protein`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "difficulty",
+            "in": "query",
+            "required": false,
+            "description": "`easy`, `more-effort` or `a-challenge`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "meal_type",
+            "in": "query",
+            "required": false,
+            "description": "e.g. `dinner`, `lunch`, `breakfast`, `dessert`, `snack`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "total_time",
+            "in": "query",
+            "required": false,
+            "description": "`lt-900` (15 min), `lt-1800`, `lt-2700`, `lt-3600`, `gte-3600`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "max_time",
+            "in": "query",
+            "required": false,
+            "description": "Total time at most this many minutes (1-1440), instead of `total_time`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "calories",
+            "in": "query",
+            "required": false,
+            "description": "`lt-250`, `lt-500`, `lt-750`, `lt-1000`...",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "servings",
+            "in": "query",
+            "required": false,
+            "description": "`gte-1` ... `gte-8`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "required": false,
+            "description": "`gte-1` ... `gte-5` stars.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rating_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum star rating 1-5, instead of `rating`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "`relevant` (default), `published`, `rating`, `quickest`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevant",
+                "published",
+                "rating",
+                "quickest"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Per page (default 24, max 60).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "lasagne",
+                  "applied_filters": {},
+                  "sort": "relevant",
+                  "total": 90,
+                  "page": 1,
+                  "count": 24,
+                  "items": [
+                    {
+                      "id": "226624",
+                      "title": "Creamy courgette lasagne",
+                      "url": "https://www.bbcgoodfood.com/recipes/creamy-courgette-lasagne",
+                      "description": null,
+                      "author": "Good Food team",
+                      "rating": 4.55,
+                      "rating_count": 738,
+                      "total_time": "30 mins",
+                      "difficulty": "Easy",
+                      "labels": [
+                        "Vegetarian"
+                      ],
+                      "image": "https://images.immediate.co.uk/production/volatile/sites/30/2022/03/Creamy-courgette-lasagne-e63aa0c.jpg",
+                      "has_video": true,
+                      "premium": false
+                    },
+                    {
+                      "id": "222670",
+                      "title": "Classic lasagne",
+                      "url": "https://www.bbcgoodfood.com/recipes/classic-lasagne-0",
+                      "description": null,
+                      "author": "Good Food team",
+                      "rating": 4.65,
+                      "rating_count": 339,
+                      "total_time": "2 hrs",
+                      "difficulty": "Easy",
+                      "labels": [],
+                      "image": "https://images.immediate.co.uk/production/volatile/sites/30/2023/11/Lasagne-d4cb438.jpg",
+                      "has_video": true,
+                      "premium": false
+                    },
+                    "… 22 more"
+                  ],
+                  "facets": {
+                    "author": [
+                      {
+                        "value": "ailsaburt",
+                        "label": "Ailsa Burt",
+                        "count": 4
+                      },
+                      {
+                        "value": "alice-shields",
+                        "label": "Alice Shields",
+                        "count": 2
+                      },
+                      "… 8 more"
+                    ],
+                    "calories": [
+                      {
+                        "value": "lt-250",
+                        "label": "Up to 250 kcal",
+                        "count": 3
+                      },
+                      {
+                        "value": "lt-500",
+                        "label": "Up to 500 kcal",
+                        "count": 37
+                      },
+                      "… 4 more"
+                    ],
+                    "servings": [
+                      {
+                        "value": "gte-1",
+                        "label": "1+ Servings",
+                        "count": 81
+                      },
+                      {
+                        "value": "gte-2",
+                        "label": "2+ Servings",
+                        "count": 80
+                      },
+                      "… 6 more"
+                    ],
+                    "total_time": [
+                      {
+                        "value": "lt-900",
+                        "label": "Under 15 minutes",
+                        "count": 1
+                      },
+                      {
+                        "value": "lt-1800",
+                        "label": "Under 30 minutes",
+                        "count": 4
+                      },
+                      "… 3 more"
+                    ],
+                    "cuisine": [
+                      {
+                        "value": "british",
+                        "label": "British",
+                        "count": 4
+                      },
+                      {
+                        "value": "italian",
+                        "label": "Italian",
+                        "count": 41
+                      },
+                      "… 2 more"
+                    ],
+                    "diet": [
+                      {
+                        "value": "vegetarian",
+                        "label": "Vegetarian",
+                        "count": 39
+                      },
+                      {
+                        "value": "healthy",
+                        "label": "Healthy",
+                        "count": 10
+                      },
+                      "… 8 more"
+                    ],
+                    "difficulty": [
+                      {
+                        "value": "easy",
+                        "label": "Easy",
+                        "count": 73
+                      },
+                      {
+                        "value": "more-effort",
+                        "label": "More effort",
+                        "count": 16
+                      },
+                      "… 1 more"
+                    ],
+                    "meal_type": [
+                      {
+                        "value": "buffet",
+                        "label": "Buffet",
+                        "count": 1
+                      },
+                      {
+                        "value": "dinner",
+                        "label": "Dinner",
+                        "count": 80
+                      },
+                      "… 5 more"
+                    ],
+                    "rating": [
+                      {
+                        "value": "gte-1",
+                        "label": "1+ Star",
+                        "count": 84
+                      },
+                      {
+                        "value": "gte-2",
+                        "label": "2+ Star",
+                        "count": 83
+                      },
+                      "… 3 more"
+                    ]
+                  },
+                  "next_page": 2,
+                  "source": "BBC Good Food",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

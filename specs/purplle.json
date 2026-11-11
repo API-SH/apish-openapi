@@ -1,0 +1,868 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Purplle",
+    "version": "1.0.0",
+    "description": "The Purplle API from API.SH: public Purplle data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Purplle",
+      "description": "2 endpoints (e-commerce)",
+      "x-slug": "purplle",
+      "x-domains": [
+        "purplle.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/purplle/v1/product": {
+      "get": {
+        "operationId": "purplleProduct",
+        "summary": "Purplle product",
+        "description": "One Purplle product: price, MRP, discount, stock, rating, ratings and review counts, wishlist count, brand, categories, seller, shipping and cash on delivery, offers, shades with their own price and stock, description and sections, manufacturer, best-before date, images and breadcrumbs.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/purplle-product",
+        "tags": [
+          "Purplle"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words; the first matching product is returned.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lipstick"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Purplle product link, or the product id. Use instead of q.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 379581,
+                  "sku": "PPLBFC8903380035971",
+                  "name": "FACES CANADA Comfy Matte Wow Liquid Lipstick - Cocoa Crush 07, 3.8 ml | One Swipe Application | Highly Pigmented | Comfortable Wear | Glides…",
+                  "url": "https://www.purplle.com/product/faces-canada-comfy-matte-wow-liquid-lipstick-cocoa-crush-07-3-8ml-one-swipe-application-highly-pigmented-com…",
+                  "brand": "Faces Canada",
+                  "brand_id": 383,
+                  "category": "Lipstick",
+                  "categories": [
+                    "Makeup",
+                    "Lip Makeup",
+                    "… 1 more"
+                  ],
+                  "price": 230,
+                  "mrp": 299,
+                  "discount_percent": 23,
+                  "in_stock": true,
+                  "rating": 4.3,
+                  "ratings_count": 2283,
+                  "reviews_count": 689,
+                  "wishlist_count": 330352,
+                  "seller": "Manash E-Commerce Private Limited - PB - Bhiwandi",
+                  "fulfilled_by_purplle": true,
+                  "best_before": "Best Before : 30 Apr 2029",
+                  "shipping": {
+                    "free_above": 499,
+                    "cost": 49,
+                    "cod_available": true,
+                    "delivery": "Delivered in 4-6 business Days"
+                  },
+                  "offers": [
+                    "Extra 5% Off on 799+"
+                  ],
+                  "shades": [
+                    {
+                      "group": "Shades",
+                      "id": 379575,
+                      "name": "FACES CANADA Comfy Matte Wow Liquid Lipstick - Choco Couture 01, 3.8 ml | One Swipe Application | Highly Pigmented | Comfortable Wear | Glid…",
+                      "url": "https://www.purplle.com/product/faces-canada-comfy-matte-wow-liquid-lipstick-choco-couture-01-3-8ml-one-swipe-application-highly-pigmented-c…",
+                      "price": 230,
+                      "mrp": 299,
+                      "in_stock": true
+                    },
+                    {
+                      "group": "Shades",
+                      "id": 379581,
+                      "name": "FACES CANADA Comfy Matte Wow Liquid Lipstick - Cocoa Crush 07, 3.8 ml | One Swipe Application | Highly Pigmented | Comfortable Wear | Glides…",
+                      "url": "https://www.purplle.com/product/faces-canada-comfy-matte-wow-liquid-lipstick-cocoa-crush-07-3-8ml-one-swipe-application-highly-pigmented-com…",
+                      "price": 230,
+                      "mrp": 299,
+                      "in_stock": true
+                    },
+                    "… 12 more"
+                  ],
+                  "description": "The Faces Canada Comfy Matte Wow liquid lipstick range, where comfort meets style in a collection designed to elevate your every look. Craft…",
+                  "sections": [
+                    {
+                      "title": "Highlights",
+                      "text": "The Faces Canada Comfy Matte Wow liquid lipstick range, where comfort meets style in a collection designed to elevate your every look. Craft…"
+                    },
+                    {
+                      "title": "About Brand",
+                      "text": "Faces - Buy Faces Cosmetics *Upto 30% Off* | Buy Faces Products like Faces Kajal, Faces Lipstick, Faces Lip Crayon from Faces Canada. COD & …"
+                    }
+                  ],
+                  "manufacturer": {
+                    "name": "Faces Canada",
+                    "address": "Faces Cosmetics India Pvt. Ltd.46/4, The Presidency,Tower A, Ground Floor, Mehrauli Gurgaon Road,Sector-14, Gurgaon 122001. India"
+                  },
+                  "images": [
+                    "https://media6.ppl-media.com/tr:h-750,w-750,c-at_max,dpr-2/static/img/product/379581/faces-canada-comfy-matte-wow-liquid-lipstick-cocoa-crus…",
+                    "https://media6.ppl-media.com/tr:h-750,w-750,c-at_max,dpr-2/static/img/product/379581/faces-canada-comfy-matte-wow-liquid-lipstick-cocoa-crus…",
+                    "… 6 more"
+                  ],
+                  "breadcrumbs": [
+                    "Makeup",
+                    "Lip Makeup",
+                    "… 2 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/purplle/v1/search": {
+      "get": {
+        "operationId": "purplleSearch",
+        "summary": "Purplle search",
+        "description": "Purplle search, category or brand listing (India): id, name, link, brand, price, MRP, discount, stock, rating, offers, elite flag and image, with the total count, every sort and paging, plus the matched category.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/purplle-search",
+        "tags": [
+          "Purplle"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lipstick"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category slug, e.g. makeup-lips-lipsticks.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Brand slug.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc",
+                "discount",
+                "rating"
+              ]
+            },
+            "example": "price_asc"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "lipstick",
+                  "category": null,
+                  "brand": null,
+                  "list_type": "search",
+                  "title": "lipstick",
+                  "page": 1,
+                  "sort": "relevance",
+                  "total": 643,
+                  "next_page": 2,
+                  "count": 24,
+                  "available_sorts": [
+                    "relevance",
+                    "price_asc",
+                    "… 3 more"
+                  ],
+                  "matched_category": {
+                    "name": "lipstick",
+                    "slug": "makeup-lips-lipsticks",
+                    "path": "makeup/lips/lipsticks"
+                  },
+                  "products": [
+                    {
+                      "id": "379581",
+                      "name": "FACES CANADA Comfy Matte Wow Liquid Lipstick - Cocoa Crush 07, 3.8 ml | One Swipe Application | Highly Pigmented | Comfortable Wear | Glides…",
+                      "url": "https://www.purplle.com/product/faces-canada-comfy-matte-wow-liquid-lipstick-cocoa-crush-07-3-8ml-one-swipe-application-highly-pigmented-com…",
+                      "brand_id": "383",
+                      "price": 230,
+                      "mrp": 299,
+                      "discount_percent": 23,
+                      "in_stock": true,
+                      "rating": 4.3,
+                      "ratings_count": 2283,
+                      "offers": "Extra 5% Off on 799+",
+                      "shades_count": 13,
+                      "elite": true,
+                      "image": "https://media6.ppl-media.com/tr:h-235,w-235,c-at_max,l-image,i-Best_seller_700x700base_gUMVzNGWt_.png,lfo-top_right,l-end,dpr-2/static/img/p…"
+                    },
+                    {
+                      "id": "380980",
+                      "name": "NY Bae Velvet Mousse Liquid Lipstick - Spicy Rust 06 (6.5 ml) | Velvet Matte Finish | Transferproof | Smudgeproof | Ultra Light | Smooth | M…",
+                      "url": "https://www.purplle.com/product/ny-bae-velvet-mousse-lipstick-spicy-rust-06",
+                      "brand_id": "1296",
+                      "price": 188,
+                      "mrp": 299,
+                      "discount_percent": 37,
+                      "in_stock": true,
+                      "rating": 4,
+                      "ratings_count": 1586,
+                      "offers": "2 offers",
+                      "shades_count": 11,
+                      "elite": true,
+                      "image": "https://media6.ppl-media.com/tr:h-235,w-235,c-at_max,l-image,i-Best_seller_700x700base_gUMVzNGWt_.png,lfo-top_right,l-end,dpr-2/static/img/p…"
+                    },
+                    "… 22 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

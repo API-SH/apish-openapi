@@ -1,0 +1,1093 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: LoopNet",
+    "version": "1.0.0",
+    "description": "The LoopNet API from API.SH: public LoopNet data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "LoopNet",
+      "description": "3 endpoints (real estate)",
+      "x-slug": "loopnet",
+      "x-domains": [
+        "loopnet.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/loopnet/v1/broker": {
+      "get": {
+        "operationId": "loopnetBroker",
+        "summary": "LoopNet broker profile",
+        "description": "A LoopNet broker's profile: name, title, company, office location, phone numbers, photo, specialties, property types, markets, languages, bio, licenses and links.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/loopnet-broker",
+        "tags": [
+          "LoopNet"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A loopnet.com/commercial-real-estate-brokers/profile/<name>/<id> link (from a listing's brokers).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.loopnet.com/commercial-real-estate-brokers/profile/ron-hebert/cqh3fweb/42860316"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "cqh3fweb",
+                  "url": "https://www.loopnet.com/commercial-real-estate-brokers/profile/ron-hebert/cqh3fweb/",
+                  "name": "Ron Hebert",
+                  "title": "Senior Vice President Investments",
+                  "company": "Marcus & Millichap",
+                  "location": "Dallas, TX 75244",
+                  "phones": [
+                    "+1 555 010 0000"
+                  ],
+                  "photo": "https://images1.loopnet.com/i2/5Pmf1P9NbBOEjMJbyQp9FuKCto-Jv--avTw764Lf7n0/118/ron-hebert.jpg",
+                  "property_types": "Industrial, Office, Retail, Flex, Health Care",
+                  "markets": "Dallas/Ft Worth, Houston",
+                  "specialties": {
+                    "Specialties": "Investment Sales Broker, Tenant Rep",
+                    "Property Types": "Industrial, Office, Retail, Flex, Health Care",
+                    "Markets": "Dallas/Ft Worth, Houston",
+                    "Languages": "English"
+                  },
+                  "bio": "In the last 19 years, Ron has closed 214 commercial real estate transactions totaling $746 million. The powerful combination of Marcus & Mil…",
+                  "licenses": [],
+                  "links": [],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/loopnet/v1/listing": {
+      "get": {
+        "operationId": "loopnetListing",
+        "summary": "LoopNet commercial listing",
+        "description": "One LoopNet listing: title, name, address, price or rental rate, description, property overview or executive summary, highlights, property facts (sale type, building class, year built, size, lot size, zoning, parking, occupancy and the other facts shown), available spaces with their size, rent, term, use and highlights, amenities, tenants with floor and industry, brokers and contacts with phone numbers and profile links, the brokerage, photos, plus `raw`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/loopnet-listing",
+        "tags": [
+          "LoopNet"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A loopnet.com/Listing/... link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "The listing id instead (the number at the end of the link).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "true: open the first listing of a search with the /loopnet/v1/search params given alongside (type, location, deal). Then url is not needed.",
+            "schema": {
+              "type": "boolean"
+            },
+            "example": "true"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "With latest: the search's property type.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "office-space"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "With latest: the search's location.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "austin-tx"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "41269074",
+                  "url": "https://www.loopnet.com/Listing/9600-N-Mopac-Expy-Austin-TX/41269074/",
+                  "title": "9600 N Mopac Expy - Stonebridge Plaza II Coworking Space Available in Austin, TX 78759",
+                  "name": "9600 N Mopac Expy - Stonebridge Plaza II - Coworking Space Available in Austin, TX 78759",
+                  "address": {
+                    "street": "9600 N Mopac Expy",
+                    "city": "Austin",
+                    "state": "TX",
+                    "zip": "78759",
+                    "country": "US"
+                  },
+                  "price": [
+                    {
+                      "name": "Rental Rate ($/SF/YR)",
+                      "price": "Upon Request",
+                      "currency": "USD"
+                    }
+                  ],
+                  "description": "Lucid Private Offices occupies the entire ninth floor of Stonebridge Plaza, a LEED-certified Class A tower at 9600 North MoPac Expressway in…",
+                  "overview": "Lucid Private Offices occupies the entire ninth floor of Stonebridge Plaza, a LEED-certified Class A tower at 9600 North MoPac Expressway in…",
+                  "highlights": [
+                    "Entire ninth floor, 22,329 square feet holding 83 private offices, 12 team suites, four conference rooms, and a dedicated library focus room…",
+                    "Four conference rooms and a library focus room on the floor, so client meetings and heads-down work never compete for the same space.",
+                    "… 4 more"
+                  ],
+                  "property_facts": {},
+                  "spaces": [
+                    {
+                      "fields": {
+                        "No. of People": "51 - 163",
+                        "Size": "20,267 SF",
+                        "Term": "Negotiable",
+                        "Rental Rate": "Upon Request",
+                        "Space Use": "Office"
+                      },
+                      "highlights": [
+                        "Space available from coworking provider",
+                        "Fully Built-Out as Standard Office",
+                        "… 2 more"
+                      ],
+                      "title": "9th Floor"
+                    }
+                  ],
+                  "amenities": {
+                    "Amenities": [
+                      "Banking",
+                      "Controlled Access"
+                    ]
+                  },
+                  "major_tenants": [
+                    {
+                      "name": "Axonius",
+                      "facts": {
+                        "Floor": "7th",
+                        "Industry": "Professional, Scientific, and Technical Services"
+                      }
+                    },
+                    {
+                      "name": "Brookfield Residential - Austin",
+                      "facts": {
+                        "Floor": "7th",
+                        "Industry": "Construction"
+                      }
+                    },
+                    "… 8 more"
+                  ],
+                  "sustainability": null,
+                  "brokers": [],
+                  "agents": [
+                    {
+                      "name": "Sariah Eastley",
+                      "company": "Lucid Private Offices",
+                      "city": "Grapevine",
+                      "state": "TX",
+                      "profile": "https://www.loopnet.com/commercial-real-estate-brokers/profile/sariah-eastley/n2jdtrqb/41269074",
+                      "photo": "https://images1.loopnet.com/i2/aM69JO-thbo4sBAa5ovyryVCWBMAQ1Xgdq6DfMQAqpw/106/image.jpg"
+                    }
+                  ],
+                  "contacts": [
+                    "Sariah Eastley"
+                  ],
+                  "phones": [
+                    "+1 555 010 0000"
+                  ],
+                  "brokerage": "Lucid Private Offices",
+                  "listing_id": "41269074",
+                  "date_on_market": null,
+                  "last_updated": "2026-10-20",
+                  "extra": [
+                    {
+                      "name": "Rental Rate",
+                      "value": [
+                        "Upon Request"
+                      ]
+                    },
+                    {
+                      "name": "Total Space Available",
+                      "value": [
+                        "20,267 SF"
+                      ]
+                    },
+                    "… 6 more"
+                  ],
+                  "sections": [],
+                  "image": "https://images1.loopnet.com/i2/tx45Ih4IlpsnwjE9GhbIXI8VlFwH6rx2nPkGgerQFeA/112/image.jpg",
+                  "images": [
+                    "https://images1.loopnet.com/i2/tx45Ih4IlpsnwjE9GhbIXI8VlFwH6rx2nPkGgerQFeA/110/9600-N-Mopac-Expy-Austin-TX-Building-Photo-1-Large.jpg",
+                    "https://images1.loopnet.com/i2/qUcqzJjA01wYF1t-DV9PjBTlwCd5DQsxt_awWmk2k74/110/9600-N-Mopac-Expy-Austin-TX-Interior-Photo-2-Large.jpg",
+                    "… 62 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/loopnet/v1/search": {
+      "get": {
+        "operationId": "loopnetSearch",
+        "summary": "LoopNet commercial property search",
+        "description": "Search LoopNet's commercial real estate for lease or for sale by property type and place (city, state), with the total count. Each listing has its id, link, building name, address, city, state, ZIP, headline (size and use, or price), price or rent, key facts (star rating, year built, size range, cap rate and the like), transaction type, tier, summary, brokers (name and company), broker logos and photos. Pass a loopnet.com search link as `url` to keep any filters set on the site. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/loopnet-search",
+        "tags": [
+          "LoopNet"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "City and state as in LoopNet links (austin-tx, new-york-ny, los-angeles-ca) or a state (tx).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "austin-tx"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Property type (default commercial-real-estate: all types).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "commercial-real-estate",
+                "office-space",
+                "retail-space",
+                "industrial-space",
+                "flex-space",
+                "coworking-space",
+                "medical-office-space",
+                "restaurants",
+                "land",
+                "multifamily",
+                "hospitality",
+                "office-buildings",
+                "retail-buildings",
+                "industrial-buildings",
+                "warehouses",
+                "shopping-centers",
+                "health-care-facilities",
+                "mixed-use",
+                "special-purpose",
+                "businesses"
+              ]
+            },
+            "example": "office-space"
+          },
+          {
+            "name": "deal",
+            "in": "query",
+            "required": false,
+            "description": "For lease (default) or for sale.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "lease",
+                "sale"
+              ]
+            },
+            "example": "lease"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A loopnet.com/search/... link instead (keeps the site's filters).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "title": "750+ New York Office Spaces for Lease",
+                  "total": 750,
+                  "page": 1,
+                  "total_pages": 30,
+                  "count": 25,
+                  "next_page": 2,
+                  "search_url": "https://www.loopnet.com/search/office-space/new-york-ny/for-lease/",
+                  "listings": [
+                    {
+                      "id": "20044350",
+                      "url": "https://www.loopnet.com/Listing/667-Madison-Ave-New-York-NY/20044350/",
+                      "name": null,
+                      "address": "667 Madison Ave, New York, NY 10065",
+                      "city": "New York",
+                      "state": "NY",
+                      "zip": "10065",
+                      "headline": "38,630 SF Office Available",
+                      "price": null,
+                      "facts": [
+                        "4 Star | Built in 1985",
+                        "6,300 - 38,630 SF",
+                        "… 1 more"
+                      ],
+                      "transaction": "ForLease",
+                      "tier": "tier1",
+                      "summary": "Art-filled office tower in the heart of the highly sought-after Plaza District, offering high-end pre-built suites with panoramic Central Pa…",
+                      "brokers": [
+                        {
+                          "name": "Avery Stern",
+                          "company": "Hartz Mountain Industries, Inc."
+                        },
+                        {
+                          "name": "Samia Bali",
+                          "company": "Hartz Mountain Industries, Inc."
+                        }
+                      ],
+                      "broker_logos": [
+                        "https://images1.loopnet.com/i2/smfMjScxVNThB5KDkF_OrYCq7tyvyt9BISHzKiG9YLA/105/image.jpg"
+                      ],
+                      "images": [
+                        "https://images1.loopnet.com/i2/2bCnNxzBuAqwn-Ey_0nvWp7o2qtY3OlP3Dqu_NJ_GOQ/117/office-property-for-lease-667-madison-ave-new-york-ny-10065.j…",
+                        "https://images1.loopnet.com/i2/4ol2KChFqJVSiEfOjFyJfguSlzWE84Q5uxJKorLqkA0/117/image.jpg",
+                        "… 10 more"
+                      ]
+                    },
+                    {
+                      "id": "13748244",
+                      "url": "https://www.loopnet.com/Listing/277-Park-Ave-New-York-NY/13748244/",
+                      "name": null,
+                      "address": "277 Park Ave, New York, NY 10172",
+                      "city": "New York",
+                      "state": "NY",
+                      "zip": "10172",
+                      "headline": "430,558 SF Office Available",
+                      "price": null,
+                      "facts": [
+                        "4 Star | Built in 1964",
+                        "21,385 - 430,558 SF",
+                        "… 1 more"
+                      ],
+                      "transaction": "ForLease",
+                      "tier": "tier1",
+                      "summary": "Prime Park Avenue location currently undergoing a $100+ million renovation and only a 4 min walk to 51st Street Transit Stop and a 9 min wal…",
+                      "brokers": [
+                        {
+                          "name": "Mark Boisi",
+                          "company": "Cushman & Wakefield"
+                        },
+                        {
+                          "name": "Bryan Boisi",
+                          "company": "Cushman & Wakefield"
+                        },
+                        "… 1 more"
+                      ],
+                      "broker_logos": [
+                        "https://images1.loopnet.com/i2/3bqXp9xvmaqQo27HGoFi6DhA6cLA8YpRS6bIwB3Da6M/105/image.png"
+                      ],
+                      "images": [
+                        "https://images1.loopnet.com/i2/zu2pa5MRk55Oa1OEkqkq9nMTLMz6nNHouUqCTt8lofo/117/office-property-for-lease-277-park-ave-new-york-ny-10172.jpg",
+                        "https://images1.loopnet.com/i2/5VYDg4OtwgwAh0aFnLbYQ9Iff7zltSm2MJx47kZtaYQ/117/image.jpg",
+                        "… 10 more"
+                      ]
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

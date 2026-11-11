@@ -1,0 +1,1274 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: OpenTable",
+    "version": "1.0.0",
+    "description": "The OpenTable API from API.SH: public OpenTable data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "OpenTable",
+      "description": "3 endpoints (travel & events)",
+      "x-slug": "opentable",
+      "x-domains": [
+        "opentable.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/opentable/v1/restaurant": {
+      "get": {
+        "operationId": "opentableRestaurant",
+        "summary": "OpenTable restaurant, menu and open times",
+        "description": "One OpenTable restaurant: id, name, link, description, review summary, cuisines, dining style, price band, dress code, executive chef, opening hours, full address with cross street, neighborhood, metro, position, phone, website, parking, public transit, entertainment, catering, payment options, additional details, overall, food, service, ambience and value ratings, noise level, review count, bookings today, takeout and delivery partners, private dining, how far ahead it books, experiences, awards, press mentions, FAQs, dining areas, full menus (sections and items with descriptions and prices), photos, recent reviews (ratings, text, reviewer, dates), and the open reservation times for the date, time and party size (up to 7 days ahead with `days`).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/opentable-restaurant",
+        "tags": [
+          "OpenTable"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "restaurant",
+            "in": "query",
+            "required": true,
+            "description": "An opentable.com/r/<name> link or its <name> part, e.g. `patrizias-of-brooklyn`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "patrizias-of-brooklyn"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Reservation date (YYYY-MM-DD, default tomorrow).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "description": "Reservation time, 24-hour HH:MM (default 19:00).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "party_size",
+            "in": "query",
+            "required": false,
+            "description": "Party size (default 2).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Also list times for this many following days (default 0).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/opentable/v1/reviews": {
+      "get": {
+        "operationId": "opentableReviews",
+        "summary": "OpenTable restaurant reviews",
+        "description": "All diner reviews of one OpenTable restaurant, a page at a time: review id, text, overall, food, service, ambience and value ratings, noise level, reviewer nickname, metro, review count and VIP flag, dined and submitted dates, review type, helpful votes, the restaurant's public reply, highlighted passages (start and end offsets in the text when `q` is given), review photos, and whether the review is from the restaurant's previous concept. Sort by newest, highest or lowest rating; `q` keeps only reviews mentioning a word or phrase. Identify the restaurant by its opentable.com/r/<name> link or name part, or by the numeric `restaurant_id` from `/opentable/v1/search` or `/opentable/v1/restaurant` (faster). `total` is the number of matching reviews; pass `next_page` back as `page` (null on the last page).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/opentable-reviews",
+        "tags": [
+          "OpenTable"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "restaurant",
+            "in": "query",
+            "required": false,
+            "description": "An opentable.com/r/<name> link or its <name> part, e.g. `patrizias-of-brooklyn`. Give this or `restaurant_id`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "patrizias-of-brooklyn"
+          },
+          {
+            "name": "restaurant_id",
+            "in": "query",
+            "required": false,
+            "description": "The restaurant's numeric OpenTable id (the `id` from `/opentable/v1/search` or `/opentable/v1/restaurant`), e.g. `1006366`. Used instead of `restaurant` when both are given.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order: `newest` (default), `highest` or `lowest` rating first.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "highest",
+                "lowest"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews mentioning this word or phrase, e.g. `pasta`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page (default 10, at most 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "restaurant_id": 1006366,
+                  "restaurant": "Patrizia's of Williamsburg",
+                  "url": "https://www.opentable.com/r/patrizias-of-brooklyn",
+                  "sort": "newest",
+                  "q": null,
+                  "page": 1,
+                  "page_size": 10,
+                  "total": 470,
+                  "total_pages": 47,
+                  "count": 10,
+                  "next_page": 2,
+                  "reviews": [
+                    {
+                      "id": "OT-1006366-53484-190164540869",
+                      "text": "We were very happy we made the last minute reservation.",
+                      "rating": 5,
+                      "food": 5,
+                      "service": 5,
+                      "ambience": 5,
+                      "value": 5,
+                      "noise": "ENERGETIC",
+                      "reviewer": "Telisha",
+                      "reviewer_metro": "New York City",
+                      "reviewer_reviews": 1,
+                      "reviewer_vip": false,
+                      "dined_at": "2026-10-24T19:15:00+00:00",
+                      "submitted_at": "2026-10-27T12:23:51Z",
+                      "type": "OPENTABLEVERIFIED",
+                      "helpful_up": 0,
+                      "helpful_down": 0,
+                      "restaurant_reply": null,
+                      "highlights": [],
+                      "photos": [],
+                      "from_previous_concept": false
+                    },
+                    {
+                      "id": "OT-1006366-52796-100043367680",
+                      "text": "It was okay had better experiences at other family style Italian places the service was not ideal either had to ask them to explain how the …",
+                      "rating": 2,
+                      "food": 2,
+                      "service": 3,
+                      "ambience": 2,
+                      "value": 2,
+                      "noise": "QUIET",
+                      "reviewer": "Shakeya",
+                      "reviewer_metro": "New York City",
+                      "reviewer_reviews": 2,
+                      "reviewer_vip": false,
+                      "dined_at": "2026-09-22T19:45:00-04:00",
+                      "submitted_at": "2026-09-26T20:30:06Z",
+                      "type": "OPENTABLEVERIFIED",
+                      "helpful_up": 0,
+                      "helpful_down": 0,
+                      "restaurant_reply": null,
+                      "highlights": [],
+                      "photos": [],
+                      "from_previous_concept": false
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/opentable/v1/search": {
+      "get": {
+        "operationId": "opentableSearch",
+        "summary": "OpenTable restaurant search with open times",
+        "description": "Restaurants OpenTable lists for a place, cuisine or restaurant name (or a position) on a date, time and party size: id, name, link, cuisine, dining style, price band, neighborhood, address, position, rating and review count, bookings today, description, a highlighted review, offers, awards, takeout, online ordering, private dining, outdoor and bar seating, largest party, phone, photos, and the open reservation times around the requested time (date, time, slot type, seating, points). Filter by cuisine, neighborhood, price band, tag, award, seating and feature ids (each answer's `filters` lists them with counts); sort by rating, distance, name or newest. `total` is the number of matching restaurants. 50 per page: pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/opentable-search",
+        "tags": [
+          "OpenTable"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "term",
+            "in": "query",
+            "required": false,
+            "description": "Place, cuisine or restaurant name, e.g. `Chicago`, `italian`, `sushi`. Give this, a position, or both.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "italian"
+          },
+          {
+            "name": "latitude",
+            "in": "query",
+            "required": false,
+            "description": "Latitude to search around, e.g. `40.7128`.",
+            "schema": {
+              "type": "number"
+            },
+            "example": "40.7128"
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "required": false,
+            "description": "Longitude to search around, e.g. `-74.006`.",
+            "schema": {
+              "type": "number"
+            },
+            "example": "-74.006"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Reservation date (YYYY-MM-DD, default tomorrow).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "description": "Reservation time, 24-hour HH:MM (default 19:00).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "party_size",
+            "in": "query",
+            "required": false,
+            "description": "Party size (default 2).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default featured).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "featured",
+                "rating",
+                "distance",
+                "name",
+                "newest"
+              ]
+            }
+          },
+          {
+            "name": "cuisines",
+            "in": "query",
+            "required": false,
+            "description": "Cuisine ids from the `filters` list, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "neighborhoods",
+            "in": "query",
+            "required": false,
+            "description": "Neighborhood ids from the `filters` list, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_bands",
+            "in": "query",
+            "required": false,
+            "description": "Price bands, comma-separated: `2` ($30 and under), `3` ($31 to $50), `4` ($50 and over).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "description": "Tag ids from the `filters` list (e.g. `charming`), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "awards",
+            "in": "query",
+            "required": false,
+            "description": "Award ids from the `filters` list (e.g. `MICHELIN`), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seating",
+            "in": "query",
+            "required": false,
+            "description": "Seating ids from the `filters` list (e.g. `bar`, `outdoor`), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "features",
+            "in": "query",
+            "required": false,
+            "description": "Feature ids from the `filters` list (e.g. `Takeout`), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (`next_page` from the previous answer).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "term": "italian",
+                  "latitude": 40.7128,
+                  "longitude": -74.006,
+                  "metro": "New York City",
+                  "date": "2026-11-05",
+                  "time": "19:00",
+                  "party_size": 2,
+                  "sort": "featured",
+                  "applied_filters": {},
+                  "total": 449,
+                  "page": 1,
+                  "page_size": 50,
+                  "count": 50,
+                  "next_page": 2,
+                  "restaurants": [
+                    {
+                      "id": 1014574,
+                      "name": "Eataly NYC Downtown - La Pizza & La Pasta",
+                      "url": "https://www.opentable.com/r/la-pizza-and-la-pasta-eataly-nyc-downtown-new-york",
+                      "cuisine": "Pizzeria",
+                      "dining_style": "Casual Dining",
+                      "price_band": "$31 to $50",
+                      "price_band_id": 3,
+                      "neighborhood": "Financial District",
+                      "address": "101 Liberty St",
+                      "city": "New York",
+                      "state": "NY",
+                      "postal_code": "10007",
+                      "latitude": 40.7100805,
+                      "longitude": -74.0117621,
+                      "rating": 4.7,
+                      "reviews": 2011,
+                      "bookings_today": 72,
+                      "description": "Located within Westfield World Trade Center at Eataly Downtown, La Pizza &amp; La Pasta celebrates two pillars of Italian culinary tradition…",
+                      "top_review": "The food, drinks and service from the servers  never failed!",
+                      "offers": [],
+                      "awards": [],
+                      "takeout": true,
+                      "order_online": null,
+                      "private_dining": true,
+                      "outdoor": false,
+                      "bar": false,
+                      "max_party_size": 15,
+                      "phone": "+1 555 010 0000",
+                      "photos": [
+                        "https://resizer.otstatic.com/v4/photos/94605804-2?width=640&height=360",
+                        "https://resizer.otstatic.com/v4/photos/94474742-2?width=640&height=360",
+                        "… 4 more"
+                      ],
+                      "times": [
+                        {
+                          "date": "2026-11-05",
+                          "time": "18:00",
+                          "type": "Standard",
+                          "seating": [
+                            "default"
+                          ],
+                          "points": 1000,
+                          "experience_ids": []
+                        },
+                        {
+                          "date": "2026-11-05",
+                          "time": "18:30",
+                          "type": "Standard",
+                          "seating": [
+                            "default"
+                          ],
+                          "points": 100,
+                          "experience_ids": []
+                        },
+                        "… 3 more"
+                      ],
+                      "no_times_reasons": []
+                    },
+                    {
+                      "id": 1272229,
+                      "name": "Nerea",
+                      "url": "https://www.opentable.com/r/nerea-greenwich",
+                      "cuisine": "Italian",
+                      "dining_style": "Casual Elegant",
+                      "price_band": "$31 to $50",
+                      "price_band_id": 3,
+                      "neighborhood": "Greenwich Village",
+                      "address": "89 Greenwich Ave",
+                      "city": "New York",
+                      "state": "NY",
+                      "postal_code": "10014",
+                      "latitude": 40.7373155,
+                      "longitude": -74.0017241,
+                      "rating": 4.3,
+                      "reviews": 154,
+                      "bookings_today": 6,
+                      "description": "Inspired by their Southern Italian roots and the warmth and breezes of the Mediterranean Sea, Nerea, fuse traditional Italian flavors with c…",
+                      "top_review": "The food and the service was great. It was kind of Off-putting when a worker came up to us and said we are going to need this table after yo…",
+                      "offers": [],
+                      "awards": [],
+                      "takeout": false,
+                      "order_online": null,
+                      "private_dining": false,
+                      "outdoor": false,
+                      "bar": false,
+                      "max_party_size": 10,
+                      "phone": "+1 555 010 0000",
+                      "photos": [
+                        "https://resizer.otstatic.com/v4/photos/65789652-3?width=640&height=360",
+                        "https://resizer.otstatic.com/v4/photos/51673375-1?width=640&height=360",
+                        "… 4 more"
+                      ],
+                      "times": [
+                        {
+                          "date": "2026-11-05",
+                          "time": "18:30",
+                          "type": "Standard",
+                          "seating": [
+                            "default"
+                          ],
+                          "points": 1000,
+                          "experience_ids": []
+                        },
+                        {
+                          "date": "2026-11-05",
+                          "time": "18:45",
+                          "type": "Standard",
+                          "seating": [
+                            "default"
+                          ],
+                          "points": 1000,
+                          "experience_ids": []
+                        },
+                        "… 3 more"
+                      ],
+                      "no_times_reasons": []
+                    },
+                    "… 48 more"
+                  ],
+                  "times_note": null,
+                  "filters": {
+                    "cuisines": [
+                      {
+                        "id": "8afc7adc-de3b-439d-91f2-ce568c1a653b",
+                        "name": "American",
+                        "count": 256
+                      },
+                      {
+                        "id": "48e9d049-40cf-4cb9-98d9-8c47d0d58986",
+                        "name": "Italian",
+                        "count": 216
+                      },
+                      "… 106 more"
+                    ],
+                    "neighborhoods": [
+                      {
+                        "id": "292",
+                        "name": "Astoria",
+                        "count": 4
+                      },
+                      {
+                        "id": "2783",
+                        "name": "Bay Ridge",
+                        "count": 5
+                      },
+                      "… 87 more"
+                    ],
+                    "price_bands": [
+                      {
+                        "id": "2",
+                        "name": "$30 and under"
+                      },
+                      {
+                        "id": "3",
+                        "name": "$31 to $50"
+                      },
+                      "… 1 more"
+                    ],
+                    "tags": [
+                      {
+                        "id": "charming",
+                        "name": "Charming",
+                        "count": 50
+                      },
+                      {
+                        "id": "dogfriendly",
+                        "name": "Dog-friendly",
+                        "count": 1
+                      },
+                      "… 19 more"
+                    ],
+                    "awards": [
+                      {
+                        "id": "MICHELIN",
+                        "count": 26
+                      },
+                      {
+                        "id": "2025",
+                        "count": 23
+                      },
+                      "… 28 more"
+                    ],
+                    "seating": [
+                      {
+                        "id": "bar",
+                        "count": 496
+                      },
+                      {
+                        "id": "counter",
+                        "count": 105
+                      },
+                      "… 3 more"
+                    ],
+                    "features": [
+                      {
+                        "id": "Takeout",
+                        "name": "Takeout",
+                        "count": 289
+                      },
+                      {
+                        "id": "Wheelchair Access",
+                        "name": "Wheelchair Access",
+                        "count": 270
+                      }
+                    ]
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

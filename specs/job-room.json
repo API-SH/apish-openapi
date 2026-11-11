@@ -1,0 +1,1450 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Job-Room",
+    "version": "1.0.0",
+    "description": "The Job-Room API from API.SH: public Job-Room data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Job-Room",
+      "description": "4 endpoints (jobs & b2b)",
+      "x-slug": "job-room",
+      "x-domains": [
+        "arbeit.swiss"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/job-room/v1/job": {
+      "get": {
+        "operationId": "jobRoomJob",
+        "summary": "Job-Room job ad",
+        "description": "One job ad from Job-Room (job-room.ch) by its id or link: title and full description in every language the ad has, company and address, workplace (commune, canton, coordinates), workload, contract type, start and end, occupations with their names, language skills, how to apply (link, email, phone, postal address), the employer's public contact person when the ad shows one, publication window, job number and `raw`. Give `id` (or `url`); or give search filters such as `q` and `canton` to open the newest matching ad.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/job-room-job",
+        "tags": [
+          "Job-Room"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Job id (a UUID from search) or its job-room.ch link. Required unless `q`/`canton`/`occupation` is given.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "The job's job-room.ch link (instead of `id`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Instead of an id: keywords; the newest matching ad is returned (with the search filters such as `canton`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "koch"
+          },
+          {
+            "name": "canton",
+            "in": "query",
+            "required": false,
+            "description": "With `q`: canton codes.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ZH"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Preferred language for `title`/`description` (default `de`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it",
+                "en"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "5375c917-d678-45e7-baaf-9d5485f902e8",
+                  "url": "https://www.job-room.ch/job-search/5375c917-d678-45e7-baaf-9d5485f902e8",
+                  "job_number": null,
+                  "job_number_avam": null,
+                  "title": "Küchenmitarbeiter (Souschef, Koch, Hilfsköche, Office) (m/w)",
+                  "description": "Flughafen\n\n# Küchenmitarbeiter (Souschef, Koch, Hilfsköche, Office) (m/w) #\n\n *  Zurich\n *  Fixe ou temporaire\n *  100%\n *  Entrée : de suit…",
+                  "language": "de",
+                  "languages": [
+                    "de"
+                  ],
+                  "company": {
+                    "name": "New Work Human Resources",
+                    "street": null,
+                    "house_number": null,
+                    "postal_code": null,
+                    "city": null,
+                    "country": null,
+                    "po_box": null,
+                    "phone": null,
+                    "email": null,
+                    "website": null,
+                    "stand_in": false
+                  },
+                  "employer": null,
+                  "location": {
+                    "city": "Zürich",
+                    "postal_code": "8050",
+                    "communal_code": "261",
+                    "region_code": "ZH12",
+                    "canton": "ZH",
+                    "country": "CH",
+                    "remarks": null,
+                    "lat": 47.412,
+                    "lon": 8.551
+                  },
+                  "workload_min": 100,
+                  "workload_max": 100,
+                  "permanent": true,
+                  "short_employment": false,
+                  "immediately": false,
+                  "start_date": null,
+                  "end_date": null,
+                  "work_forms": [],
+                  "number_of_jobs": null,
+                  "occupations": [
+                    {
+                      "avam_code": "102250",
+                      "work_experience": null,
+                      "education_code": null,
+                      "qualification_code": null,
+                      "name": "Hilfskoch/Hilfsköchin",
+                      "name_female": "Hilfsköchin",
+                      "name_male": "Hilfskoch"
+                    },
+                    {
+                      "avam_code": "102250",
+                      "work_experience": null,
+                      "education_code": null,
+                      "qualification_code": null,
+                      "name": "Hilfskoch/Hilfsköchin",
+                      "name_female": "Hilfsköchin",
+                      "name_male": "Hilfskoch"
+                    }
+                  ],
+                  "language_skills": [
+                    {
+                      "language": "de",
+                      "spoken": null,
+                      "written": null
+                    },
+                    {
+                      "language": "de",
+                      "spoken": null,
+                      "written": null
+                    }
+                  ],
+                  "apply": {
+                    "url": null,
+                    "email": null,
+                    "phone": null,
+                    "post_address": null,
+                    "raw_post_address": null,
+                    "additional_info": null
+                  },
+                  "external_url": "https://newwork-hr.ch/offre/kuchenmitarbeiter-souschef-koch-hilfskoche-office-m-w-a28a20bc-49ec-4eda-ac54-79cd5ea401c9/",
+                  "contact": null,
+                  "published_from": "2026-11-05",
+                  "published_until": "2027-01-04",
+                  "reporting_obligation": false,
+                  "reporting_obligation_end": null,
+                  "source": "EXTERN",
+                  "status": "PUBLISHED_PUBLIC",
+                  "created_at": "2026-11-06T02:36:08.777064",
+                  "updated_at": "2026-11-06T02:36:08.777064",
+                  "descriptions": [
+                    {
+                      "language": "de",
+                      "title": "Küchenmitarbeiter (Souschef, Koch, Hilfsköche, Office) (m/w)",
+                      "description": "Flughafen\n\n# Küchenmitarbeiter (Souschef, Koch, Hilfsköche, Office) (m/w) #\n\n *  Zurich\n *  Fixe ou temporaire\n *  100%\n *  Entrée : de suit…"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/job-room/v1/occupations": {
+      "get": {
+        "operationId": "jobRoomOccupations",
+        "summary": "Job-Room occupation suggestions",
+        "description": "Occupation names matching a prefix, as Job-Room's search form suggests them: label, classification type and code, the mapped codes (AVAM, X28, BFS, CHISCO) and `filter`, the value to pass as `occupation` to /job-room/v1/search.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/job-room-occupations",
+        "tags": [
+          "Job-Room"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Start of an occupation name (2-80 characters).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Informatik"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language of the labels (default `de`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it",
+                "en"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Number of suggestions (default 10, max 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "Informatik",
+                  "lang": "de",
+                  "count": 10,
+                  "occupations": [
+                    {
+                      "label": "Informatik Allrounder",
+                      "type": "X28",
+                      "code": "11000899",
+                      "language": "de",
+                      "filter": "AVAM:101784",
+                      "avam_code": "101784",
+                      "mappings": {
+                        "CHISCO3": "351",
+                        "CHISCO5": "35120",
+                        "BFS": "51101391",
+                        "X28": "11000899",
+                        "AVAM": "101784"
+                      }
+                    },
+                    {
+                      "label": "Informatik Allrounderin",
+                      "type": "X28",
+                      "code": "11000899",
+                      "language": "de",
+                      "filter": "AVAM:101784",
+                      "avam_code": "101784",
+                      "mappings": {
+                        "CHISCO3": "351",
+                        "CHISCO5": "35120",
+                        "BFS": "51101391",
+                        "X28": "11000899",
+                        "AVAM": "101784"
+                      }
+                    },
+                    "… 8 more"
+                  ],
+                  "classifications": [
+                    {
+                      "label": "Allgemeine Bürokräfte",
+                      "type": "CHISCO3",
+                      "code": "411",
+                      "language": "de",
+                      "filter": "CHISCO3:411",
+                      "avam_code": null,
+                      "mappings": {}
+                    },
+                    {
+                      "label": "Entwickler und Analytiker von Software und Anwendungen",
+                      "type": "CHISCO3",
+                      "code": "251",
+                      "language": "de",
+                      "filter": "CHISCO3:251",
+                      "avam_code": null,
+                      "mappings": {}
+                    },
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/job-room/v1/places": {
+      "get": {
+        "operationId": "jobRoomPlaces",
+        "summary": "Job-Room place suggestions",
+        "description": "Swiss places matching a name or postcode, as Job-Room's search form suggests them: city, postcode, commune number (`communal_code` for /job-room/v1/search), canton, region and coordinates (for a radius search), plus matching cantons.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/job-room-places",
+        "tags": [
+          "Job-Room"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Place name or postcode.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Zürich"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Number of suggestions (default 10, max 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "Zürich",
+                  "count": 2,
+                  "places": [
+                    {
+                      "city": "Egg b. Zürich",
+                      "postal_code": "8132",
+                      "communal_code": "192",
+                      "canton": "ZH",
+                      "region_code": "ZH02",
+                      "lat": 47.301,
+                      "lon": 8.691,
+                      "id": "ca9bff5c-9c6d-4bb6-82c5-05b9d37a3b8d"
+                    },
+                    {
+                      "city": "Zürich",
+                      "postal_code": "8024",
+                      "communal_code": "261",
+                      "canton": "ZH",
+                      "region_code": "ZH12",
+                      "lat": 47.360508,
+                      "lon": 8.475219,
+                      "id": "ec2e45cb-5de5-4048-9ede-78d1fa057b40"
+                    }
+                  ],
+                  "cantons": [
+                    {
+                      "name": "Zürich",
+                      "code": "ZH"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/job-room/v1/search": {
+      "get": {
+        "operationId": "jobRoomSearch",
+        "summary": "Job-Room (arbeit.swiss) job search",
+        "description": "Swiss jobs on Job-Room (job-room.ch), the job platform of the Swiss public employment service linked from arbeit.swiss, with every filter of its search: keywords, occupations, cantons, communes, a radius around a point, workload range, permanent or temporary, company, days online and sort. Each job: `id`, `url`, `job_number`, `title`, `description` (text; keyword hits shortened by the site), `company` (name, address), `location` (city, postcode, commune, canton, coordinates), workload range, contract flags, start and end dates, `occupations` (codes), `language_skills`, `apply` (link, email, phone where given), `contact` (the employer's public contact when shown), publication dates and status. `total` is the number of matches. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/job-room-search",
+        "tags": [
+          "Job-Room"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords; several keywords separated by commas.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "koch"
+          },
+          {
+            "name": "canton",
+            "in": "query",
+            "required": false,
+            "description": "Canton codes, comma separated (e.g. `ZH,BE,GE`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ZH"
+          },
+          {
+            "name": "occupation",
+            "in": "query",
+            "required": false,
+            "description": "Occupation codes from /job-room/v1/occupations (`filter`, e.g. `AVAM:101784`), comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "communal_code",
+            "in": "query",
+            "required": false,
+            "description": "Swiss commune numbers (BFS, from /job-room/v1/places `communal_code`), comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Latitude of a point in Switzerland for a radius search (with `lon` and `radius`).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": false,
+            "description": "Longitude of the radius search point.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Radius in km around `lat`/`lon` (default 20, max 200).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "workload_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum workload in percent (default 10).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "workload_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum workload in percent (default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "contract",
+            "in": "query",
+            "required": false,
+            "description": "Contract type.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "permanent",
+                "temporary"
+              ]
+            }
+          },
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "description": "Company name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "online_since",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs published in the last N days (1-60, default 60).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order (default `date_desc`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "date_desc",
+                "date_asc",
+                "relevance"
+              ]
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Preferred language of the job texts when an ad has several (default `de`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it",
+                "en"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Jobs per page (default 20, max 30).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (from 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "koch",
+                  "lang": "de",
+                  "sort": "date_desc",
+                  "applied_filters": {
+                    "q": [
+                      "koch"
+                    ],
+                    "canton": [
+                      "ZH"
+                    ]
+                  },
+                  "total": 292,
+                  "count": 20,
+                  "page": 1,
+                  "limit": 20,
+                  "next_page": 2,
+                  "jobs": [
+                    {
+                      "id": "fdd204f0-e04b-4e94-909b-72f79a7b38ea",
+                      "url": "https://www.job-room.ch/job-search/fdd204f0-e04b-4e94-909b-72f79a7b38ea",
+                      "job_number": "242886880",
+                      "job_number_avam": null,
+                      "title": "Abteilungsleiter*in Metzgerei",
+                      "description": ".\n\n### Was du mitbringst\n\n* Bildung: Abgeschlossene Grund- oder Weiterbildung\n* Fachrichtung: im Detailhandel, Branche Lebensmittel/Fleischw…",
+                      "language": "de",
+                      "languages": [
+                        "de"
+                      ],
+                      "company": {
+                        "name": "Migros Ostschweiz",
+                        "street": "Bahnhofstrasse",
+                        "house_number": "151",
+                        "postal_code": "8620",
+                        "city": "Wetzikon ZH",
+                        "country": "CH",
+                        "po_box": null,
+                        "phone": null,
+                        "email": null,
+                        "website": null,
+                        "stand_in": false
+                      },
+                      "employer": null,
+                      "location": {
+                        "city": "Wetzikon ZH",
+                        "postal_code": "8620",
+                        "communal_code": "121",
+                        "region_code": "ZH11",
+                        "canton": "ZH",
+                        "country": "CH",
+                        "remarks": null,
+                        "lat": 47.322,
+                        "lon": 8.806
+                      },
+                      "workload_min": 80,
+                      "workload_max": 100,
+                      "permanent": true,
+                      "short_employment": false,
+                      "immediately": false,
+                      "start_date": null,
+                      "end_date": null,
+                      "work_forms": [],
+                      "number_of_jobs": null,
+                      "occupations": [
+                        {
+                          "avam_code": "101065",
+                          "work_experience": null,
+                          "education_code": null,
+                          "qualification_code": null
+                        }
+                      ],
+                      "language_skills": [],
+                      "apply": {
+                        "url": "www.jobs.ch/de/stellenangebote/detail/043ae4b6-a599-4a12-9279-f708c22229fb/?utm_source=job-room.ch&inv=ppd-p&utm_medium=affiliate&utm_campai…",
+                        "email": null,
+                        "phone": null,
+                        "post_address": null,
+                        "raw_post_address": null,
+                        "additional_info": null
+                      },
+                      "external_url": "www.jobs.ch/de/stellenangebote/detail/043ae4b6-a599-4a12-9279-f708c22229fb/?utm_source=job-room.ch&inv=ppd-p&utm_medium=affiliate&utm_campai…",
+                      "contact": null,
+                      "published_from": "2026-11-06",
+                      "published_until": "2026-12-06",
+                      "reporting_obligation": false,
+                      "reporting_obligation_end": null,
+                      "source": "API",
+                      "status": "PUBLISHED_PUBLIC",
+                      "created_at": "2026-11-06T05:01:57.907",
+                      "updated_at": "2026-11-06T05:01:57.91"
+                    },
+                    {
+                      "id": "d127baf7-7636-4e79-a33d-5c102f68710f",
+                      "url": "https://www.job-room.ch/job-search/d127baf7-7636-4e79-a33d-5c102f68710f",
+                      "job_number": "242886735",
+                      "job_number_avam": null,
+                      "title": "KOCHOPTIK – Arbeiten, wo Qualität Tradition hat - Augenoptiker/in & dipl. Augenoptiker/in gesucht",
+                      "description": "KOCHOPTIK – Arbeiten, wo Qualität Tradition hat\n\nAugenoptiker/in & dipl.",
+                      "language": "de",
+                      "languages": [
+                        "de"
+                      ],
+                      "company": {
+                        "name": "VisilabGroup SA",
+                        "street": null,
+                        "house_number": null,
+                        "postal_code": "8304",
+                        "city": "Wallisellen",
+                        "country": "CH",
+                        "po_box": null,
+                        "phone": null,
+                        "email": null,
+                        "website": null,
+                        "stand_in": false
+                      },
+                      "employer": null,
+                      "location": {
+                        "city": "Wallisellen",
+                        "postal_code": "8304",
+                        "communal_code": "69",
+                        "region_code": "ZH07",
+                        "canton": "ZH",
+                        "country": "CH",
+                        "remarks": null,
+                        "lat": 47.413,
+                        "lon": 8.592
+                      },
+                      "workload_min": 100,
+                      "workload_max": 100,
+                      "permanent": true,
+                      "short_employment": false,
+                      "immediately": false,
+                      "start_date": null,
+                      "end_date": null,
+                      "work_forms": [],
+                      "number_of_jobs": null,
+                      "occupations": [
+                        {
+                          "avam_code": "101654",
+                          "work_experience": null,
+                          "education_code": null,
+                          "qualification_code": null
+                        }
+                      ],
+                      "language_skills": [],
+                      "apply": {
+                        "url": "https://www.jobscout24.ch/de/job/49ca33ab-915e-4976-8b50-26d9c3a2ad6e/?utm_source=job-room.ch&utm_medium=affiliate&utm_campaign=wb:jobscout2…",
+                        "email": null,
+                        "phone": null,
+                        "post_address": null,
+                        "raw_post_address": null,
+                        "additional_info": null
+                      },
+                      "external_url": "https://www.jobscout24.ch/de/job/49ca33ab-915e-4976-8b50-26d9c3a2ad6e/?utm_source=job-room.ch&utm_medium=affiliate&utm_campaign=wb:jobscout2…",
+                      "contact": null,
+                      "published_from": "2026-11-06",
+                      "published_until": "2026-12-06",
+                      "reporting_obligation": false,
+                      "reporting_obligation_end": null,
+                      "source": "API",
+                      "status": "PUBLISHED_PUBLIC",
+                      "created_at": "2026-11-06T04:05:32.86",
+                      "updated_at": "2026-11-06T04:05:32.905"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

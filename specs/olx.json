@@ -1,0 +1,1593 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: OLX",
+    "version": "1.0.0",
+    "description": "The OLX API from API.SH: public OLX data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "OLX",
+      "description": "4 endpoints (e-commerce)",
+      "x-slug": "olx",
+      "x-domains": [
+        "olx.pl"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/olx/v1/category": {
+      "get": {
+        "operationId": "olxCategory",
+        "summary": "OLX category listings",
+        "description": "An OLX category page in Poland, Ukraine, Romania, Bulgaria, Portugal, Kazakhstan, Uzbekistan or Brazil: the category (id, name, path, link, listing count, page title), its parent categories and subcategories with their listing counts, the city or region when the page has one, and its listings (40 per page plus promoted ones) with the same fields as /olx/v1/search, including `raw`. Give the category's path or page link, or its `category_id`; with none, the top-level categories are returned. Sort, price range, region/city and condition filters apply. Pass `next_page` back as `page`; null on the last page (the site serves at most 1,000 results per listing).\n\nBrazil (`country=BR`): with no category, the whole category tree (ids, names, paths, subcategories); with a `path` such as `autos-e-pecas/carros-vans-e-utilitarios` (brand and model slugs may follow) or `category_id`, the category, its parent and subcategories and its listings (50 per page, up to page 100) with every /olx/v1/search filter for Brazil, including `available_filters`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/olx-category",
+        "tags": [
+          "OLX"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "description": "Category slugs as in the site's addresses, e.g. `elektronika/telefony` (a city slug may follow, e.g. `elektronika/telefony/warszawa`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "elektronika/telefony"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A category page link instead of `path` and `country`, e.g. https://www.olx.pl/elektronika/telefony/.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Site country (default PL).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PL",
+                "UA",
+                "RO",
+                "BG",
+                "PT",
+                "KZ",
+                "UZ",
+                "BR"
+              ]
+            },
+            "example": "PL"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "description": "Numeric category id instead of `path` (category ids appear in results as `category_id`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order (default relevance).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "price_asc",
+                "price_desc"
+              ]
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "region_id",
+            "in": "query",
+            "required": false,
+            "description": "Region id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city_id",
+            "in": "query",
+            "required": false,
+            "description": "City id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "condition",
+            "in": "query",
+            "required": false,
+            "description": "Item condition, e.g. new, used, damaged.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1, max 25; Brazil max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "PL",
+                  "category": {
+                    "id": 1838,
+                    "name": "Telefony",
+                    "path": "elektronika/telefony",
+                    "url": "https://www.olx.pl/elektronika/telefony/",
+                    "count": 458204,
+                    "title": "Telefony Ogłoszenia OLX.pl"
+                  },
+                  "location": null,
+                  "parents": [
+                    {
+                      "id": 99,
+                      "name": "Elektronika",
+                      "path": "elektronika",
+                      "url": "https://www.olx.pl/elektronika/",
+                      "count": 458204
+                    }
+                  ],
+                  "subcategories": [
+                    {
+                      "id": 2906,
+                      "name": "Akcesoria",
+                      "path": "elektronika/telefony/akcesoria",
+                      "url": "https://www.olx.pl/elektronika/telefony/akcesoria/",
+                      "count": 393223
+                    },
+                    {
+                      "id": 1839,
+                      "name": "Smartfony i telefony komórkowe",
+                      "path": "elektronika/telefony/smartfony-telefony-komorkowe",
+                      "url": "https://www.olx.pl/elektronika/telefony/smartfony-telefony-komorkowe/",
+                      "count": 58668
+                    },
+                    "… 2 more"
+                  ],
+                  "sort": "relevance",
+                  "page": 1,
+                  "total": 458204,
+                  "count": 52,
+                  "next_page": 2,
+                  "url": "https://www.olx.pl/elektronika/telefony/",
+                  "items": [
+                    {
+                      "id": "1108342455",
+                      "title": "Baterie Akumulatorki AA 2500 mAh Eneloop Pro - 210 szt.",
+                      "url": "https://www.olx.pl/d/oferta/baterie-akumulatorki-aa-2500-mah-eneloop-pro-210-szt-CID99-ID1d0uwd.html",
+                      "description": "Akumulatorki AA Eneloop Pro o pojemności 2500 mAh. \n \nMożliwość sprzedaży po 50 szt. cena za zestaw 750 zł lub w całości za 3000.\n\nMożliwość…",
+                      "price": 3000,
+                      "currency": "PLN",
+                      "price_label": "3 000 zł",
+                      "negotiable": false,
+                      "previous_price": null,
+                      "condition": "new",
+                      "attributes": {
+                        "state": "Nowe",
+                        "type": "Oryginalny"
+                      },
+                      "category_id": 2908,
+                      "category_type": "electronics",
+                      "city": "Warszawa",
+                      "district": "Praga-Południe",
+                      "region": "Mazowieckie",
+                      "latitude": 52.23876,
+                      "longitude": 21.08553,
+                      "created_at": "2026-10-28T20:03:03+01:00",
+                      "refreshed_at": "2026-11-03T20:23:48+01:00",
+                      "valid_to": "2026-11-27T20:03:04+01:00",
+                      "business": false,
+                      "promoted": true,
+                      "delivery": true,
+                      "seller_id": "2554506759",
+                      "seller_name": "Marlena",
+                      "images": [
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/v9nf34kjl0ij2-PL/image;s=1932x960",
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/t1t1bgjrbbbl-PL/image;s=1450x967",
+                        "… 1 more"
+                      ]
+                    },
+                    {
+                      "id": "1010355488",
+                      "title": "HIT Apple iPhone 13 128GB 5G KOLORY Gwarancja 12 miesięcy Kraków Starowiślna 50 SmartSfera TRADE-IN",
+                      "url": "https://www.olx.pl/d/oferta/hit-apple-iphone-13-128gb-5g-kolory-gwarancja-12-miesiecy-krakow-starowislna-50-smartsfera-trade-in-CID99-ID16nl…",
+                      "description": "Oryginalny smartfon Apple iPhone 13 128GB w klasie Premium.\n\nInteresuje Cię inny model lub pamięć wbudowana? Sprawdź inne nasze ogłoszenia.\n…",
+                      "price": 1047,
+                      "currency": "PLN",
+                      "price_label": "1 047 zł",
+                      "negotiable": false,
+                      "previous_price": null,
+                      "condition": "used",
+                      "attributes": {
+                        "state": "Używane",
+                        "phonemodel": "+1 555 010 0000",
+                        "builtinmemory_phones": "+1 555 010 0000",
+                        "rammemory_phones": "+1 555 010 0000",
+                        "coloriphone": "Czarny",
+                        "guarantee": "Oferty z gwarancją",
+                        "phonecharger": "Nie",
+                        "sim_options": "Dual SIM (SIM + eSIM)",
+                        "phones_features": "Rozpoznawanie twarzy, Szybkie ładowanie, Hot-Spot, Płatność NFC, Ładowanie indukcyjne"
+                      },
+                      "category_id": 2298,
+                      "category_type": "electronics",
+                      "city": "Kraków",
+                      "district": "Stare Miasto",
+                      "region": "Małopolskie",
+                      "latitude": 50.06026,
+                      "longitude": 19.9396,
+                      "created_at": "2025-06-25T16:13:36+02:00",
+                      "refreshed_at": "2026-10-28T11:31:43+01:00",
+                      "valid_to": "2026-11-27T11:30:43+01:00",
+                      "business": true,
+                      "promoted": true,
+                      "delivery": true,
+                      "seller_id": "1978244341",
+                      "seller_name": "SmartSfera",
+                      "images": [
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/6wmfycxt11wq1-PL/image;s=4284x5712",
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/hmtthztpwx273-PL/image;s=371x500",
+                        "… 5 more"
+                      ]
+                    },
+                    "… 50 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/olx/v1/item": {
+      "get": {
+        "operationId": "olxItem",
+        "summary": "OLX listing",
+        "description": "One OLX listing by link or id: title, full description, price (currency, label, negotiable, previous price), condition and every attribute, category, location (city, district, region, map position), dates, status, photos, delivery flag and the seller's public summary (id, name, member since, last seen, business page). India listings also carry favourites. Brazil listings (olx.com.br) carry the full description, attributes and feature summary, state, zip code and area code, online payment with Pix price and installments, delivery, the FIPE reference price and financing terms for vehicles, and the seller (name, id, professional flag, rating, sales count, dispatch time, profile link). The link's domain sets the country.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/olx-item",
+        "tags": [
+          "OLX"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "An OLX listing link (olx.pl, olx.ua, olx.ro, olx.bg, olx.pt, olx.kz, olx.uz, olx.in or olx.com.br).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.olx.in/item/iid-1858289843"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "The listing's numeric id, instead of `url` (with `country`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country for `id`: PL (default), UA, RO, BG, PT, KZ, UZ, IN, BR.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PL",
+                "UA",
+                "RO",
+                "BG",
+                "PT",
+                "KZ",
+                "UZ",
+                "IN",
+                "BR"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1858289843",
+                  "title": "Iphone 16 128Gb sealed box 1 Yr warranty",
+                  "url": "https://www.olx.in/item/iid-1858289843",
+                  "description": "Iphone 16 128Gb sealed box 1 Yr warranty\nGLOBAL USA 12 months warranty \n\n -SALES _PURCHASE - EXCHANGE\n-EXCHANGE ACCEPTED WITH ALL DEVICES\n-C…",
+                  "price": 66000,
+                  "currency": "INR",
+                  "price_label": "₹ 66,000",
+                  "attributes": {
+                    "make": "iPhone"
+                  },
+                  "category_id": "1453",
+                  "city": null,
+                  "district": null,
+                  "region": null,
+                  "latitude": 17.426328,
+                  "longitude": 78.450445,
+                  "created_at": "2026-10-14T20:17:12+05:30",
+                  "first_created_at": "2026-10-10T06:36:02+05:30",
+                  "valid_to": "2026-11-09T06:36:09+05:30",
+                  "business": null,
+                  "favorites": 0,
+                  "seller_id": "248623139",
+                  "seller_name": null,
+                  "images": [
+                    "https://apollo.olx.in:443/v1/files/75q7bjmiuukn-IN/image"
+                  ],
+                  "country": "IN",
+                  "views": null,
+                  "status": "active",
+                  "seller": {
+                    "id": "248623139",
+                    "name": "Mobile Palace",
+                    "created_at": "2018-05-01T06:34:26Z",
+                    "verified": null,
+                    "url": "https://www.olx.in/profile/248623139"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/olx/v1/search": {
+      "get": {
+        "operationId": "olxSearch",
+        "summary": "OLX listing search",
+        "description": "Classified listings on OLX in Poland, Ukraine, Romania, Bulgaria, Portugal, Kazakhstan, Uzbekistan, India and Brazil, with the site's filters: sort, price range, category, region/city (India: location), condition, seller type, photos, delivery and category attributes. Category attribute filters (not India) are passed through as they appear in the site's search URLs, as extra query parameters, e.g. `filter_float_year:from=2018`, `filter_enum_petrol[0]=diesel` (up to 20; attribute keys are listed in each result's `attributes`). Each listing: id, title, link, description, price, currency and label, negotiable flag, condition and the other attributes, category, city, district, region, map position, creation/refresh/expiry dates, business flag, promotion and delivery flags, seller id and name, photos, and `raw` (the site's record). `total` is the site's count. Pass `next_page` back as `page`; null on the last page (the site serves at most 1,000 results per search outside India).\n\nBrazil (`country=BR`, olx.com.br): keywords, `category` (the site's category path, e.g. `autos-e-pecas/carros-vans-e-utilitarios`, optionally followed by brand and model slugs such as `/toyota/corolla`) or `category_id`, `state` (UF) with `region` and `area` slugs, price range, sort, seller type and the category's own filters as `filter_<key>=<value>` (comma-separated for several values, e.g. `filter_rs=2018` for year from, `filter_gb=2` for automatic gearbox, `filter_ros=3` for 3+ bedrooms). Every Brazil response lists the filters its category accepts in `available_filters` (param names and allowed values). Brazil listings also carry state, area code, online payment, delivery and seller-rating fields; 50 per page, up to page 100.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/olx-search",
+        "tags": [
+          "OLX"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords, e.g. `iphone`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "iphone"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "PL (default), UA, RO, BG, PT, KZ, UZ, IN or BR.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PL",
+                "UA",
+                "RO",
+                "BG",
+                "PT",
+                "KZ",
+                "UZ",
+                "IN",
+                "BR"
+              ]
+            },
+            "example": "PL"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), newest, price_asc, price_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "price_asc",
+                "price_desc"
+              ]
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price (local currency).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price (local currency).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "description": "The site's category id (category_id in results), e.g. 99 for phones on olx.pl.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "region_id",
+            "in": "query",
+            "required": false,
+            "description": "Region id (not India), e.g. 8.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city_id",
+            "in": "query",
+            "required": false,
+            "description": "City id (not India).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "description": "India only: location id (city or area), e.g. 4058526 for Hyderabad.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "condition",
+            "in": "query",
+            "required": false,
+            "description": "Not India: new, used or damaged (where the category has a condition).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "owner_type",
+            "in": "query",
+            "required": false,
+            "description": "Not India: private or business sellers only.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "private",
+                "business"
+              ]
+            }
+          },
+          {
+            "name": "has_photo",
+            "in": "query",
+            "required": false,
+            "description": "Not India: true for listings with photos only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "delivery",
+            "in": "query",
+            "required": false,
+            "description": "Not India: true for listings that offer delivery only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Brazil only: the category path as in olx.com.br links, e.g. `celulares`, `imoveis/venda`, `autos-e-pecas/carros-vans-e-utilitarios/toyota/corolla` (see /olx/v1/category?country=BR). Brazil also takes `category_id` (e.g. 2020 for cars).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Brazil only: two-letter state (UF), e.g. SP, RJ, MG.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "description": "Brazil only, with state: the region slug from olx.com.br links, e.g. `sao-paulo-e-regiao`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "required": false,
+            "description": "Brazil only, with region: the area slug, e.g. `zona-sul`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "iphone",
+                  "country": "PL",
+                  "sort": "relevance",
+                  "page": 1,
+                  "total": 166377,
+                  "count": 52,
+                  "next_page": 2,
+                  "url": "https://www.olx.pl/oferty/q-iphone/",
+                  "items": [
+                    {
+                      "id": "1098987819",
+                      "title": "Bateria 100% iPhone 14 Plus 256gb Midnight",
+                      "url": "https://www.olx.pl/d/oferta/bateria-100-iphone-14-plus-256gb-midnight-CID99-ID1cneWZ.html",
+                      "description": "Uwaga \nMożliwość wysyłki kurierem za pobraniem \n\nPewny sprzedawca \nProdukt zawsze zgodny z opisem \nOceny nie kłamią \n\niPhone 14 Plus 256gb\nK…",
+                      "price": 1599,
+                      "currency": "PLN",
+                      "price_label": "1 599 zł",
+                      "negotiable": false,
+                      "previous_price": null,
+                      "condition": "used",
+                      "attributes": {
+                        "state": "Używane",
+                        "phonemodel": "+1 555 010 0000",
+                        "builtinmemory_phones": "+1 555 010 0000",
+                        "rammemory_phones": "+1 555 010 0000",
+                        "coloriphone": "Czarny",
+                        "guarantee": "Oferty z gwarancją",
+                        "phonecharger": "Tak",
+                        "sim_options": "Dual SIM (SIM + eSIM)",
+                        "phones_features": "Always on display, Rozpoznawanie twarzy, Szybkie ładowanie, Hot-Spot, Płatność NFC, Ładowanie indukcyjne"
+                      },
+                      "category_id": 2298,
+                      "category_type": "electronics",
+                      "city": "Warszawa",
+                      "district": "Praga-Południe",
+                      "region": "Mazowieckie",
+                      "latitude": 52.23876,
+                      "longitude": 21.08553,
+                      "created_at": "2026-09-17T21:11:35+02:00",
+                      "refreshed_at": "2026-10-28T22:43:40+01:00",
+                      "valid_to": "2026-11-16T20:11:36+01:00",
+                      "business": false,
+                      "promoted": true,
+                      "delivery": true,
+                      "seller_id": "330413574",
+                      "seller_name": "iSuperMen",
+                      "images": [
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/7vkiofql9z3u2-PL/image;s=750x1000",
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/sjhfrl30rzg1-PL/image;s=750x1000",
+                        "… 5 more"
+                      ]
+                    },
+                    {
+                      "id": "1108317690",
+                      "title": "IPhone 256gb, Samsung, Motorola, opis!",
+                      "url": "https://www.olx.pl/d/oferta/iphone-256gb-samsung-motorola-opis-CID99-ID1d0o3M.html",
+                      "description": "Motorola Edge 40 Neo 12/256 GB\nTelefon w dobrym stanie. Na ekranie naklejona jest dobrej jakości folia matowa, pod folią ekran jak nowy. W z…",
+                      "price": 500,
+                      "currency": "PLN",
+                      "price_label": "500 zł",
+                      "negotiable": false,
+                      "previous_price": null,
+                      "condition": "used",
+                      "attributes": {
+                        "state": "Używane",
+                        "purpose": "Iphone"
+                      },
+                      "category_id": 2910,
+                      "category_type": "electronics",
+                      "city": "Legnica",
+                      "district": null,
+                      "region": "Dolnośląskie",
+                      "latitude": 51.20701,
+                      "longitude": 16.15532,
+                      "created_at": "2026-10-28T18:42:19+01:00",
+                      "refreshed_at": "2026-10-28T18:45:36+01:00",
+                      "valid_to": "2026-11-27T18:42:19+01:00",
+                      "business": false,
+                      "promoted": true,
+                      "delivery": true,
+                      "seller_id": "276371317",
+                      "seller_name": "qwerty2483.aq",
+                      "images": [
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/em3weipbxg232-PL/image;s=2000x1500",
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/pj0u4cqy39fu1-PL/image;s=2000x1500",
+                        "… 6 more"
+                      ]
+                    },
+                    "… 50 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/olx/v1/seller": {
+      "get": {
+        "operationId": "olxSeller",
+        "summary": "OLX seller profile and listings",
+        "description": "A seller's public OLX profile and their active listings: name, business flag and type, company name, description and website (business sellers), logo, member since, last seen, response time, profile link, listing count and the listings (as in search). India: the profile only (name, about, member since, verification badges). Brazil (`country=BR`): professional and private sellers, by the seller id from /olx/v1/item (`seller.id`) or an olx.com.br/perfil/ link: name, description, benefits, business vertical, logo, city and state (a professional seller's street address when it shows it publicly; private sellers by town only, phone numbers in their description hidden), verification, member since, last seen, the seller's categories and states, and their listings (50 per page) with `sort` (newest, price_asc, price_desc), `q` and `category_id` filters. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/olx-seller",
+        "tags": [
+          "OLX"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The seller's numeric id (seller_id in search and item results); for Brazil the seller id (seller.id in item results) or an olx.com.br/perfil/ link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "36655789"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "PL (default), UA, RO, BG, PT, KZ, UZ, IN or BR.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PL",
+                "UA",
+                "RO",
+                "BG",
+                "PT",
+                "KZ",
+                "UZ",
+                "IN",
+                "BR"
+              ]
+            },
+            "example": "PL"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Brazil only: newest (default), price_asc or price_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "price_asc",
+                "price_desc"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Brazil only: keywords within the seller's listings.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "description": "Brazil only: one of the seller's categories (`categories` in the response).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "36655789",
+                  "country": "PL",
+                  "name": "TyrePol",
+                  "business": true,
+                  "business_type": "premium",
+                  "company_name": "Tyrepol Sp. z o. o.",
+                  "company_description": "Jesteśmy firmą zajmującą się dystrybucją opon , która powstała w celu dostarczania najwyższej jakości oferowanych towarów równocześnie wyróż…",
+                  "website": "http://www.tyrepol.pl",
+                  "logo": "https://img-resizer.prd.01.eu-west-1.eu.olx.org/img-eu-olxpl-production/427440715_1_94x72.jpg",
+                  "created_at": "2015-12-04T09:03:52+01:00",
+                  "last_seen": "2026-11-03T18:39:03+01:00",
+                  "online": false,
+                  "response_time": null,
+                  "url": "https://www.olx.pl/oferty/user/2tNQp/",
+                  "total_listings": 51,
+                  "page": 1,
+                  "count": 40,
+                  "next_page": 2,
+                  "listings": [
+                    {
+                      "id": "1108311052",
+                      "title": "1080netto PROMOCJA Szeroka opona SAUCERMAN 315/70 r22.5 napęd 315 70 SDR152 REGIONALNA",
+                      "url": "https://www.olx.pl/d/oferta/1080netto-promocja-szeroka-opona-saucerman-315-70-r22-5-naped-315-70-sdr152-regionalna-CID5-ID1d0mkI.html",
+                      "description": "Opona SAUCERMAN 315/70 R22.5 SDR152 156/150L M+S 3PMSF NAPĘD REGIONALNY\nOznaczenie M+S oraz Snieżynka i trzy szczyty (3PMSF)\nSzeroki pas opo…",
+                      "price": 1080,
+                      "currency": "PLN",
+                      "price_label": "1 080 zł",
+                      "negotiable": false,
+                      "previous_price": null,
+                      "condition": "new",
+                      "attributes": {
+                        "type": "Ciężarowe",
+                        "state": "Nowe",
+                        "tiretype": "Całoroczne",
+                        "size": "22 i większe",
+                        "width": "315",
+                        "profile": "70",
+                        "parts_warranty": "24 "
+                      },
+                      "category_id": 1383,
+                      "category_type": "automotive",
+                      "city": "Rzeszów",
+                      "district": null,
+                      "region": "Podkarpackie",
+                      "latitude": 50.04152,
+                      "longitude": 22.00953,
+                      "created_at": "2026-10-28T18:05:37+01:00",
+                      "refreshed_at": "2026-11-03T18:28:54+01:00",
+                      "valid_to": "2026-11-27T18:05:37+01:00",
+                      "business": true,
+                      "promoted": true,
+                      "delivery": false,
+                      "seller_id": "36655789",
+                      "seller_name": "TyrePol",
+                      "images": [
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/3r5xazec4bn41-PL/image;s=750x1000",
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/xpvj9kovs0181-PL/image;s=750x1000",
+                        "… 2 more"
+                      ]
+                    },
+                    {
+                      "id": "1106944548",
+                      "title": "260netto ZIMOWA OPONA 225/65 R16C dostawcza bus ZIMA MASTER Movano",
+                      "url": "https://www.olx.pl/d/oferta/260netto-zimowa-opona-225-65-r16c-dostawcza-bus-zima-master-movano-CID5-ID1cUCQk.html",
+                      "description": "OPONA Zimowa , wzmacnia do BUSA\nTBB TIRES 225/65 R16C ADVENZZA SNOW 112/110R 8PR ZIMA\n\nProdukcja TAJLANDIA - ROK 2026\n\nCena 320zł brutto szt…",
+                      "price": 320,
+                      "currency": "PLN",
+                      "price_label": "320 zł",
+                      "negotiable": false,
+                      "previous_price": null,
+                      "condition": "new",
+                      "attributes": {
+                        "type": "Dostawcze",
+                        "state": "Nowe",
+                        "tiretype": "Zimowe",
+                        "size": "16",
+                        "width": "225",
+                        "profile": "65"
+                      },
+                      "category_id": 1383,
+                      "category_type": "automotive",
+                      "city": "Rzeszów",
+                      "district": null,
+                      "region": "Podkarpackie",
+                      "latitude": 50.04152,
+                      "longitude": 22.00953,
+                      "created_at": "2026-10-22T17:15:02+02:00",
+                      "refreshed_at": "2026-11-03T18:18:36+01:00",
+                      "valid_to": "2026-11-21T16:15:03+01:00",
+                      "business": true,
+                      "promoted": true,
+                      "delivery": false,
+                      "seller_id": "36655789",
+                      "seller_name": "TyrePol",
+                      "images": [
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/wxtijlmqw25n1-PL/image;s=750x1000",
+                        "https://ireland.apollo.olxcdn.com:443/v1/files/yhivbt90qxec-PL/image;s=750x1000"
+                      ]
+                    },
+                    "… 38 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

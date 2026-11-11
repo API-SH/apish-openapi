@@ -1,0 +1,933 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Tira",
+    "version": "1.0.0",
+    "description": "The Tira API from API.SH: public Tira data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Tira",
+      "description": "2 endpoints (e-commerce)",
+      "x-slug": "tira",
+      "x-domains": [
+        "tirabeauty.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tira/v1/product": {
+      "get": {
+        "operationId": "tiraProduct",
+        "summary": "Tira product",
+        "description": "One Tira product: price, MRP, discount, stock, sizes with quantity, rating and review counts, category, department, country of origin, pack size, colour, skin type, ingredients, benefits, shelf life, description, attributes, shades with their own price, images and tags.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/tira-product",
+        "tags": [
+          "Tira"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words; the first matching product is returned (3 more credits than passing a link).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lipstick"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Tira product link, or the product slug. Use instead of q.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "uid": 8676145,
+                  "item_code": "1169333",
+                  "name": "Akind Oh So Smooth Lip Creme 8-Hour Hydration & Lip Barrier-Friendly - Toasted (4.2 g)",
+                  "slug": "akind-oh-so-smooth-lip-creme-toasted-4-2-g-8676145",
+                  "url": "https://www.tirabeauty.com/product/akind-oh-so-smooth-lip-creme-toasted-4-2-g-8676145",
+                  "brand": "Akind",
+                  "price": 556,
+                  "mrp": 795,
+                  "discount": "30% OFF",
+                  "currency": "INR",
+                  "in_stock": true,
+                  "sizes": [
+                    {
+                      "size": "OS",
+                      "quantity": 396,
+                      "available": true
+                    }
+                  ],
+                  "rating": 3.9,
+                  "ratings_count": 178,
+                  "reviews_count": 16,
+                  "category": "Lipstick",
+                  "department": "Makeup",
+                  "country_of_origin": "India",
+                  "pack_size": "4.2 g",
+                  "color": "Toasted",
+                  "skin_type": "All Skin Types",
+                  "ingredients": [
+                    "Jojoba Oil",
+                    "Vitamin E",
+                    "… 1 more"
+                  ],
+                  "benefits": [
+                    "Moisturising",
+                    "Lightweight"
+                  ],
+                  "preferences": [
+                    "Vegan",
+                    "Cruelty Free"
+                  ],
+                  "shelf_life_months": 30,
+                  "description": "This barrier-loving lip creme delivers rich pigment with a silky soft finish that feels as good as it looks. Powered by murumuru butter, she…",
+                  "attributes": [
+                    {
+                      "group": "Product Attributes",
+                      "name": "Generic Name of Commodity",
+                      "value": "Lipstick"
+                    },
+                    {
+                      "group": "Product Attributes",
+                      "name": "Concern",
+                      "value": ""
+                    },
+                    "… 10 more"
+                  ],
+                  "shades": [
+                    {
+                      "uid": 8676145,
+                      "name": "Toasted",
+                      "slug": "akind-oh-so-smooth-lip-creme-toasted-4-2-g-8676145",
+                      "url": "https://www.tirabeauty.com/product/akind-oh-so-smooth-lip-creme-toasted-4-2-g-8676145",
+                      "available": true,
+                      "image": "https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/original/PE397ORBuT-1169333_Swatch.jpg"
+                    },
+                    {
+                      "uid": 8676137,
+                      "name": "Almond Milk",
+                      "slug": "akind-oh-so-smooth-lip-creme-almond-milk-4-2-g-8676137",
+                      "url": "https://www.tirabeauty.com/product/akind-oh-so-smooth-lip-creme-almond-milk-4-2-g-8676137",
+                      "available": true,
+                      "image": "https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/original/T44iRadgQB-1169334_Swatch.jpg"
+                    },
+                    "… 6 more"
+                  ],
+                  "images": [
+                    "https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/original/UNX9ktw6IB-1169333_1.jpg",
+                    "https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/original/tZT7lsDKj4-1169333_2.jpg",
+                    "… 7 more"
+                  ],
+                  "tags": [
+                    "Single",
+                    "sm_enabled"
+                  ],
+                  "cached": false,
+                  "credits_used": 4
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/tira/v1/search": {
+      "get": {
+        "operationId": "tiraSearch",
+        "summary": "Tira search",
+        "description": "Tira search, brand or category listing (India): uid, item code, name, link, brand, price, MRP, discount, rating, stock, sizes, tags and image, with brand, category, every sort and any listed filter, plus the filter lists with counts. Returns the first 12 results of a query, so there is no next page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/tira-search",
+        "tags": [
+          "Tira"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lipstick"
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Brand slug, e.g. akind.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category slug, e.g. lipstick.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "latest",
+                "discount_dsc",
+                "price_asc",
+                "price_dsc",
+                "attributes.customaveragerating_desc"
+              ]
+            },
+            "example": "price_asc"
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "Other filters as key:value; separated by semicolons (keys from the filters list), e.g. primary-colour:Pink.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "lipstick",
+                  "brand": null,
+                  "category": null,
+                  "redirected_to_category": null,
+                  "sort": "latest",
+                  "total": 4449,
+                  "next_page": null,
+                  "has_more": true,
+                  "count": 12,
+                  "available_sorts": [
+                    "latest",
+                    "discount_dsc",
+                    "… 3 more"
+                  ],
+                  "products": [
+                    {
+                      "uid": 8676145,
+                      "item_code": "1169333",
+                      "name": "Akind Oh So Smooth Lip Creme 8-Hour Hydration & Lip Barrier-Friendly - Toasted (4.2 g)",
+                      "slug": "akind-oh-so-smooth-lip-creme-toasted-4-2-g-8676145",
+                      "url": "https://www.tirabeauty.com/product/akind-oh-so-smooth-lip-creme-toasted-4-2-g-8676145",
+                      "brand": "Akind",
+                      "brand_slug": "akind",
+                      "price": 556,
+                      "mrp": 795,
+                      "discount": "30% OFF",
+                      "currency": "INR",
+                      "rating": 3.9,
+                      "ratings_count": 178,
+                      "reviews_count": 16,
+                      "sellable": true,
+                      "in_stock": true,
+                      "category": "Lipstick",
+                      "color": "Toasted",
+                      "pack_size": "4.2 g",
+                      "sizes": [
+                        "OS"
+                      ],
+                      "shades_count": 5,
+                      "tags": [
+                        "Single",
+                        "sm_enabled"
+                      ],
+                      "image": "https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/original/UNX9ktw6IB-1169333_1.jpg"
+                    },
+                    {
+                      "uid": 8676144,
+                      "item_code": "1169335",
+                      "name": "Akind Oh So Smooth Lip Creme 8-Hour Hydration & Lip Barrier-Friendly - Sunday (4.2 g)",
+                      "slug": "akind-oh-so-smooth-lip-creme-sunday-4-2-g-8676144",
+                      "url": "https://www.tirabeauty.com/product/akind-oh-so-smooth-lip-creme-sunday-4-2-g-8676144",
+                      "brand": "Akind",
+                      "brand_slug": "akind",
+                      "price": 556,
+                      "mrp": 795,
+                      "discount": "30% OFF",
+                      "currency": "INR",
+                      "rating": 3.9,
+                      "ratings_count": 178,
+                      "reviews_count": 16,
+                      "sellable": true,
+                      "in_stock": true,
+                      "category": "Lipstick",
+                      "color": "Sunday",
+                      "pack_size": "4.2 g",
+                      "sizes": [
+                        "OS"
+                      ],
+                      "shades_count": 5,
+                      "tags": [
+                        "Single",
+                        "sm_enabled"
+                      ],
+                      "image": "https://cdn.tirabeauty.com/v2/billowing-snowflake-434234/tira-p/wrkr/products/pictures/item/free/original/i2Z24rdTaE-1169335_1.jpg"
+                    },
+                    "… 10 more"
+                  ],
+                  "filters": [
+                    {
+                      "key": "category",
+                      "title": "Category",
+                      "kind": "multivalued",
+                      "values": [
+                        {
+                          "value": "lipstick",
+                          "name": "Lipstick",
+                          "count": 2002
+                        },
+                        {
+                          "value": "liquid-lipstick",
+                          "name": "Liquid Lipstick",
+                          "count": 1269
+                        },
+                        "… 40 more"
+                      ]
+                    },
+                    {
+                      "key": "brand",
+                      "title": "Brand",
+                      "kind": "multivalued",
+                      "values": [
+                        {
+                          "value": "m-a-c",
+                          "name": "M.A.C",
+                          "count": 341
+                        },
+                        {
+                          "value": "lakme",
+                          "name": "Lakme",
+                          "count": 332
+                        },
+                        "… 127 more"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

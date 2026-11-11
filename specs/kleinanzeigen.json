@@ -1,0 +1,1278 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Kleinanzeigen",
+    "version": "1.0.0",
+    "description": "The Kleinanzeigen API from API.SH: public Kleinanzeigen data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Kleinanzeigen",
+      "description": "4 endpoints (e-commerce)",
+      "x-slug": "kleinanzeigen",
+      "x-domains": [
+        "kleinanzeigen.de"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kleinanzeigen/v1/categories": {
+      "get": {
+        "operationId": "kleinanzeigenCategories",
+        "summary": "Kleinanzeigen categories",
+        "description": "Every Kleinanzeigen category and sub-category with its id, ad count and link. Use an id as category_id with /kleinanzeigen/v1/search.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kleinanzeigen-categories",
+        "tags": [
+          "Kleinanzeigen"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 15,
+                  "subcategories_count": 147,
+                  "categories": [
+                    {
+                      "id": 210,
+                      "name": "Auto, Rad & Boot",
+                      "ads": 7313664,
+                      "url": "https://www.kleinanzeigen.de/s-auto-rad-boot/c210",
+                      "subcategories": [
+                        {
+                          "id": 216,
+                          "name": "Autos",
+                          "ads": 787250,
+                          "url": "https://www.kleinanzeigen.de/s-autos/c216"
+                        },
+                        {
+                          "id": 223,
+                          "name": "Autoteile & Reifen",
+                          "ads": 3740188,
+                          "url": "https://www.kleinanzeigen.de/s-autoteile-reifen/c223"
+                        },
+                        "… 8 more"
+                      ]
+                    },
+                    {
+                      "id": 161,
+                      "name": "Elektronik",
+                      "ads": 4077621,
+                      "url": "https://www.kleinanzeigen.de/s-multimedia-elektronik/c161",
+                      "subcategories": [
+                        {
+                          "id": 172,
+                          "name": "Audio & Hifi",
+                          "ads": 465004,
+                          "url": "https://www.kleinanzeigen.de/s-audio-hifi/c172"
+                        },
+                        {
+                          "id": 226,
+                          "name": "Dienstleistungen Elektronik",
+                          "ads": 17231,
+                          "url": "https://www.kleinanzeigen.de/s-dienstleistungen-edv/c226"
+                        },
+                        "… 16 more"
+                      ]
+                    },
+                    "… 13 more"
+                  ],
+                  "note": "Use a category id with /kleinanzeigen/v1/search?category_id=",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kleinanzeigen/v1/item": {
+      "get": {
+        "operationId": "kleinanzeigenItem",
+        "summary": "Kleinanzeigen listing",
+        "description": "One Kleinanzeigen listing by link or id: title, price, price type (fixed, negotiable, free) and label, shipping cost, offer type, full description, the details table (brand, model, condition...), attribute codes, category path, breadcrumbs, postal code, place, region, city and district, posting date, photos, and the seller's public summary (type, display name, active since, satisfaction rating, listings page and shop link).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kleinanzeigen-item",
+        "tags": [
+          "Kleinanzeigen"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A kleinanzeigen.de listing link (/s-anzeige/...).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.kleinanzeigen.de/s-anzeige/apple-iphone-16-pro-max-titan-grau-wie-neu-/3556170506-173-1144"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "The listing number, instead of `url`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "3556170506",
+                  "title": "Apple IPhone 16 Pro Max Titan Grau wie NEU!",
+                  "url": "https://www.kleinanzeigen.de/s-anzeige/apple-iphone-16-pro-max-titan-grau-wie-neu-/3556170506-173-1144",
+                  "price": 749,
+                  "price_type": "NEGOTIABLE",
+                  "price_label": "749 € VB",
+                  "shipping": "+ Versand ab 3,99 €",
+                  "ad_type": "OFFERED",
+                  "description": "Ich verkaufe mein Apple iPhone 16 Pro Max mit 256 GB Speicher in der Farbe Titan Natur (Grau).\n\nDas Handy ist gebraucht, befindet sich aber …",
+                  "details": {
+                    "Marke": "Apple",
+                    "Modell": "iPhone 16 Pro Max",
+                    "Farbe": "Grau",
+                    "Speicher (GB)": "256 GB",
+                    "Zustand": "Sehr Gut"
+                  },
+                  "features": [],
+                  "attributes": {
+                    "art": "apple",
+                    "storage": "256gb",
+                    "condition": "like_new",
+                    "versand": "t",
+                    "color": "grau",
+                    "model": "iphone_16_pro_max"
+                  },
+                  "category": {
+                    "id": "173",
+                    "l1": "Multimedia_Elektronik",
+                    "l2": "Handy_Telekom",
+                    "l3": "apple"
+                  },
+                  "breadcrumbs": [
+                    {
+                      "name": "Kleinanzeigen Dortmund",
+                      "url": "https://www.kleinanzeigen.de/stadt/dortmund/"
+                    },
+                    {
+                      "name": "Elektronik",
+                      "url": "https://www.kleinanzeigen.de/s-multimedia-elektronik/c161"
+                    },
+                    "… 1 more"
+                  ],
+                  "postal_code": "44269",
+                  "location": "44269 Dortmund - Schüren",
+                  "region": "Nordrhein-Westfalen",
+                  "city": "Dortmund",
+                  "district": "Schüren",
+                  "posted": "30.10.2026",
+                  "images": [
+                    "https://img.kleinanzeigen.de/api/v1/prod-ads/images/47/475e98cb-ce06-4337-9e35-70cc98a2baec?rule=$_59.AUTO",
+                    "https://img.kleinanzeigen.de/api/v1/prod-ads/images/e2/e2556cf8-83e6-4500-a620-a155c70de689?rule=$_59.AUTO",
+                    "… 3 more"
+                  ],
+                  "seller": {
+                    "type": "Private",
+                    "name": "Leon",
+                    "active_since": "26.11.2017",
+                    "rating": "OK",
+                    "user_id": "51852267",
+                    "listings_url": "https://www.kleinanzeigen.de/s-bestandsliste.html?userId=51852267",
+                    "shop_url": null
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kleinanzeigen/v1/search": {
+      "get": {
+        "operationId": "kleinanzeigenSearch",
+        "summary": "Kleinanzeigen listing search",
+        "description": "Classified listings on Kleinanzeigen (Germany) for keywords, with the site's filters: category, location and radius, price range, private or commercial sellers, offers or wanted ads, and sort (newest, lowest or highest price). Each listing: id, title, link, description snippet, price and label, negotiable (VB) and free flags, postal code and place, posting time, shipping and direct-buy flags, image and image count, shop link for commercial sellers. `total` is the site's count. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kleinanzeigen-search",
+        "tags": [
+          "Kleinanzeigen"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Keywords, e.g. `iphone`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "iphone"
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "description": "The site's category number, e.g. 173 (phones), 217 (bicycles).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "description": "The site's location number, e.g. 3331 (Berlin).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Kilometres around the location: 5, 10, 20, 30, 50, 100, 150, 200.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "5",
+                "10",
+                "20",
+                "30",
+                "50",
+                "100",
+                "150",
+                "200"
+              ]
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price in euros.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price in euros.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seller",
+            "in": "query",
+            "required": false,
+            "description": "private or commercial.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "private",
+                "commercial"
+              ]
+            }
+          },
+          {
+            "name": "ad_type",
+            "in": "query",
+            "required": false,
+            "description": "offer (items offered) or wanted (people looking for an item). Default: both.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "offer",
+                "wanted"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "newest (default), price_asc or price_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "price_asc",
+                "price_desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "iphone",
+                  "sort": "newest",
+                  "page": 1,
+                  "heading": "1 - 25 von 158.892 Ergebnissen für „iphone“ in Deutschland",
+                  "total": 158892,
+                  "count": 27,
+                  "next_page": 2,
+                  "url": "https://www.kleinanzeigen.de/s-iphone/k0",
+                  "items": [
+                    {
+                      "id": "3427324948",
+                      "title": "iPhone 16 Pro 256GB TOP ZUSTAND Aussteller mit 1 Jahr Garantie v. DE Händler",
+                      "url": "https://www.kleinanzeigen.de/s-anzeige/iphone-16-pro-256gb-top-zustand-aussteller-mit-1-jahr-garantie-v-de-haendler/3427324948-173-1907",
+                      "description": "Wir haben das iPhone 16 Pro 256GB im Angebot.\n\n- Neuwertiger Zustand\n- Voll funktionsfähig und in einem einwandfreien Zustand\n- Akkukapazitä…",
+                      "price": 699,
+                      "price_label": "699 €",
+                      "negotiable": false,
+                      "free": false,
+                      "postal_code": "52379",
+                      "location": "Langerwehe",
+                      "posted": null,
+                      "shipping": true,
+                      "direct_buy": false,
+                      "image_count": 1,
+                      "image": "https://img.kleinanzeigen.de/api/v1/prod-ads/images/7f/7f844161-1d82-4335-a482-f70e6df1e38d?rule=$_59.AUTO",
+                      "shop_url": "https://www.kleinanzeigen.de/pro/mein-home-center"
+                    },
+                    {
+                      "id": "3555823630",
+                      "title": "Apple IPhone 12 Pro 5G Akku 92% [128GB,Silver] • Guter Zustand • Rechnung • GARANTIE • Mobilfunkshop • sofort verfügbar • Art.-Nr:7649",
+                      "url": "https://www.kleinanzeigen.de/s-anzeige/apple-iphone-12-pro-5g-akku-92-128gb-silver-guter-zustand-rechnung-garantie-mobilfunkshop-sofort-verf…",
+                      "description": "**✨ Willkommen beim Pantech Store Hannover – seit 2010 Ihr Spezialist für neue & gebrauchte Originalprodukte zu Top-Preisen!\n❌ Festpreisange…",
+                      "price": 239,
+                      "price_label": "239 €",
+                      "negotiable": false,
+                      "free": false,
+                      "postal_code": "30451",
+                      "location": "Linden-Limmer",
+                      "posted": null,
+                      "shipping": false,
+                      "direct_buy": false,
+                      "image_count": 9,
+                      "image": "https://img.kleinanzeigen.de/api/v1/prod-ads/images/9a/9a0c71bb-294c-4501-8c0b-91642227c9b9?rule=$_59.AUTO",
+                      "shop_url": "https://www.kleinanzeigen.de/pro/Pantech-Store"
+                    },
+                    "… 25 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kleinanzeigen/v1/seller": {
+      "get": {
+        "operationId": "kleinanzeigenSeller",
+        "summary": "Kleinanzeigen shop and its ads",
+        "description": "A commercial seller's Kleinanzeigen Pro shop page and its active ads: shop name, seller type, user and store ids, about text, logo, active since, ads online and ads ever posted, followers, reply time and rate, satisfaction rating, the business contact details the page shows (phone, address, website, opening hours) and the shop's categories with ad counts. Each ad: id, title, link, short description, price and label, negotiable and free flags, place, posting date, shipping, tags, image and photo count. Search within the shop by keywords, category and price range. 25 ads per page; pass `next_page` back as `page`; null on the last page. Only Pro shop pages (kleinanzeigen.de/pro/<name>) are supported.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kleinanzeigen-seller",
+        "tags": [
+          "Kleinanzeigen"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "shop",
+            "in": "query",
+            "required": false,
+            "description": "The shop name in kleinanzeigen.de/pro/<name>.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2radNeuberg"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "The shop page link (https://www.kleinanzeigen.de/pro/<name>), instead of `shop`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords to search within the shop's ads.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "required": false,
+            "description": "Only ads in this category (ids are listed in `categories`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price in whole euros.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price in whole euros.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "shop": "2radNeuberg",
+                  "name": "2 radNeuberg GmbH",
+                  "url": "https://www.kleinanzeigen.de/pro/2radNeuberg",
+                  "seller_type": "commercial",
+                  "user_id": "58439838",
+                  "store_id": "30969",
+                  "description": "Bei uns finden Sie eine große Auswahl Fahrradmodellen für jegliche Einsatzbereiche. Unser breites Angebot erstreckt sich nicht nur über komf…",
+                  "logo": "https://img.kleinanzeigen.de/api/v1/prod-user/images/fe/fe9af28d-4c09-4801-a42b-05e5d37c5372?rule=$_12.JPG",
+                  "active_since": "21.09.2018",
+                  "ads_online": 348,
+                  "ads_total": 25418,
+                  "followers": 1746,
+                  "reply_time": "unter 6h",
+                  "reply_rate": "79%",
+                  "satisfaction": "TOP",
+                  "contact": {
+                    "phone": "+1 555 010 0000",
+                    "phone_alternative": "+1 555 010 0000",
+                    "address": "Germanenstraße 2, 63543 Hessen - Neuberg",
+                    "website": "https://2radneuberg.de/",
+                    "opening_hours": [
+                      {
+                        "days": "Mo",
+                        "times": [
+                          "12:00 - 19:00"
+                        ]
+                      },
+                      {
+                        "days": "Di - Do",
+                        "times": [
+                          "10:00 - 18:00"
+                        ]
+                      },
+                      "… 2 more"
+                    ]
+                  },
+                  "categories": [
+                    {
+                      "id": 80,
+                      "name": "Haus & Garten",
+                      "total_ads": 1
+                    },
+                    {
+                      "id": 102,
+                      "name": "Jobs",
+                      "total_ads": 3
+                    },
+                    "… 2 more"
+                  ],
+                  "page": 1,
+                  "pages": 14,
+                  "total": 348,
+                  "count": 25,
+                  "next_page": 2,
+                  "ads": [
+                    {
+                      "id": "3561148257",
+                      "title": "CONWAY Cairon T 3.0 E-Bike 750Wh 85Nm SMART KIOX Statt 4.199€",
+                      "url": "https://www.kleinanzeigen.de/s-anzeige/conway-cairon-t-3-0-e-bike-750wh-85nm-smart-kiox-statt-4-199-/3561148257-217-4551",
+                      "description": "CONWAY CAIRON T 3.0 750 SE – BOSCH CX | 750 Wh | TOP-ANGEBOT!\n\n❌ Statt 4.199 €\n✅ JETZT NUR 2.999 €\n1.200 € SPAREN!\n\n⭐ 28 ZOLL | BOSCH CX 85 …",
+                      "price": 2999,
+                      "price_label": "2.999 € VB",
+                      "negotiable": true,
+                      "free": false,
+                      "location": "Hessen - Neuberg",
+                      "posted": "Heute, 07:01",
+                      "shipping": true,
+                      "tags": [
+                        "Versand möglich"
+                      ],
+                      "image": "https://img.kleinanzeigen.de/api/v1/prod-ads/images/0b/0ba548ad-8b4b-46e9-9c3b-083f2b44f6c6?rule=$_35.JPG",
+                      "image_count": 12,
+                      "virtual_tour": false
+                    },
+                    {
+                      "id": "3561146810",
+                      "title": "Corratec E-Power MTC LTD 100 E-Bike Fully 800Wh 120Nm Statt 5499€",
+                      "url": "https://www.kleinanzeigen.de/s-anzeige/corratec-e-power-mtc-ltd-100-e-bike-fully-800wh-120nm-statt-5499-/3561146810-217-4551",
+                      "description": "HERBST-KNALLER – CORRATEC E-POWER MTC 100 WAVE LTD | 800 Wh | 120 Nm | BOSCH CX | FULLY 2026\n\nMEGA HERBST-ANGEBOT – 1.500 € SPAREN!\n\n❌ STATT…",
+                      "price": 3999,
+                      "price_label": "3.999 € VB",
+                      "negotiable": true,
+                      "free": false,
+                      "location": "Hessen - Neuberg",
+                      "posted": "Heute, 06:55",
+                      "shipping": true,
+                      "tags": [
+                        "Versand möglich"
+                      ],
+                      "image": "https://img.kleinanzeigen.de/api/v1/prod-ads/images/38/387b1358-c8a4-49bb-8137-fd71e77ca387?rule=$_35.JPG",
+                      "image_count": 12,
+                      "virtual_tour": false
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

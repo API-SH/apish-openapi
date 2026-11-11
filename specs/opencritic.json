@@ -1,0 +1,1823 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: OpenCritic",
+    "version": "1.0.0",
+    "description": "The OpenCritic API from API.SH: public OpenCritic data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "OpenCritic",
+      "description": "6 endpoints (media & music)",
+      "x-slug": "opencritic",
+      "x-domains": [
+        "opencritic.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/opencritic/v1/browse": {
+      "get": {
+        "operationId": "opencriticBrowse",
+        "summary": "OpenCritic browse games",
+        "description": "Games by platform and period, sorted by score, release date or number of reviews, 20 a page: id, name, link, Top Critic Average, Critics Recommend percentage, tier, review count, first release date, platforms, genres and image. Narrow to one genre or tag with `genre` (echoed in the response). Use time=upcoming for upcoming releases and a year for the best games of that year. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/opencritic-browse",
+        "tags": [
+          "OpenCritic"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": false,
+            "description": "all (default), ps5, ps4, xbxs, xb1, switch, switch-2, pc, quest, psvr, vive, stadia, wii-u, 3ds, vita.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "ps5",
+                "ps4",
+                "xbxs",
+                "xb1",
+                "switch",
+                "switch-2",
+                "pc",
+                "quest",
+                "psvr",
+                "vive",
+                "stadia",
+                "wii-u",
+                "3ds",
+                "vita"
+              ]
+            },
+            "example": "ps5"
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "description": "all-time (default), last90 (released in the last 90 days), upcoming, or a year such as 2024.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2024"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "score (default), date or reviews.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "score",
+                "date",
+                "reviews"
+              ]
+            },
+            "example": "score"
+          },
+          {
+            "name": "genre",
+            "in": "query",
+            "required": false,
+            "description": "Only games with this genre or tag: action, adventure, anime, arcade, beat-em-up, card-game, casual, co-op, comedy, family-friendly, fantasy, fighting, hack-and-slash, horror, indie, jrpg, mmo, multiplayer, open-world, platformer, puzzle, rpg, racing, retro, roguelike, sci-fi, shooter, side-scroller, simulation, singleplayer, souls-like, sports, stealth, story-rich, strategy, survival, turn-based, vr, visual-novel (`tag` is accepted too).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, starting at 1.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "platform": "ps5",
+                  "time": "2024",
+                  "sort": "score",
+                  "page": 1,
+                  "per_page": 20,
+                  "count": 20,
+                  "next_page": 2,
+                  "games": [
+                    {
+                      "id": 17118,
+                      "name": "Astro Bot",
+                      "url": "https://opencritic.com/game/17118/astro-bot",
+                      "top_critic_score": 94.33,
+                      "percent_recommended": 99.47,
+                      "tier": "Mighty",
+                      "num_reviews": 192,
+                      "num_top_critic_reviews": null,
+                      "first_release_date": "2024-09-06T00:00:00.000Z",
+                      "platforms": [
+                        {
+                          "id": 3,
+                          "name": "PlayStation 5",
+                          "short_name": "PS5",
+                          "release_date": "2024-09-06T00:00:00.000Z"
+                        }
+                      ],
+                      "genres": [
+                        "Platformer"
+                      ],
+                      "tags": [
+                        "Platformer",
+                        "Family Friendly",
+                        "… 2 more"
+                      ],
+                      "image": "https://img.opencritic.com/game/17118/o/KAreMcbv.jpg"
+                    },
+                    {
+                      "id": 16525,
+                      "name": "Elden Ring: Shadow of the Erdtree",
+                      "url": "https://opencritic.com/game/16525/elden-ring-shadow-of-the-erdtree",
+                      "top_critic_score": 93.73,
+                      "percent_recommended": 99.25,
+                      "tier": "Mighty",
+                      "num_reviews": 140,
+                      "num_top_critic_reviews": null,
+                      "first_release_date": "2024-06-21T00:00:00.000Z",
+                      "platforms": [
+                        {
+                          "id": 27,
+                          "name": "PC",
+                          "short_name": "PC",
+                          "release_date": "2024-06-21T00:00:00.000Z"
+                        },
+                        {
+                          "id": 3,
+                          "name": "PlayStation 5",
+                          "short_name": "PS5",
+                          "release_date": "2024-06-21T00:00:00.000Z"
+                        },
+                        "… 3 more"
+                      ],
+                      "genres": [
+                        "Action",
+                        "RPG"
+                      ],
+                      "tags": [
+                        "Action",
+                        "Adventure",
+                        "… 8 more"
+                      ],
+                      "image": "https://img.opencritic.com/game/16525/o/SsF5DdmK.jpg"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/opencritic/v1/critic": {
+      "get": {
+        "operationId": "opencriticCritic",
+        "summary": "OpenCritic critic profile and reviews",
+        "description": "A critic's profile (bio, links, gaming handles, favourite games), their review stats (count, average and median score, percent recommended) and their reviews with the game, outlet, score, snippet and link, 20 a page. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/opencritic-critic",
+        "tags": [
+          "OpenCritic"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Critic id or opencritic.com/critic link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "5288"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "critic_id": 5288,
+                  "name": "Jarrett Green",
+                  "url": "https://opencritic.com/critic/5288/jarrett-green",
+                  "image": null,
+                  "bio": null,
+                  "hometown": null,
+                  "website": null,
+                  "twitter": null,
+                  "facebook": null,
+                  "steam": null,
+                  "xbox_live": null,
+                  "psn": null,
+                  "nintendo_friend_code": null,
+                  "favorite_games": null,
+                  "claimed": false,
+                  "num_reviews": 69,
+                  "average_score": 66.52,
+                  "median_score": 70,
+                  "percent_recommended": 44.93,
+                  "joined": "2019-09-21T19:35:44.232Z",
+                  "page": 1,
+                  "per_page": 20,
+                  "count": 20,
+                  "next_page": 2,
+                  "reviews": [
+                    {
+                      "game": {
+                        "id": 20690,
+                        "name": "Call of Duty: Modern Warfare 4",
+                        "url": "https://opencritic.com/game/20690/call-of-duty-modern-warfare-4"
+                      },
+                      "id": "6ae3813178b8defc10e5a045",
+                      "outlet": "IGN",
+                      "outlet_id": 56,
+                      "outlet_image": "https://img.opencritic.com/outlet/56/edZfuPwc.jpg",
+                      "critics": [
+                        {
+                          "id": 5288,
+                          "name": "Jarrett Green"
+                        }
+                      ],
+                      "critic_alias": "Jarrett Green",
+                      "score": 80,
+                      "score_display": "8 / 10.0",
+                      "score_format": "0 to 10 incl decimals",
+                      "normalized_score": 100,
+                      "is_top_critic_pick": false,
+                      "title": "Call of Duty: Modern Warfare 4 DMZ Review",
+                      "snippet": "Call of Duty: Modern Warfare 4’s DMZ mode is delightfully high-tension without getting too sweaty, and a strong addition to the growing list…",
+                      "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-dmz-review",
+                      "language": "en-us",
+                      "published": "2026-10-28T00:00:00.000Z",
+                      "platforms": [
+                        "PS5"
+                      ],
+                      "median_at_time_of_review": 78
+                    },
+                    {
+                      "game": {
+                        "id": 21470,
+                        "name": "Dragon's Dogma 2: Dark Arisen",
+                        "url": "https://opencritic.com/game/21470/dragon-s-dogma-2-dark-arisen"
+                      },
+                      "id": "6ac95de3f8c306636fab92c7",
+                      "outlet": "IGN",
+                      "outlet_id": 56,
+                      "outlet_image": "https://img.opencritic.com/outlet/56/edZfuPwc.jpg",
+                      "critics": [
+                        {
+                          "id": 5288,
+                          "name": "Jarrett Green"
+                        }
+                      ],
+                      "critic_alias": "Jarrett Green",
+                      "score": 80,
+                      "score_display": "8 / 10.0",
+                      "score_format": "0 to 10 incl decimals",
+                      "normalized_score": 100,
+                      "is_top_critic_pick": false,
+                      "title": "Dragon's Dogma 2: Dark Arisen Review",
+                      "snippet": "Dragon’s Dogma 2: Dark Arisen is an engrossing expansion full of interesting new characters, vibrant enemies, and the wonderful wreckage of …",
+                      "url": "https://www.ign.com/articles/dragons-dogma-2-dark-arisen-review",
+                      "language": "en-us",
+                      "published": "2026-10-07T00:00:00.000Z",
+                      "platforms": [
+                        "PS5"
+                      ],
+                      "median_at_time_of_review": 78
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/opencritic/v1/game": {
+      "get": {
+        "operationId": "opencriticGame",
+        "summary": "OpenCritic game",
+        "description": "A game on OpenCritic: Top Critic Average, Critics Recommend percentage, tier (Mighty, Strong, Fair, Weak), median score, percentile, number of reviews and top-critic reviews, description, platforms with release dates, genres, developers and publishers, age rating, loot box flag, first and latest review dates, store prices and discounts, trailers, screenshots, images and the featured critic reviews.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/opencritic-game",
+        "tags": [
+          "OpenCritic"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "OpenCritic game id, the number in opencritic.com/game/<id>/<name> (463 = The Witcher 3). Or give `url`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "463"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "An opencritic.com game link instead of `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 463,
+                  "name": "The Witcher 3: Wild Hunt",
+                  "url": "https://opencritic.com/game/463/the-witcher-3-wild-hunt",
+                  "top_critic_score": 92.54,
+                  "percent_recommended": 95.32,
+                  "tier": "Mighty",
+                  "num_reviews": 181,
+                  "num_top_critic_reviews": 152,
+                  "first_release_date": "2015-05-19T00:00:00.000Z",
+                  "platforms": [
+                    {
+                      "id": 6,
+                      "name": "PlayStation 4",
+                      "short_name": "PS4",
+                      "release_date": "2015-05-19T00:00:00.000Z"
+                    },
+                    {
+                      "id": 7,
+                      "name": "Xbox One",
+                      "short_name": "XB1",
+                      "release_date": "2015-05-19T00:00:00.000Z"
+                    },
+                    "… 4 more"
+                  ],
+                  "genres": [
+                    "Adventure",
+                    "RPG"
+                  ],
+                  "tags": [],
+                  "image": "https://img.opencritic.com/game/463/o/M0VUcLa8.jpg",
+                  "description": "The Witcher: Wild Hunt is a story-driven, next-generation open world role-playing game set in a visually stunning fantasy universe full of m…",
+                  "median_score": 95,
+                  "percentile": 100,
+                  "developers": [
+                    "CD Projekt Red"
+                  ],
+                  "publishers": [
+                    "Warner Bros. Interactive Entertainment"
+                  ],
+                  "is_major_title": true,
+                  "has_loot_boxes": false,
+                  "monetization": null,
+                  "age_rating_image": "http://www.esrb.org/images/ratingsymbol_m.png",
+                  "first_review_date": "2015-05-11T04:00:00.000Z",
+                  "latest_review_date": "2026-01-08T00:00:00.000Z",
+                  "embargo_date": null,
+                  "stores": [
+                    {
+                      "name": "GOG",
+                      "url": "https://af.gog.com/en/game/the_witcher_3_wild_hunt?as=1673677962",
+                      "price": 24.99,
+                      "base_price": 49.99,
+                      "discount": 50
+                    },
+                    {
+                      "name": "Amazon",
+                      "url": "http://geni.us/Q1lNMz",
+                      "price": null,
+                      "base_price": null,
+                      "discount": null
+                    },
+                    "… 4 more"
+                  ],
+                  "biggest_discount_percent": 50,
+                  "biggest_discount_amount": 25,
+                  "trailers": [
+                    {
+                      "title": "The Witcher 3: Wild Hunt - Launch Cinematic",
+                      "url": "https://www.youtube.com/watch?v=1-l29HlKkXU",
+                      "channel": "The Witcher",
+                      "published": "2015-05-14T00:00:00.000Z"
+                    },
+                    {
+                      "title": "The Witcher 3: Wild Hunt - Official Gameplay Trailer",
+                      "url": "https://www.youtube.com/watch?v=nYwe_WHARdc",
+                      "channel": "The Witcher",
+                      "published": "2015-04-10T00:00:00.000Z"
+                    },
+                    "… 3 more"
+                  ],
+                  "screenshots": [
+                    "https://c.opencritic.com/images/games/463/JL7L5E3K2jIwnwO3cdPYKepNiCmXgfDf.jpg",
+                    "https://c.opencritic.com/images/games/463/d67IprZXB6a3V2z49MimwZIB6KTQsz4i.jpg",
+                    "… 1 more"
+                  ],
+                  "images": {
+                    "box": "https://img.opencritic.com/game/463/o/M0VUcLa8.jpg",
+                    "square": "https://img.opencritic.com/game/463/o/OVsgXNo2.jpg",
+                    "masthead": "https://img.opencritic.com/game/463/o/GUT53zSN.jpg",
+                    "banner": "https://img.opencritic.com/game/463/o/NcQS6Nk8.jpg",
+                    "logo": "https://img.opencritic.com/game/463/o/vm06X7tT.jpg"
+                  },
+                  "top_reviews": [
+                    {
+                      "id": "63bf2a2607560b861277d73b",
+                      "outlet": "Game Rant",
+                      "outlet_id": 60,
+                      "outlet_image": "https://img.opencritic.com/outlet/60/Xpi802fv.jpg",
+                      "critics": [
+                        {
+                          "id": 8262,
+                          "name": "Adrian Morales"
+                        }
+                      ],
+                      "critic_alias": "Adrian Morales",
+                      "score": 90,
+                      "score_display": "4.5 / 5 stars",
+                      "score_format": "0 to 5 stars, incl half stars",
+                      "normalized_score": 100,
+                      "is_top_critic_pick": false,
+                      "title": "The Witcher 3: Wild Hunt Next-Gen Update Review",
+                      "snippet": "The Witcher 3: Wild Hunt on next-gen consoles is the best way to discover or re-discover one of the most celebrated RPGs of the last decade.",
+                      "url": "https://gamerant.com/the-witcher-3-wild-hunt-ps5-xbox-series-review/",
+                      "language": "en-us",
+                      "published": "2022-12-14T00:00:00.000Z",
+                      "platforms": [
+                        "PS5"
+                      ],
+                      "median_at_time_of_review": 80
+                    },
+                    {
+                      "id": "5d866f6b93765d6778740bb9",
+                      "outlet": "Eurogamer",
+                      "outlet_id": 114,
+                      "outlet_image": "https://img.opencritic.com/outlet/114/U5o0V4A8.jpg",
+                      "critics": [
+                        {
+                          "id": 751,
+                          "name": "Oli Welsh"
+                        }
+                      ],
+                      "critic_alias": "Oli Welsh",
+                      "score": 100,
+                      "score_display": "Essential",
+                      "score_format": "Essential, Recommended, No Rec, Avoid",
+                      "normalized_score": 70,
+                      "is_top_critic_pick": false,
+                      "title": "The Witcher 3: Wild Hunt review",
+                      "snippet": "It will last you months, yet not waste your time. Above all, it has a vivid, enduring personality, something that is exceedingly rare among …",
+                      "url": "http://www.eurogamer.net/articles/2015-05-18-the-witcher-3-wild-hunt-review",
+                      "language": "en-us",
+                      "published": "2015-05-17T00:00:00.000Z",
+                      "platforms": [
+                        "PS4"
+                      ],
+                      "median_at_time_of_review": null
+                    },
+                    "… 6 more"
+                  ],
+                  "updated": "2026-11-04T04:44:12.179Z",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/opencritic/v1/hall-of-fame": {
+      "get": {
+        "operationId": "opencriticHallOfFame",
+        "summary": "OpenCritic Hall of Fame",
+        "description": "This year's OpenCritic Hall of Fame (the best-reviewed games of the year so far), with the newest releases and the next upcoming releases: id, name, link, Top Critic Average, tier, first release date, platforms and image.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/opencritic-hall-of-fame",
+        "tags": [
+          "OpenCritic"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "year": 2026,
+                  "hall_of_fame": [
+                    {
+                      "id": 21335,
+                      "name": "Trails in the Sky 2nd Chapter",
+                      "url": "https://opencritic.com/game/21335/trails-in-the-sky-2nd-chapter",
+                      "top_critic_score": 92,
+                      "percent_recommended": null,
+                      "tier": "Mighty",
+                      "num_reviews": null,
+                      "num_top_critic_reviews": null,
+                      "first_release_date": "2026-09-17T00:00:00.000Z",
+                      "platforms": [
+                        {
+                          "id": 3,
+                          "name": "PlayStation 5",
+                          "short_name": "PS5",
+                          "release_date": "2026-09-17T00:00:00.000Z"
+                        },
+                        {
+                          "id": 39,
+                          "name": "Nintendo Switch 2",
+                          "short_name": "Switch 2",
+                          "release_date": "2026-09-17T00:00:00.000Z"
+                        },
+                        "… 2 more"
+                      ],
+                      "genres": [],
+                      "tags": [],
+                      "image": "https://img.opencritic.com/game/21335/o/Q8ZgT3Yx.jpg"
+                    },
+                    {
+                      "id": 21276,
+                      "name": "The Witcher 3: Wild Hunt - Remastered",
+                      "url": "https://opencritic.com/game/21276/the-witcher-3-wild-hunt-remastered",
+                      "top_critic_score": 91,
+                      "percent_recommended": null,
+                      "tier": "Mighty",
+                      "num_reviews": null,
+                      "num_top_critic_reviews": null,
+                      "first_release_date": "2026-09-29T00:00:00.000Z",
+                      "platforms": [
+                        {
+                          "id": 3,
+                          "name": "PlayStation 5",
+                          "short_name": "PS5",
+                          "release_date": "2026-09-29T00:00:00.000Z"
+                        },
+                        {
+                          "id": 27,
+                          "name": "PC",
+                          "short_name": "PC",
+                          "release_date": "2026-09-29T00:00:00.000Z"
+                        },
+                        "… 2 more"
+                      ],
+                      "genres": [],
+                      "tags": [],
+                      "image": "https://img.opencritic.com/game/21276/o/HxGurdvN.jpg"
+                    },
+                    "… 10 more"
+                  ],
+                  "recently_released": [
+                    {
+                      "id": 20818,
+                      "name": "Godzilla: Destroy All Monsters Melee Remastered",
+                      "url": "https://opencritic.com/game/20818/godzilla-destroy-all-monsters-melee-remastered",
+                      "top_critic_score": 72,
+                      "percent_recommended": null,
+                      "tier": "Fair",
+                      "num_reviews": null,
+                      "num_top_critic_reviews": null,
+                      "first_release_date": "2026-11-03T00:00:00.000Z",
+                      "platforms": [
+                        {
+                          "id": 27,
+                          "name": "PC",
+                          "short_name": "PC",
+                          "release_date": "2026-11-03T00:00:00.000Z"
+                        }
+                      ],
+                      "genres": [],
+                      "tags": [],
+                      "image": "https://img.opencritic.com/game/20818/o/H8a8p4Fd.jpg"
+                    },
+                    {
+                      "id": 21627,
+                      "name": "Joe & Mac Retro Collection",
+                      "url": "https://opencritic.com/game/21627/joe-mac-retro-collection",
+                      "top_critic_score": 80,
+                      "percent_recommended": null,
+                      "tier": "Strong",
+                      "num_reviews": null,
+                      "num_top_critic_reviews": null,
+                      "first_release_date": "2026-10-29T00:00:00.000Z",
+                      "platforms": [
+                        {
+                          "id": 3,
+                          "name": "PlayStation 5",
+                          "short_name": "PS5",
+                          "release_date": "2026-10-29T00:00:00.000Z"
+                        },
+                        {
+                          "id": 2,
+                          "name": "Xbox Series X/S",
+                          "short_name": "XBXS",
+                          "release_date": "2026-10-29T00:00:00.000Z"
+                        },
+                        "… 3 more"
+                      ],
+                      "genres": [],
+                      "tags": [],
+                      "image": "https://img.opencritic.com/game/21627/o/eylecU5s.jpg"
+                    },
+                    "… 6 more"
+                  ],
+                  "upcoming": [
+                    {
+                      "id": 21344,
+                      "name": "The Legend of Zelda: Ocarina of Time",
+                      "url": "https://opencritic.com/game/21344/the-legend-of-zelda-ocarina-of-time",
+                      "top_critic_score": null,
+                      "percent_recommended": null,
+                      "tier": "",
+                      "num_reviews": null,
+                      "num_top_critic_reviews": null,
+                      "first_release_date": "2026-11-05T00:00:00.000Z",
+                      "platforms": [
+                        {
+                          "id": 39,
+                          "name": "Nintendo Switch 2",
+                          "short_name": "Switch 2",
+                          "release_date": "2026-11-05T00:00:00.000Z"
+                        }
+                      ],
+                      "genres": [],
+                      "tags": [],
+                      "image": "https://img.opencritic.com/game/21344/o/kbJ4xQ1X.jpg"
+                    },
+                    {
+                      "id": 15398,
+                      "name": "Grand Theft Auto VI",
+                      "url": "https://opencritic.com/game/15398/grand-theft-auto-vi",
+                      "top_critic_score": null,
+                      "percent_recommended": null,
+                      "tier": "",
+                      "num_reviews": null,
+                      "num_top_critic_reviews": null,
+                      "first_release_date": "2026-11-19T00:00:00.000Z",
+                      "platforms": [
+                        {
+                          "id": 3,
+                          "name": "PlayStation 5",
+                          "short_name": "PS5",
+                          "release_date": "2026-11-19T00:00:00.000Z"
+                        },
+                        {
+                          "id": 2,
+                          "name": "Xbox Series X/S",
+                          "short_name": "XBXS",
+                          "release_date": "2026-11-19T00:00:00.000Z"
+                        }
+                      ],
+                      "genres": [],
+                      "tags": [],
+                      "image": "https://img.opencritic.com/game/15398/o/pCgpCQGW.jpg"
+                    },
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/opencritic/v1/outlet": {
+      "get": {
+        "operationId": "opencriticOutlet",
+        "summary": "OpenCritic outlet profile and reviews",
+        "description": "A publication's profile (website, logo, language, score format, top-critic status) with its review stats and its reviews with the game, critics, score, snippet and link, 20 a page. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/opencritic-outlet",
+        "tags": [
+          "OpenCritic"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Outlet id or opencritic.com/outlet link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "56"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "outlet_id": 56,
+                  "name": "IGN",
+                  "url": "https://opencritic.com/outlet/56/ign",
+                  "website": "http://www.ign.com/",
+                  "domain": "ign.com",
+                  "logo": "https://img.opencritic.com/outlet/56/o/fyeAmHFh.jpg",
+                  "language": "en-us",
+                  "top_critic": null,
+                  "tier": 1,
+                  "score_format": "0 to 10 incl decimals",
+                  "recommended_cutoff": 70,
+                  "no_longer_publishing": false,
+                  "youtube": false,
+                  "num_reviews": 2560,
+                  "average_score": 74.31,
+                  "median_score": 78,
+                  "percent_recommended": 58.63,
+                  "updated": "2026-10-12T20:41:53.857Z",
+                  "page": 1,
+                  "per_page": 20,
+                  "count": 20,
+                  "next_page": 2,
+                  "reviews": [
+                    {
+                      "game": {
+                        "id": 20818,
+                        "name": "Godzilla: Destroy All Monsters Melee Remastered",
+                        "url": "https://opencritic.com/game/20818/godzilla-destroy-all-monsters-melee-remastered"
+                      },
+                      "id": "6aea583ef362f8279b7d5cf0",
+                      "outlet": "IGN",
+                      "outlet_id": 56,
+                      "outlet_image": "https://img.opencritic.com/outlet/56/edZfuPwc.jpg",
+                      "critics": [
+                        {
+                          "id": 1205,
+                          "name": "Will Borger"
+                        }
+                      ],
+                      "critic_alias": "Will Borger",
+                      "score": 70,
+                      "score_display": "7 / 10.0",
+                      "score_format": "0 to 10 incl decimals",
+                      "normalized_score": 100,
+                      "is_top_critic_pick": false,
+                      "title": "Godzilla: Destroy All Monsters Melee Remastered Review",
+                      "snippet": "Godzilla: Destroy All Monsters Melee Remastered is a delightful throwback to a bygone era of lazy weekends past that will give you back as m…",
+                      "url": "https://www.ign.com/articles/godzilla-destroy-all-monsters-melee-remastered-review",
+                      "language": "en-us",
+                      "published": "2026-11-02T00:00:00.000Z",
+                      "platforms": [
+                        "PC"
+                      ],
+                      "median_at_time_of_review": 78
+                    },
+                    {
+                      "game": {
+                        "id": 20690,
+                        "name": "Call of Duty: Modern Warfare 4",
+                        "url": "https://opencritic.com/game/20690/call-of-duty-modern-warfare-4"
+                      },
+                      "id": "6ae3813178b8defc10e5a045",
+                      "outlet": "IGN",
+                      "outlet_id": 56,
+                      "outlet_image": "https://img.opencritic.com/outlet/56/edZfuPwc.jpg",
+                      "critics": [
+                        {
+                          "id": 5288,
+                          "name": "Jarrett Green"
+                        }
+                      ],
+                      "critic_alias": "Jarrett Green",
+                      "score": 80,
+                      "score_display": "8 / 10.0",
+                      "score_format": "0 to 10 incl decimals",
+                      "normalized_score": 100,
+                      "is_top_critic_pick": false,
+                      "title": "Call of Duty: Modern Warfare 4 DMZ Review",
+                      "snippet": "Call of Duty: Modern Warfare 4’s DMZ mode is delightfully high-tension without getting too sweaty, and a strong addition to the growing list…",
+                      "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-dmz-review",
+                      "language": "en-us",
+                      "published": "2026-10-28T00:00:00.000Z",
+                      "platforms": [
+                        "PS5"
+                      ],
+                      "median_at_time_of_review": 78
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/opencritic/v1/reviews": {
+      "get": {
+        "operationId": "opencriticReviews",
+        "summary": "OpenCritic critic reviews",
+        "description": "A game's critic reviews, 20 a page: outlet, critic names, score as published (stars, out of 10, letter grade ...) and normalised to 100, top-critic pick flag, headline, snippet, link, language, platforms and publish date. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/opencritic-reviews",
+        "tags": [
+          "OpenCritic"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "OpenCritic game id. Or give `url`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "463"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "An opencritic.com game link instead of `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, starting at 1.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "game": {
+                    "id": 463,
+                    "name": "The Witcher 3: Wild Hunt",
+                    "url": "https://opencritic.com/game/463/the-witcher-3-wild-hunt",
+                    "top_critic_score": 92.54,
+                    "percent_recommended": 95.32,
+                    "tier": "Mighty",
+                    "num_reviews": 181,
+                    "num_top_critic_reviews": 152,
+                    "first_release_date": "2015-05-19T00:00:00.000Z",
+                    "platforms": [
+                      {
+                        "id": 6,
+                        "name": "PlayStation 4",
+                        "short_name": "PS4",
+                        "release_date": "2015-05-19T00:00:00.000Z"
+                      },
+                      {
+                        "id": 7,
+                        "name": "Xbox One",
+                        "short_name": "XB1",
+                        "release_date": "2015-05-19T00:00:00.000Z"
+                      },
+                      "… 4 more"
+                    ],
+                    "genres": [
+                      "Adventure",
+                      "RPG"
+                    ],
+                    "tags": [],
+                    "image": "https://img.opencritic.com/game/463/o/M0VUcLa8.jpg"
+                  },
+                  "page": 1,
+                  "per_page": 20,
+                  "total": 181,
+                  "count": 20,
+                  "next_page": 2,
+                  "reviews": [
+                    {
+                      "id": "682cc114f8c306636f636888",
+                      "outlet": "PC Gamer",
+                      "outlet_id": 162,
+                      "outlet_image": "https://img.opencritic.com/outlet/162/Tzt3P7so.jpg",
+                      "critics": [
+                        {
+                          "id": 732,
+                          "name": "Shaun Prescott"
+                        }
+                      ],
+                      "critic_alias": "Shaun Prescott",
+                      "score": 92,
+                      "score_display": "92 / 100",
+                      "score_format": "0 to 100, whole numbers",
+                      "normalized_score": 100,
+                      "is_top_critic_pick": false,
+                      "title": "The Witcher 3: Wild Hunt review",
+                      "snippet": "A big, beautiful, sprawling action RPG full of rich stories, and suffused with an oppressive darkness.",
+                      "url": "https://www.pcgamer.com/the-witcher-3-review/",
+                      "language": "en-us",
+                      "published": "2015-05-21T00:00:00.000Z",
+                      "platforms": [
+                        "PC"
+                      ],
+                      "median_at_time_of_review": 78
+                    },
+                    {
+                      "id": "63bf2a2607560b861277d73b",
+                      "outlet": "Game Rant",
+                      "outlet_id": 60,
+                      "outlet_image": "https://img.opencritic.com/outlet/60/Xpi802fv.jpg",
+                      "critics": [
+                        {
+                          "id": 8262,
+                          "name": "Adrian Morales"
+                        }
+                      ],
+                      "critic_alias": "Adrian Morales",
+                      "score": 90,
+                      "score_display": "4.5 / 5 stars",
+                      "score_format": "0 to 5 stars, incl half stars",
+                      "normalized_score": 100,
+                      "is_top_critic_pick": false,
+                      "title": "The Witcher 3: Wild Hunt Next-Gen Update Review",
+                      "snippet": "The Witcher 3: Wild Hunt on next-gen consoles is the best way to discover or re-discover one of the most celebrated RPGs of the last decade.",
+                      "url": "https://gamerant.com/the-witcher-3-wild-hunt-ps5-xbox-series-review/",
+                      "language": "en-us",
+                      "published": "2022-12-14T00:00:00.000Z",
+                      "platforms": [
+                        "PS5"
+                      ],
+                      "median_at_time_of_review": 80
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

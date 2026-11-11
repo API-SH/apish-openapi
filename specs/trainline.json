@@ -1,0 +1,1373 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Trainline",
+    "version": "1.0.0",
+    "description": "The Trainline API from API.SH: public Trainline data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Trainline",
+      "description": "5 endpoints (travel & events)",
+      "x-slug": "trainline",
+      "x-domains": [
+        "thetrainline.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trainline/v1/arrivals": {
+      "get": {
+        "operationId": "trainlineArrivals",
+        "summary": "Trainline UK live arrivals",
+        "description": "The live arrival board of a station in Great Britain: scheduled and expected time, platform, operator, origin and destination of each arriving service. Pass `from` to list only trains coming from that station.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/trainline-arrivals",
+        "tags": [
+          "Trainline"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "station",
+            "in": "query",
+            "required": true,
+            "description": "Station name or slug.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "manchester-piccadilly"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Only trains coming from this station (name or slug).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Services (default 100, max 200).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.thetrainline.com/live/arrivals/manchester-piccadilly",
+                  "station": {
+                    "name": "Manchester Piccadilly",
+                    "code": "MAN",
+                    "slug": "manchester-piccadilly"
+                  },
+                  "from": null,
+                  "checked_at": "2026-11-05T10:58:00",
+                  "updated_at": "2026-11-05T10:58:47.568Z",
+                  "count": 50,
+                  "services": [
+                    {
+                      "id": "L2NhbGxpbmdQYXR0ZXJuL0czODQwNS8yMDI2LTExLTA1",
+                      "scheduled": "10:43",
+                      "expected": "11:01",
+                      "on_time": false,
+                      "cancelled": false,
+                      "delayed": true,
+                      "platform": "14",
+                      "operator": "Transport for Wales",
+                      "origin": "Manchester Airport",
+                      "destination": null
+                    },
+                    {
+                      "id": "L2NhbGxpbmdQYXR0ZXJuL0c4NjE3Ni8yMDI2LTExLTA1",
+                      "scheduled": "10:52",
+                      "expected": "10:58",
+                      "on_time": false,
+                      "cancelled": false,
+                      "delayed": true,
+                      "platform": "14",
+                      "operator": "Northern",
+                      "origin": "Manchester Airport",
+                      "destination": null
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/trainline/v1/departures": {
+      "get": {
+        "operationId": "trainlineDepartures",
+        "summary": "Trainline UK live departures",
+        "description": "The live departure board of a station in Great Britain: every service of the next hours with scheduled and expected time, platform, operator, origin and destination, and on-time, delayed or cancelled flags. Pass `to` to list only trains calling at that station. Pass a service `id` to /trainline/v1/service for its calling points.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/trainline-departures",
+        "tags": [
+          "Trainline"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "station",
+            "in": "query",
+            "required": true,
+            "description": "Station name or slug, e.g. `london-euston`, `manchester-piccadilly`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "london-euston"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Only trains calling at this station (name or slug).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Services (default 100, max 200).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.thetrainline.com/live/departures/london-euston",
+                  "station": {
+                    "name": "London Euston",
+                    "code": "EUS",
+                    "slug": "london-euston"
+                  },
+                  "to": null,
+                  "checked_at": "2026-11-05T10:51:00",
+                  "updated_at": "2026-11-05T10:51:41.112Z",
+                  "count": 42,
+                  "services": [
+                    {
+                      "id": "L2NhbGxpbmdQYXR0ZXJuL1czNDIxMC8yMDI2LTExLTA1",
+                      "scheduled": "10:53",
+                      "expected": "On time",
+                      "on_time": true,
+                      "cancelled": false,
+                      "delayed": false,
+                      "platform": "2",
+                      "operator": "Avanti West Coast",
+                      "origin": "London Euston",
+                      "destination": "Manchester Piccadilly"
+                    },
+                    {
+                      "id": "L2NhbGxpbmdQYXR0ZXJuL1c4ODIwNC8yMDI2LTExLTA1",
+                      "scheduled": "10:54",
+                      "expected": "On time",
+                      "on_time": true,
+                      "cancelled": false,
+                      "delayed": false,
+                      "platform": "8",
+                      "operator": "West Midlands Trains",
+                      "origin": "London Euston",
+                      "destination": "Tring"
+                    },
+                    "… 40 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/trainline/v1/locations": {
+      "get": {
+        "operationId": "trainlineLocations",
+        "summary": "Trainline station and city search",
+        "description": "Stations, station groups (a city with all its stations), bus stops and airports that Trainline sells tickets to across Great Britain and Europe: code (URN), short code, type, country, time zone, the carriers that serve it, and a slug for the route and board endpoints.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/trainline-locations",
+        "tags": [
+          "Trainline"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Station or city name (2+ characters).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "manchester"
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of the names. Default `en-GB`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en-GB",
+                "en-US",
+                "fr-FR",
+                "de-DE",
+                "it-IT",
+                "es-ES",
+                "nl-NL",
+                "pt-PT",
+                "pl-PL",
+                "cs-CZ",
+                "sv-SE",
+                "da-DK"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Only one location type, e.g. `station` or `stationGroup`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "manchester",
+                  "locale": "en-GB",
+                  "count": 17,
+                  "locations": [
+                    {
+                      "code": "urn:trainline:generic:loc:MAN2968gb",
+                      "name": "Manchester Piccadilly",
+                      "short_code": "MAN",
+                      "type": "station",
+                      "country_code": "GB",
+                      "subtitle": null,
+                      "attributes": [
+                        "MainStation",
+                        "BusStation",
+                        "… 1 more"
+                      ],
+                      "time_zone": "Europe/London",
+                      "language": "en",
+                      "connections": [
+                        "atoc",
+                        "nationalexpress"
+                      ],
+                      "score": 0.40811986,
+                      "slug": "manchester-piccadilly"
+                    },
+                    {
+                      "code": "urn:trainline:generic:loc:115gb",
+                      "name": "Manchester",
+                      "short_code": "115",
+                      "type": "stationGroup",
+                      "country_code": "GB",
+                      "subtitle": "Any",
+                      "attributes": [
+                        "BusStation",
+                        "category:point"
+                      ],
+                      "time_zone": "Europe/London",
+                      "language": "en",
+                      "connections": [
+                        "atoc",
+                        "distribusion",
+                        "… 1 more"
+                      ],
+                      "score": 0.21027617,
+                      "slug": "manchester"
+                    },
+                    "… 15 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/trainline/v1/route": {
+      "get": {
+        "operationId": "trainlineRoute",
+        "summary": "Trainline route: times, trains per day, fares from",
+        "description": "Everything Trainline publishes about a train route between two cities or stations: average, fastest and slowest journey time, trains per day (and direct ones), first and last departure, changes, distance, operators, lowest fare and currency, a sample timetable of upcoming departures, customer rating and short reviews (first name only), editorial trip reviews, the FAQ, similar routes and top destinations from both ends. Works for British and European routes (London to Manchester, Paris to Lyon, Rome to Milan).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/trainline-route",
+        "tags": [
+          "Trainline"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "description": "Origin city or station name or slug (e.g. `london`, `paris`, `london-euston`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "london"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "description": "Destination city or station name or slug.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "manchester"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.thetrainline.com/train-times/london-to-manchester",
+                  "from": {
+                    "id": "2144c4ddc11461cf9b03af198933e8df",
+                    "name": "London",
+                    "slug": "london",
+                    "urn": "urn:trainline:generic:loc:182gb",
+                    "code": "182",
+                    "country_code": "GB",
+                    "lat": null,
+                    "lng": null
+                  },
+                  "to": {
+                    "id": "93583656327762b2e1831bdac48db2eb",
+                    "name": "Manchester",
+                    "slug": "manchester",
+                    "urn": "urn:trainline:generic:loc:115gb",
+                    "code": "115",
+                    "country_code": "GB",
+                    "lat": null,
+                    "lng": null
+                  },
+                  "title": "Trains to Manchester from London",
+                  "intro": "Want to travel from London to Manchester by train? Start your journey with us. It takes an average of 2 hours 51 minutes to travel from Lond…",
+                  "trains_per_day": 79,
+                  "direct_trains_per_day": 79,
+                  "fastest_min": 126,
+                  "average_min": 171,
+                  "slowest_min": 179,
+                  "first_departure": "04:53",
+                  "last_departure": "22:03",
+                  "min_changes": 0,
+                  "max_changes": 9,
+                  "sleepers": false,
+                  "distance_km": 262,
+                  "distance_miles": 163,
+                  "lowest_price": 14,
+                  "currency": "GBP",
+                  "operators": [
+                    {
+                      "id": "avantiwestcoast",
+                      "name": "Avanti West Coast",
+                      "url": "https://www.thetrainline.com/train-companies/avanti"
+                    }
+                  ],
+                  "train_types": [],
+                  "timetable": [
+                    {
+                      "departure": "2026-11-06T09:13:00",
+                      "arrival": "2026-11-06T11:19:00",
+                      "duration_min": 126,
+                      "changes": 0
+                    },
+                    {
+                      "departure": "2026-11-06T09:33:00",
+                      "arrival": "2026-11-06T11:44:00",
+                      "duration_min": 131,
+                      "changes": 0
+                    },
+                    "… 6 more"
+                  ],
+                  "rating": {
+                    "average": 3.2,
+                    "count": 79
+                  },
+                  "customer_reviews": [
+                    {
+                      "stars": 5,
+                      "text": "very good product",
+                      "date": "2024-06-29T11:05:34.398Z",
+                      "author": "Wieslaw"
+                    },
+                    {
+                      "stars": 4,
+                      "text": "Train journey was ok, delayed arriving into Manchester but got a refund of that part of my journey and was easy to sort. Thanks to driver fo…",
+                      "date": "2024-06-28T22:14:18.766Z",
+                      "author": "Cassie"
+                    },
+                    "… 18 more"
+                  ],
+                  "trip_reviews": [
+                    {
+                      "title": "Taking the train between London and Manchester is a good experience",
+                      "rating": 4,
+                      "text": "I often travel by train from London to Manchester with Avanti West Coast , travelling in Standard Class. It takes just over two hours to get…"
+                    }
+                  ],
+                  "faq": [
+                    {
+                      "question": "How do I travel from London to Manchester?",
+                      "answer": "You can get from London to Manchester by train in 2 hours and 51 minutes on average, with the fastest journeys taking just 2 hours and 6 min…"
+                    },
+                    {
+                      "question": "How long does the train from London to Manchester take?",
+                      "answer": "The average journey time by train between London and Manchester is 2 hours and 51 minutes, with around 79 trains per day running on this rou…"
+                    },
+                    "… 15 more"
+                  ],
+                  "similar_routes": [
+                    {
+                      "from": "Manchester",
+                      "to": "London",
+                      "url": "https://www.thetrainline.com/train-times/manchester-to-london"
+                    },
+                    {
+                      "from": "London",
+                      "to": "Manchester Airport",
+                      "url": "https://www.thetrainline.com/train-times/london-to-manchester-airport"
+                    },
+                    "… 47 more"
+                  ],
+                  "top_destinations_from_origin": [
+                    {
+                      "name": "Brighton",
+                      "slug": "brighton"
+                    },
+                    {
+                      "name": "Liverpool",
+                      "slug": "liverpool"
+                    },
+                    "… 3 more"
+                  ],
+                  "top_destinations_from_destination": [
+                    {
+                      "name": "London",
+                      "slug": "london"
+                    },
+                    {
+                      "name": "Liverpool",
+                      "slug": "liverpool"
+                    },
+                    "… 3 more"
+                  ],
+                  "alternate_language_urls": {
+                    "de": "https://www.thetrainline.com/de/bahn-fahrplan/london-nach-manchester",
+                    "en": "https://www.thetrainline.com/train-times/london-to-manchester",
+                    "es": "https://www.thetrainline.com/es/horarios-trenes/londres-a-manchester",
+                    "fr": "https://www.thetrainline.com/fr/horaires-train/londres-a-manchester",
+                    "it": "https://www.thetrainline.com/it/orari-treni/londra-a-manchester",
+                    "nl": "https://www.thetrainline.com/nl/treintijden/londen-naar-manchester",
+                    "pt-br": "https://www.thetrainline.com/pt-br/horarios-de-trem/londres-para-manchester",
+                    "da": "https://www.thetrainline.com/da/togtider/london-til-manchester",
+                    "cs": "https://www.thetrainline.com/cs/odjezdy-vlaku/londyn-do-manchester",
+                    "de-at": "https://www.thetrainline.com/de-at/bahn-fahrplan/london-nach-manchester",
+                    "de-ch": "https://www.thetrainline.com/de-ch/bahn-fahrplan/london-nach-manchester",
+                    "fr-ch": "https://www.thetrainline.com/fr-ch/horaires-train/londres-a-manchester",
+                    "it-ch": "https://www.thetrainline.com/it-ch/orari-treni/londra-a-manchester",
+                    "nb": "https://www.thetrainline.com/nb/togtider/london-til-manchester",
+                    "pl": "https://www.thetrainline.com/pl/rozklad-jazdy/londyn-do-manchester",
+                    "pt": "https://www.thetrainline.com/pt/horarios-de-comboio/londres-a-manchester",
+                    "sv": "https://www.thetrainline.com/sv/tagtider/london-till-manchester",
+                    "en-us": "https://www.thetrainline.com/en-us/train-times/london-to-manchester"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/trainline/v1/service": {
+      "get": {
+        "operationId": "trainlineService",
+        "summary": "Trainline UK train calling points",
+        "description": "One train from a live board (or the next one leaving the station when no id is given): operator, every calling point with scheduled and expected time, platform, whether the train has left, and where it is now. Service ids come from /trainline/v1/departures or /trainline/v1/arrivals and are valid on their day only.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/trainline-service",
+        "tags": [
+          "Trainline"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "station",
+            "in": "query",
+            "required": true,
+            "description": "The board station the id came from (name or slug).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "london-euston"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Service `id` from a departures or arrivals board. Without it: the next service on the station's board.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "board",
+            "in": "query",
+            "required": false,
+            "description": "Board the id came from. Default `departures`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "departures",
+                "arrivals"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.thetrainline.com/live/departures/london-euston/L2NhbGxpbmdQYXR0ZXJuL0MxMTA1Mi8yMDI2LTExLTA1",
+                  "id": "L2NhbGxpbmdQYXR0ZXJuL0MxMTA1Mi8yMDI2LTExLTA1",
+                  "train_uid": "C11052",
+                  "date": "2026-11-05",
+                  "operator": "London Overground",
+                  "scheduled": "11:00",
+                  "checked_at": "10:58",
+                  "origin": "London Euston",
+                  "destination": "Watford Junction",
+                  "current_station": "London Euston",
+                  "count": 19,
+                  "calling_points": [
+                    {
+                      "station": "London Euston",
+                      "scheduled": "11:00",
+                      "expected": "On time",
+                      "platform": null,
+                      "departed": false,
+                      "train_here": true,
+                      "origin": true,
+                      "destination": false,
+                      "selected": true
+                    },
+                    {
+                      "station": "South Hampstead",
+                      "scheduled": "11:05",
+                      "expected": "On time",
+                      "platform": null,
+                      "departed": false,
+                      "train_here": false,
+                      "origin": false,
+                      "destination": false,
+                      "selected": false
+                    },
+                    "… 17 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

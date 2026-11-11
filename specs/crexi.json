@@ -1,0 +1,1741 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Crexi",
+    "version": "1.0.0",
+    "description": "The Crexi API from API.SH: public Crexi data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Crexi",
+      "description": "4 endpoints (real estate)",
+      "x-slug": "crexi",
+      "x-domains": [
+        "crexi.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crexi/v1/broker": {
+      "get": {
+        "operationId": "crexiBroker",
+        "summary": "Crexi broker and their listings",
+        "description": "A Crexi broker's public profile (name, photo, brokerage with website and logo, licenses, member since) and their properties for sale, newest first. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/crexi-broker",
+        "tags": [
+          "Crexi"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Broker id (brokers[].id in /crexi/v1/listing).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "12358"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Listings per page, 1-60.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "25"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, starting at 1. Pass `next_page` back as `page`; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "broker": {
+                    "id": 12358,
+                    "global_id": "d3d9b689-3d93-4c8d-afee-8205905724a5",
+                    "first_name": "Kyle",
+                    "last_name": "Hartung",
+                    "name": "Kyle Hartung",
+                    "profile_url": "https://www.crexi.com/profile/kyleha",
+                    "photo": "https://crexi.com/images/format=auto,width=164,height=164,fit=cover/users/12358/4e484023fd094753bbc053bc4cbe6f49.png",
+                    "brokerage": {
+                      "name": "Goodman Real Estate Services Group LLC",
+                      "website": "https://goodmanrealestate.com",
+                      "logo": "https://crexi.com/images/format=auto,width=150,height=100/user-accounts/23276/b88f383a03614ba391c5ce981434432e.png",
+                      "address": null
+                    },
+                    "licenses": [
+                      {
+                        "number": "SAL.2003016343"
+                      }
+                    ],
+                    "listings": null,
+                    "badges": [],
+                    "auctioneer": false,
+                    "member_since": "2017-01-06T22:36:58.541Z"
+                  },
+                  "total": 16,
+                  "page": 1,
+                  "limit": 25,
+                  "count": 16,
+                  "next_page": null,
+                  "listings": [
+                    {
+                      "id": 2464139,
+                      "url": "https://www.crexi.com/properties/2464139/ohio-university-hospitals-heartland-dental---10b-guarantor",
+                      "name": "University Hospitals | Heartland Dental - $10B Guarantor",
+                      "description": "$10 Billion Guaranty - A+ Regional Location",
+                      "status": "On-Market",
+                      "asking_price": 5816000,
+                      "types": [
+                        "Office"
+                      ],
+                      "investment_type": "Institutional",
+                      "square_feet": 13802,
+                      "cap_rate": null,
+                      "lot_size_acres": null,
+                      "units": null,
+                      "offers_due": null,
+                      "activated_on": "2026-10-08T15:49:00.553Z",
+                      "updated_on": "2026-11-02T15:20:11.203Z",
+                      "is_new": false,
+                      "opportunity_zone": false,
+                      "has_video": false,
+                      "has_virtual_tour": false,
+                      "has_offering_memorandum": true,
+                      "has_flyer": false,
+                      "image_count": 8,
+                      "thumbnail": "https://crexi.com/images/format=auto,width=716,height=444,fit=cover/assets/2464139/9790806b8e234fe9b62daad6f70e6cd5.JPG",
+                      "brokerage": "Goodman Real Estate Services Group LLC",
+                      "brokerage_logo": "https://crexi.com/images/format=auto,width=150,height=100/user-accounts/23276/b88f383a03614ba391c5ce981434432e.png",
+                      "locations": [
+                        {
+                          "address": "1480 Center Rd",
+                          "city": "Avon",
+                          "county": "Lorain County",
+                          "state": "OH",
+                          "state_name": "Ohio",
+                          "zip": "44011",
+                          "neighborhood": null,
+                          "full_address": "1480 Center Rd, Avon, Lorain County, OH 44011",
+                          "latitude": 41.46609540176578,
+                          "longitude": -82.01974783488949
+                        }
+                      ]
+                    },
+                    {
+                      "id": 2712672,
+                      "url": "https://www.crexi.com/properties/2712672/ohio-trumbull-plaza",
+                      "name": "Trumbull Plaza",
+                      "description": "Extreme Value Add Opportunity",
+                      "status": "Auction",
+                      "asking_price": 350000,
+                      "types": [
+                        "Retail"
+                      ],
+                      "investment_type": "Value Add",
+                      "square_feet": 86374,
+                      "cap_rate": null,
+                      "lot_size_acres": null,
+                      "units": null,
+                      "offers_due": "2026-11-04T16:00:00Z",
+                      "activated_on": "2026-09-25T17:35:05.832Z",
+                      "updated_on": "2026-11-01T23:13:03.918Z",
+                      "is_new": false,
+                      "opportunity_zone": false,
+                      "has_video": true,
+                      "has_virtual_tour": false,
+                      "has_offering_memorandum": true,
+                      "has_flyer": false,
+                      "image_count": 31,
+                      "thumbnail": "https://crexi.com/images/format=auto,width=716,height=444,fit=cover/assets/2712672/6f51f3a4f77946078f49ca4a3b709a20.jpg",
+                      "brokerage": "Goodman Real Estate Services Group LLC",
+                      "brokerage_logo": "https://crexi.com/images/format=auto,width=150,height=100/user-accounts/23276/b88f383a03614ba391c5ce981434432e.png",
+                      "locations": [
+                        {
+                          "address": "2547 Parkman Rd NW",
+                          "city": "Warren",
+                          "county": "Trumbull County",
+                          "state": "OH",
+                          "state_name": "Ohio",
+                          "zip": "44485",
+                          "neighborhood": null,
+                          "full_address": "2547 Parkman Rd NW, Warren, Trumbull County, OH 44485",
+                          "latitude": 41.2511628,
+                          "longitude": -80.8577375
+                        }
+                      ]
+                    },
+                    "… 14 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/crexi/v1/leases": {
+      "get": {
+        "operationId": "crexiLeases",
+        "summary": "Crexi commercial properties for lease",
+        "description": "US commercial spaces for lease on Crexi by place, property type, building class or keyword: id, link, name, status, type and subtype, building size, buildings, lot size, tenancy, vacant units, available spaces (rentable square feet, range, rate type), dates, photos, brokers and addresses with coordinates. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/crexi-leases",
+        "tags": [
+          "Crexi"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "City, county, state or ZIP as written on the site (e.g. \"Austin, TX\", \"Texas\", \"78701\").",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Austin, TX"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Property types, comma-separated (Retail, Office, Industrial, ...).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "class",
+            "in": "query",
+            "required": false,
+            "description": "Building class, comma-separated: A, B, C, D.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keyword.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, 1-60.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "25"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, starting at 1. Pass `next_page` back as `page`; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "total": 1195,
+                  "page": 1,
+                  "limit": 25,
+                  "count": 25,
+                  "next_page": 2,
+                  "applied_filters": {
+                    "address": {
+                      "type": "Plain",
+                      "mode": "Include",
+                      "values": [
+                        "Austin, TX"
+                      ],
+                      "structuredValues": [
+                        "Austin, TX"
+                      ]
+                    }
+                  },
+                  "results": [
+                    {
+                      "id": 1001459,
+                      "url": "https://www.crexi.com/lease/properties/1001459/texas-114-ralph-ablanedo",
+                      "name": "114 Ralph Ablanedo",
+                      "description": "Industrial | 5.2 Acre Site with 25,600 SF Building and 3.4 Acre Fenced Yard",
+                      "status": "Active",
+                      "type": "Industrial",
+                      "subtype": "Warehouse",
+                      "building_sqft": 26200,
+                      "buildings": 4,
+                      "lot_size_acres": 5.2,
+                      "tenancy": "Multi",
+                      "vacant_units": 4,
+                      "spaces": [
+                        {
+                          "rentable_sqft": 3850,
+                          "rentable_sqft_min": 1500,
+                          "rentable_sqft_max": 18000,
+                          "rentable_acres": null,
+                          "rate_type": "Per Year",
+                          "rate": null,
+                          "lease_type": null
+                        }
+                      ],
+                      "activated_on": "2025-07-28T16:35:01.973",
+                      "updated_on": "2026-10-19T17:33:33.341",
+                      "images": [
+                        "https://crexi.com/images/format=auto,width=620,height=400,fit=cover/lease-assets/1001459/6a87c90ce7a34e108e64f6f41a3a09b6.JPG",
+                        "https://crexi.com/images/format=auto,width=620,height=400,fit=cover/lease-assets/1001459/d433383c24164b5289146f66837016ee.JPG",
+                        "… 57 more"
+                      ],
+                      "image_count": 59,
+                      "brokers": [
+                        {
+                          "name": "Lucian Morehead",
+                          "brokerage": "Asterra Properties",
+                          "global_id": "1575d586-1d7c-4f72-bc64-c77d41673852"
+                        },
+                        {
+                          "name": "Matt Rester",
+                          "brokerage": "Asterra Properties",
+                          "global_id": "e634790a-1ad3-47db-bbfd-b6e58d0ea992"
+                        },
+                        "… 1 more"
+                      ],
+                      "locations": [
+                        {
+                          "address": "114 Ralph Ablanedo",
+                          "city": "Austin",
+                          "county": null,
+                          "state": "TX",
+                          "state_name": "Texas",
+                          "zip": "78748-5521",
+                          "neighborhood": "South Austin",
+                          "full_address": "114 Ralph Ablanedo, Austin, TX 78748-5521",
+                          "latitude": 30.17389847639479,
+                          "longitude": -97.78639993736967
+                        }
+                      ]
+                    },
+                    {
+                      "id": 1001726,
+                      "url": "https://www.crexi.com/lease/properties/1001726/texas-dessau-retail-center",
+                      "name": "Dessau Retail Center",
+                      "description": "Retail | 1 space available | 1,100 SqFt",
+                      "status": "Active",
+                      "type": "Retail",
+                      "subtype": "",
+                      "building_sqft": 6800,
+                      "buildings": 3,
+                      "lot_size_acres": 6.5,
+                      "tenancy": "Multi",
+                      "vacant_units": 1,
+                      "spaces": [
+                        {
+                          "rentable_sqft": 1100,
+                          "rentable_sqft_min": 1100,
+                          "rentable_sqft_max": 1100,
+                          "rentable_acres": null,
+                          "rate_type": "Per Year",
+                          "rate": null,
+                          "lease_type": null
+                        }
+                      ],
+                      "activated_on": "2025-07-28T22:07:37.194",
+                      "updated_on": "2026-09-17T20:25:47.047",
+                      "images": [
+                        "https://crexi.com/images/format=auto,width=620,height=400,fit=cover/lease-assets/1001726/4e33e0419d374e3ea644d8c1e1f91eef.PNG",
+                        "https://crexi.com/images/format=auto,width=620,height=400,fit=cover/lease-assets/1001726/3887e1f7462c4f37b2f71070df5065f6.PNG",
+                        "… 5 more"
+                      ],
+                      "image_count": 7,
+                      "brokers": [
+                        {
+                          "name": "Christopher Hernandez",
+                          "brokerage": "Resolut RE Austin",
+                          "global_id": "edb6463c-c79e-435d-bbcd-f0ab22fd9660"
+                        }
+                      ],
+                      "locations": [
+                        {
+                          "address": "11800 Dessau Rd",
+                          "city": "Austin",
+                          "county": "Travis County",
+                          "state": "TX",
+                          "state_name": "Texas",
+                          "zip": "78754",
+                          "neighborhood": "Tech Ridge",
+                          "full_address": "11800 Dessau Rd, Austin, TX 78754",
+                          "latitude": 30.3785752,
+                          "longitude": -97.6579754
+                        }
+                      ]
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/crexi/v1/listing": {
+      "get": {
+        "operationId": "crexiListing",
+        "summary": "Crexi listing",
+        "description": "One Crexi listing (for sale or for lease): name, summary, status, asking price, types, subtypes, tenants, the property details table (values the site hides from signed-out visitors are left out), investment highlights, marketing description, auction terms, offers-due date, Opportunity Zone, dates, locations with coordinates, lease suites, every photo and video, and each broker with brokerage, address, website, licenses and listing count. Pass `latest=true` with search filters to open the newest matching listing.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/crexi-listing",
+        "tags": [
+          "Crexi"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Listing id (the number in crexi.com/properties/<id>/...). Or give `url`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A crexi.com listing link (sale or /lease/properties/ link).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "description": "sale or lease, when giving a bare lease id.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sale",
+                "lease"
+              ]
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "true: open the first current result of a search made with the other filter params given here (the same as the search route's, e.g. type, state), instead of `id`/`url`.",
+            "schema": {
+              "type": "boolean"
+            },
+            "example": "true"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "With `latest`: the search's `type` filter.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Retail"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "With `latest`: the search's `state` filter.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "TX"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 2725313,
+                  "kind": "sale",
+                  "url": "https://www.crexi.com/properties/2725313/texas-former-preschool-facility",
+                  "name": "Former Preschool Facility",
+                  "summary": "Ideal for an Owner-User | Dallas-Fort Worth MSA",
+                  "status": "Auction",
+                  "asking_price": 225000,
+                  "unpriced": false,
+                  "sold": false,
+                  "paused": false,
+                  "types": [
+                    "Retail"
+                  ],
+                  "subtypes": [
+                    "Day Care/Nursery"
+                  ],
+                  "tenants": [],
+                  "details": {
+                    "Starting Bid": "$225,000",
+                    "Property Type": "Retail",
+                    "Sub Type": "Day Care/Nursery",
+                    "Square Footage": "9,619",
+                    "Buildings": "3",
+                    "Stories": "1",
+                    "Zoning": "NC - Neighborhood Commercial",
+                    "Lot Size (acres)": "1",
+                    "Ownership": "Fee Simple"
+                  },
+                  "investment_highlights": "High Growth Region\nDallas-Fort Worth Metroplex\nExcellent Visibility\nJustin Elementary School\nNear New Housing Developments\nStrong Demographi…",
+                  "marketing_description": "For registration\nrequirements and regulations, please review HERE or Alex Orth | 949.500.9409 | name@example.com.\n\nProperty tours are availa…",
+                  "building_highlights": null,
+                  "offers_due": "2026-11-18T20:00:00Z",
+                  "auction": {
+                    "starting_bid": "$225,000",
+                    "participation_deposit": 10000,
+                    "earnest_deposit": 10,
+                    "earnest_deposit_is_percent": true,
+                    "escrow_days": 30,
+                    "auctioneer": null
+                  },
+                  "opportunity_zone": false,
+                  "has_offering_memorandum": true,
+                  "has_flyer": false,
+                  "has_virtual_tour": false,
+                  "created_on": "2026-09-30T17:21:05.476Z",
+                  "activated_on": "2026-10-13T17:35:03.613Z",
+                  "updated_on": "2026-10-22T15:37:34.775Z",
+                  "locations": [
+                    {
+                      "address": "427 Boss Range Rd",
+                      "city": "Justin",
+                      "county": "Denton County",
+                      "state": "TX",
+                      "state_name": "Texas",
+                      "zip": "76247",
+                      "neighborhood": null,
+                      "full_address": null,
+                      "latitude": 33.0791318,
+                      "longitude": -97.3083275
+                    }
+                  ],
+                  "suites": [],
+                  "photos": [
+                    {
+                      "url": "https://crexi.com/images/format=auto,width=3000,height=2000/assets/2725313/270a42217143400b9dbc2986945aefa8.JPG",
+                      "type": "Image",
+                      "caption": null
+                    },
+                    {
+                      "url": "https://crexi.com/images/format=auto,width=3000,height=2000/assets/2725313/0693e708f8304f4abfa1da1b89a34e72.JPG",
+                      "type": "Image",
+                      "caption": null
+                    },
+                    "… 31 more"
+                  ],
+                  "videos": [],
+                  "brokers": [
+                    {
+                      "id": 2220330,
+                      "global_id": "b224b5f0-557b-4682-bc80-b6901a0a83ee",
+                      "first_name": "Michael",
+                      "last_name": "Kaplan",
+                      "name": "Michael Kaplan",
+                      "profile_url": "https://www.crexi.com/profile/michaelkaplan7",
+                      "photo": "https://crexi.com/images/format=auto,width=164,height=164,fit=cover/users/1083785/76befca9effd4bd199ea70664179c682.JPG",
+                      "brokerage": {
+                        "name": "SRS Real Estate Partners - Global Company",
+                        "website": "https://srsre.com/",
+                        "logo": "https://crexi.com/images/format=auto,width=150,height=100/user-accounts/194569/db0417d06c9a42a08a1ec2c9ec0312ea.png",
+                        "address": {
+                          "address": "8144 Walnut Hill Lane",
+                          "city": "Dallas",
+                          "county": "",
+                          "state": "TX",
+                          "state_name": "Texas",
+                          "zip": "75231",
+                          "neighborhood": null,
+                          "full_address": null,
+                          "latitude": null,
+                          "longitude": null
+                        }
+                      },
+                      "licenses": [
+                        {
+                          "number": "771801-SA",
+                          "state": "TX",
+                          "brokerage": "SRS Real Estate Partners",
+                          "auctioneer": false
+                        },
+                        {
+                          "number": "S.0189416.LLC",
+                          "state": "NV",
+                          "brokerage": "LOGIC Commercial Real Estate",
+                          "auctioneer": false
+                        }
+                      ],
+                      "listings": 122,
+                      "badges": [
+                        "PRO"
+                      ],
+                      "auctioneer": false,
+                      "member_since": "2020-03-03T17:41:35.024Z"
+                    },
+                    {
+                      "id": 2948990,
+                      "global_id": "5ec00618-2bd4-4831-b91a-d1a70d5fc87a",
+                      "first_name": "Alex",
+                      "last_name": "Orth",
+                      "name": "Alex Orth",
+                      "profile_url": "https://www.crexi.com/profile/jamesorth",
+                      "photo": "https://crexi.com/images/format=auto,width=164,height=164,fit=cover/users/2948990/7495bf2be2304c23932c862c69e26611.jpg",
+                      "brokerage": {
+                        "name": null,
+                        "website": null,
+                        "logo": null,
+                        "address": {
+                          "address": null,
+                          "city": null,
+                          "county": "",
+                          "state": null,
+                          "state_name": null,
+                          "zip": null,
+                          "neighborhood": null,
+                          "full_address": null,
+                          "latitude": null,
+                          "longitude": null
+                        }
+                      },
+                      "licenses": [],
+                      "listings": 70,
+                      "badges": [],
+                      "auctioneer": false,
+                      "member_since": "2026-03-30T16:43:43.809Z"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/crexi/v1/search": {
+      "get": {
+        "operationId": "crexiSearch",
+        "summary": "Crexi commercial properties for sale",
+        "description": "US commercial properties for sale on Crexi with the site's search filters: property type and subtype, state, ZIP, keyword, asking price, cap rate, building size, price per square foot, occupancy, tenancy, tenant brand and credit, investment type, Opportunity Zone and broker. Each result has id, link, name, status (On-Market, Auction...), asking price, types, investment type, square feet, cap rate, lot size, offers-due date, dates, media flags, thumbnail, brokerage and locations with coordinates. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/crexi-search",
+        "tags": [
+          "Crexi"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Property types, comma-separated: Retail, Multifamily, Office, Industrial, Hospitality, Mixed Use, Land, Self Storage, Mobile Home Park, Senior Living, Special Purpose, Note/Loan, Business for Sale.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Retail"
+          },
+          {
+            "name": "subtype",
+            "in": "query",
+            "required": false,
+            "description": "Subtypes, comma-separated (e.g. Gas Station, Shopping Center, QSR/Fast Food, Warehouse, Medical Office, Hotel).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "US state codes, comma-separated.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "TX"
+          },
+          {
+            "name": "zip",
+            "in": "query",
+            "required": false,
+            "description": "ZIP codes, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keyword (name, tenant, address...).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum asking price (USD); unpriced listings are then left out.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum asking price (USD).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "cap_rate_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum cap rate (%).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "cap_rate_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum cap rate (%).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sqft_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum building size (sq ft).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sqft_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum building size (sq ft).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_per_sqft_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price per sq ft.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_per_sqft_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price per sq ft.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "occupancy_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum occupancy (%).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "occupancy_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum occupancy (%).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "tenancy",
+            "in": "query",
+            "required": false,
+            "description": "Tenancy, comma-separated: Single, Multi, Vacant.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": false,
+            "description": "Tenant brands, comma-separated (e.g. Starbucks, Dollar General).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenant_credit",
+            "in": "query",
+            "required": false,
+            "description": "Tenant credit, comma-separated: Credit Rated, Corporate Guarantee, Franchisee.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "investment_type",
+            "in": "query",
+            "required": false,
+            "description": "Investment type, e.g. Value Add, Core, Core Plus, Opportunistic, NNN.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "opportunity_zone",
+            "in": "query",
+            "required": false,
+            "description": "true: only properties in an Opportunity Zone.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "broker_id",
+            "in": "query",
+            "required": false,
+            "description": "Only this broker's listings (a broker id from /crexi/v1/listing).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_unpriced",
+            "in": "query",
+            "required": false,
+            "description": "false: leave out listings without an asking price.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price",
+                "newest",
+                "size",
+                "cap_rate"
+              ]
+            },
+            "example": "relevance"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "asc or desc (default: asc for price and size, else desc).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, 1-60.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "25"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, starting at 1. Pass `next_page` back as `page`; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "total": 7201,
+                  "page": 1,
+                  "limit": 25,
+                  "count": 25,
+                  "next_page": 2,
+                  "applied_filters": {
+                    "count": 25,
+                    "offset": 0,
+                    "sortOrder": "rank",
+                    "sortDirection": "Descending",
+                    "includeUnpriced": true,
+                    "types": [
+                      "Retail"
+                    ],
+                    "states": [
+                      "TX"
+                    ]
+                  },
+                  "results": [
+                    {
+                      "id": 2725313,
+                      "url": "https://www.crexi.com/properties/2725313/texas-former-preschool-facility",
+                      "name": "Former Preschool Facility",
+                      "description": "Ideal for an Owner-User | Dallas-Fort Worth MSA",
+                      "status": "Auction",
+                      "asking_price": 225000,
+                      "types": [
+                        "Retail"
+                      ],
+                      "investment_type": null,
+                      "square_feet": 9619,
+                      "cap_rate": null,
+                      "lot_size_acres": null,
+                      "units": null,
+                      "offers_due": "2026-11-18T20:00:00Z",
+                      "activated_on": "2026-10-13T17:35:03.613Z",
+                      "updated_on": "2026-10-22T15:37:34.775Z",
+                      "is_new": false,
+                      "opportunity_zone": false,
+                      "has_video": true,
+                      "has_virtual_tour": false,
+                      "has_offering_memorandum": true,
+                      "has_flyer": false,
+                      "image_count": 33,
+                      "thumbnail": "https://crexi.com/images/format=auto,width=716,height=444,fit=cover/assets/2725313/270a42217143400b9dbc2986945aefa8.JPG",
+                      "brokerage": "SRS Real Estate Partners - Global Company",
+                      "brokerage_logo": "https://crexi.com/images/format=auto,width=150,height=100/user-accounts/194569/db0417d06c9a42a08a1ec2c9ec0312ea.png",
+                      "locations": [
+                        {
+                          "address": "427 Boss Range Rd",
+                          "city": "Justin",
+                          "county": "Denton County",
+                          "state": "TX",
+                          "state_name": "Texas",
+                          "zip": "76247",
+                          "neighborhood": null,
+                          "full_address": "427 Boss Range Rd, Justin, Denton County, TX 76247",
+                          "latitude": 33.0791318,
+                          "longitude": -97.3083275
+                        }
+                      ]
+                    },
+                    {
+                      "id": 2365369,
+                      "url": "https://www.crexi.com/properties/2365369/texas-walgreens",
+                      "name": "Walgreens",
+                      "description": "High-Growth DFW MSA | Long-Term Corporate Lease With Built-In Rent Growth | Excellent Visibility",
+                      "status": "On-Market",
+                      "asking_price": 4400000,
+                      "types": [
+                        "Retail"
+                      ],
+                      "investment_type": null,
+                      "square_feet": 15022,
+                      "cap_rate": null,
+                      "lot_size_acres": null,
+                      "units": null,
+                      "offers_due": null,
+                      "activated_on": "2026-02-24T18:39:55.911Z",
+                      "updated_on": "2026-06-30T21:36:36.869Z",
+                      "is_new": false,
+                      "opportunity_zone": false,
+                      "has_video": false,
+                      "has_virtual_tour": false,
+                      "has_offering_memorandum": true,
+                      "has_flyer": false,
+                      "image_count": 3,
+                      "thumbnail": "https://crexi.com/images/format=auto,width=716,height=444,fit=cover/assets/2365369/1ab5f630f14c457b80b1e5c704992e12.JPG",
+                      "brokerage": "Matthews",
+                      "brokerage_logo": "https://crexi.com/images/format=auto,width=150,height=100/user-accounts/93903/1a492abe7d3345d7b86e8a722d399cee.png",
+                      "locations": [
+                        {
+                          "address": "6984 Rufe Snow Dr",
+                          "city": "Fort Worth",
+                          "county": null,
+                          "state": "TX",
+                          "state_name": "Texas",
+                          "zip": "76148",
+                          "neighborhood": null,
+                          "full_address": "6984 Rufe Snow Dr, Fort Worth, TX 76148",
+                          "latitude": 32.8745113,
+                          "longitude": -97.2372543
+                        }
+                      ]
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

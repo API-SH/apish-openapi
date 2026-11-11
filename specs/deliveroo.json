@@ -1,0 +1,979 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Deliveroo",
+    "version": "1.0.0",
+    "description": "The Deliveroo API from API.SH: public Deliveroo data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Deliveroo",
+      "description": "2 endpoints (food & delivery)",
+      "x-slug": "deliveroo",
+      "x-domains": [
+        "deliveroo.co.uk"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/deliveroo/v1/menu": {
+      "get": {
+        "operationId": "deliverooMenu",
+        "summary": "Deliveroo restaurant menu with prices and options",
+        "description": "One Deliveroo restaurant's menu: restaurant id, name, address, area, city, currency, rating and review count, the header lines (rating, opening time), description, image, offers, and every category with every item (id, name, description, calories, price, discounted price, offer, popular, available, image, allergens, dietary tags, option group ids), plus every option group (name, minimum and maximum choices) with each option's name, price and availability.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/deliveroo-menu",
+        "tags": [
+          "Deliveroo"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "A Deliveroo restaurant link (deliveroo.co.uk/menu/<city>/<area>/<restaurant>, any Deliveroo country site).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://deliveroo.co.uk/menu/london/leicester-square/shake-shack-leicester-square"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "91193",
+                  "uname": "shake-shack-leicester-square",
+                  "name": "Shake Shack - Burgers & Shakes - Leicester Square",
+                  "url": "https://deliveroo.co.uk/menu/london/leicester-square/shake-shack-leicester-square",
+                  "country": "uk",
+                  "address": "1-2 Coventry St, London, London, W1D6BH",
+                  "neighborhood": "Leicester Square",
+                  "city": "london",
+                  "postcode": null,
+                  "currency": "GBP",
+                  "branch_type": "RESTAURANT",
+                  "fulfillment": "DELIVEROO",
+                  "group_order": true,
+                  "rating": 4.7,
+                  "review_count_text": "500+",
+                  "header": [
+                    "4.7 Excellent (500+) 'Tasty food'",
+                    "Rated 4.7 Excellent from 500+ reviews. People say Tasty food Show reviews",
+                    "… 2 more"
+                  ],
+                  "info": [],
+                  "description": "Serving up amazing food, Shake Shack - Burgers & Shakes - Leicester Square sits in the heart of Leicester Square. With dishes you're guarant…",
+                  "image": "https://rs-menus-api.roocdn.com/images/14fa87b5-4a52-4e53-b632-698a8d264245/image.jpeg?width=1200&height=630&fit=crop",
+                  "offers": [
+                    {
+                      "type": "BuyOneGetOneFreeOffer",
+                      "minimum_order": "£0.00",
+                      "item_ids": [
+                        "2605086188"
+                      ]
+                    }
+                  ],
+                  "menu_id": "2032931",
+                  "category_count": 14,
+                  "item_count": 264,
+                  "more_items_not_shown": false,
+                  "categories": [
+                    {
+                      "id": "956304801",
+                      "name": "Limited Time Only!",
+                      "items": [
+                        {
+                          "id": "2849625037",
+                          "category_id": "956304801",
+                          "name": "The Big Shack",
+                          "description": "Made with two 100% Aberdeen Angus cheeseburgers made to order, topped with lettuce, pickles, onions, tomatoes, and secret sauce on a three-l…",
+                          "calories": "1008 kcal",
+                          "price": {
+                            "…": "3 fields"
+                          },
+                          "price_discounted": null,
+                          "price_info": null,
+                          "offer": null,
+                          "popular": false,
+                          "available": true,
+                          "image": "https://rs-menus-api.roocdn.com/images/3f25b128-5496-49ae-8382-84b11d49f8c1/image.jpeg?width=800&height=600&auto=webp&format=jpg&fit=crop",
+                          "allergens": "Contains celery, eggs, gluten, milk, mustard, soybeans Questions about allergens, ingredients or cooking methods? Please contact the restaur…",
+                          "dietary": null,
+                          "rating": null,
+                          "max_selection": null,
+                          "modifier_group_ids": [
+                            "2922037683",
+                            "2922037682"
+                          ]
+                        },
+                        {
+                          "id": "2849625056",
+                          "category_id": "956304801",
+                          "name": "Onion Rings",
+                          "description": "Crispy beer-battered onion rings made from sliced sweet Spanish onions served with secret sauce.",
+                          "calories": "603 kcal",
+                          "price": {
+                            "…": "3 fields"
+                          },
+                          "price_discounted": null,
+                          "price_info": null,
+                          "offer": null,
+                          "popular": false,
+                          "available": true,
+                          "image": "https://rs-menus-api.roocdn.com/images/b4183b0c-20e7-4b55-9644-1462521442f2/image.jpeg?width=800&height=600&auto=webp&format=jpg&fit=crop",
+                          "allergens": "Contains eggs, gluten, milk, mustard, nuts, soybeans Questions about allergens, ingredients or cooking methods? Please contact the restauran…",
+                          "dietary": null,
+                          "rating": null,
+                          "max_selection": null,
+                          "modifier_group_ids": [
+                            "2788727623",
+                            "2788727624"
+                          ]
+                        },
+                        "… 1 more"
+                      ]
+                    },
+                    {
+                      "id": "928634690",
+                      "name": "Featured Shake",
+                      "items": [
+                        {
+                          "id": "2849625047",
+                          "category_id": "928634690",
+                          "name": "Matcha Cookies & Cream Shake",
+                          "description": "Vanilla custard hand-spun with matcha powder and vanilla cream cookies, topped with crushed cookies",
+                          "calories": "899 kcal",
+                          "price": {
+                            "…": "3 fields"
+                          },
+                          "price_discounted": null,
+                          "price_info": null,
+                          "offer": null,
+                          "popular": false,
+                          "available": true,
+                          "image": "https://rs-menus-api.roocdn.com/images/e3262425-9ea3-49e8-985b-2ca78a0bfc79/image.jpeg?width=800&height=600&auto=webp&format=jpg&fit=crop",
+                          "allergens": "Contains eggs, gluten, milk, sesame, soybeans Questions about allergens, ingredients or cooking methods? Please contact the restaurant.",
+                          "dietary": [
+                            {
+                              "…": "5 fields"
+                            }
+                          ],
+                          "rating": null,
+                          "max_selection": null,
+                          "modifier_group_ids": []
+                        }
+                      ]
+                    },
+                    "… 12 more"
+                  ],
+                  "option_groups": [
+                    {
+                      "id": "2893295020",
+                      "name": "NO ICE",
+                      "description": "Customize:.",
+                      "min": 0,
+                      "max": 1,
+                      "multiselect": false,
+                      "options": [
+                        {
+                          "id": "2805384498",
+                          "name": "No Ice",
+                          "description": null,
+                          "price": {
+                            "…": "3 fields"
+                          },
+                          "available": true,
+                          "calories": null,
+                          "modifier_group_ids": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "2893295019",
+                      "name": "Ice Modifier",
+                      "description": "Customise.",
+                      "min": 0,
+                      "max": 1,
+                      "multiselect": false,
+                      "options": [
+                        {
+                          "id": "2805384500",
+                          "name": "No Ice",
+                          "description": null,
+                          "price": {
+                            "…": "3 fields"
+                          },
+                          "available": true,
+                          "calories": null,
+                          "modifier_group_ids": []
+                        }
+                      ]
+                    },
+                    "… 32 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/deliveroo/v1/restaurants": {
+      "get": {
+        "operationId": "deliverooRestaurants",
+        "summary": "Deliveroo restaurants in an area, with dish search",
+        "description": "Restaurants and shops Deliveroo lists for an area (UK, Ireland, France, Italy, Belgium, Netherlands, UAE, Kuwait, Qatar, Singapore, Hong Kong), optionally for a dish, cuisine or name search and a delivery point: id, name, menu link, rating, review count, distance, delivery time, offers, image and the card summary, plus the dishes the search matched (name, price and restaurant in the description, link, image). Pass a Deliveroo area link, or city and area as they appear in Deliveroo links; lat and lon narrow it to a delivery point.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/deliveroo-restaurants",
+        "tags": [
+          "Deliveroo"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A Deliveroo area link (deliveroo.co.uk/restaurants/<city>/<area>, any Deliveroo country site). Or pass city and area.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://deliveroo.co.uk/restaurants/london/soho"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Dish, cuisine or restaurant name to search for (optional).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "burger"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Deliveroo country site when passing city and area (default uk).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "uk",
+                "ie",
+                "fr",
+                "it",
+                "be",
+                "nl",
+                "ae",
+                "kw",
+                "qa",
+                "sg",
+                "hk"
+              ]
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "City as in Deliveroo links, e.g. london, manchester, paris.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "required": false,
+            "description": "Area as in Deliveroo links, e.g. soho, leicester-square.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Delivery point latitude (with lon).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": false,
+            "description": "Delivery point longitude.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "uk",
+                  "city": "london",
+                  "area": "soho",
+                  "geohash": null,
+                  "query": "burger",
+                  "url": "https://deliveroo.co.uk/restaurants/london/soho?query=burger",
+                  "subheader": "150 partners",
+                  "count": 150,
+                  "restaurants": [
+                    {
+                      "id": "168386",
+                      "name": "Burger King",
+                      "url": "https://deliveroo.co.uk/menu/London/fitzrovia/6734-burger-king-tottenham-court-road",
+                      "rating": 4.6,
+                      "rating_count_text": "500+",
+                      "distance": "0.3 mi",
+                      "delivery_minutes": 10,
+                      "delivery_fee": null,
+                      "offers": [
+                        "Spend £10, Get £0 delivery fee"
+                      ],
+                      "image": "https://rs-menus-api.roocdn.com/images/dc27e06c-3d8d-4763-81eb-163ad3620903/image.jpeg?width=800&height=400&auto=webp&format=jpg&fit=crop",
+                      "summary": "Burger King. 0.3 mi. Delivers at 10. Rated 4.6 from 500+ reviews.",
+                      "drn_id": "047dc90e-f71f-4ff6-9495-7936057b6a0f"
+                    },
+                    {
+                      "id": "752907",
+                      "name": "Supernova",
+                      "url": "https://deliveroo.co.uk/menu/London/mayfair/supernova-nas",
+                      "rating": 4.8,
+                      "rating_count_text": "500+",
+                      "distance": "0.8 mi",
+                      "delivery_minutes": 20,
+                      "delivery_fee": null,
+                      "offers": [
+                        "Spend £10, Get £0 delivery fee"
+                      ],
+                      "image": "https://rs-menus-api.roocdn.com/images/219126fe-2c72-4a9e-b1da-7fc544a9dfa7/image.jpeg?width=800&height=400&auto=webp&format=jpg&fit=crop",
+                      "summary": "Supernova. 0.8 mi. Delivers at 20. Rated 4.8 from 500+ reviews.",
+                      "drn_id": "df9894fa-096d-4c01-9461-a2c27270055e"
+                    },
+                    "… 148 more"
+                  ],
+                  "dishes": [
+                    {
+                      "id": "2760243325",
+                      "name": "House Cheeseburger ",
+                      "description": "Item House Cheeseburger  from Supernova. Priced at £11.50. 0.8 mi. Delivers at 20. Rated 4.8 from 500+ reviews. Only on Deliveroo.",
+                      "url": "https://deliveroo.co.uk/menu/London/mayfair/supernova-nas?day=today&item-drn-id=13b2a747-3de5-4208-a515-3394532996de&item-id=2760243325&time…",
+                      "image": "https://rs-menus-api.roocdn.com/images/f841b721-5b33-4bce-8cb8-fd11370eca94/image.jpeg?width=800&height=600&auto=webp&format=jpg&fit=crop"
+                    },
+                    {
+                      "id": "2719112073",
+                      "name": "Bacon Double Cheeseburger",
+                      "description": "Item Bacon Double Cheeseburger from Burger King. Priced at £7.09. 0.3 mi. Delivers at 10. Rated 4.6 from 500+ reviews. Meal deals.",
+                      "url": "https://deliveroo.co.uk/menu/London/fitzrovia/6734-burger-king-tottenham-court-road?day=today&item-drn-id=2d35ef25-101d-4c39-960c-62a045894c…",
+                      "image": "https://rs-menus-api.roocdn.com/images/7d3db71d-ed87-4e55-841c-40ef752a7c63/image.jpeg?width=800&height=600&auto=webp&format=jpg&fit=crop"
+                    },
+                    "… 124 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

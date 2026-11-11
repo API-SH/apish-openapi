@@ -1,0 +1,1481 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: H&M",
+    "version": "1.0.0",
+    "description": "The H&M API from API.SH: public H&M data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "H&M",
+      "description": "4 endpoints (e-commerce)",
+      "x-slug": "h-m",
+      "x-domains": [
+        "hm.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hm/v1/category": {
+      "get": {
+        "operationId": "hmCategory",
+        "summary": "H&M category listing",
+        "description": "Products of one H&M category in one market (locale such as en_us, en_gb, de_de), with sort, facet filters and paging. Each product has the same fields as `/hm/v1/search`: article id, name, brand, price, regular price and sale flag, colour, category, availability, markers, sizes with stock levels, other colours, link, images and `raw`. Also the sort options and facets (each with its filter values, counts and whether it is selected). Pass `next_page` back as `page`; null on the last page. An unknown category answers 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hm-category",
+        "tags": [
+          "H&M"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": true,
+            "description": "The site's category id, e.g. `men_tshirtstanks`, `ladies_dresses`, `ladies_jeans`, `men_shoes`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "men_tshirtstanks"
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Market and language as in hm.com links: en_us (default), en_gb, de_de, fr_fr, sv_se, ...",
+            "schema": {
+              "type": "string"
+            },
+            "example": "en_us"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), newest, price_asc, price_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "price_asc",
+                "price_desc"
+              ]
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "A facet filter `facet:value` from `facets[].values[].value`, e.g. `colorWithNames:black_000000` or `fits:Muscle fit`. Repeat the parameter (or join with `||`) for several, up to 10.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Products per page (default 36, max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": "men_tshirtstanks",
+                  "locale": "en_us",
+                  "sort": "relevance",
+                  "page": 1,
+                  "total": 785,
+                  "total_pages": 22,
+                  "count": 36,
+                  "next_page": 2,
+                  "sort_options": [
+                    {
+                      "id": "relevance",
+                      "label": "Relevance"
+                    },
+                    {
+                      "id": "newest",
+                      "label": "New"
+                    },
+                    "… 2 more"
+                  ],
+                  "facets": [
+                    {
+                      "id": "priceRange",
+                      "name": "Price",
+                      "type": "RANGE",
+                      "min": 3.99,
+                      "max": 69.99,
+                      "values": []
+                    },
+                    {
+                      "id": "colorWithNames",
+                      "name": "ColorWithNames",
+                      "type": "TEXT",
+                      "values": [
+                        {
+                          "value": "colorWithNames:beige_f5f5dc",
+                          "name": "beige_f5f5dc",
+                          "count": 52,
+                          "selected": false
+                        },
+                        {
+                          "value": "colorWithNames:black_000000",
+                          "name": "black_000000",
+                          "count": 152,
+                          "selected": false
+                        },
+                        "… 12 more"
+                      ]
+                    },
+                    "… 28 more"
+                  ],
+                  "items": [
+                    {
+                      "id": "0685816001",
+                      "name": "Regular Fit T-shirt",
+                      "brand": "H&M",
+                      "price": 7.99,
+                      "regular_price": 7.99,
+                      "on_sale": false,
+                      "price_label": "$7.99",
+                      "color": "White",
+                      "color_hex": "FFFFFF",
+                      "color_groups": [
+                        "white_ffffff"
+                      ],
+                      "category": "men_tshirtstanks_shortsleeve",
+                      "availability": "Available",
+                      "coming_soon": false,
+                      "new_arrival": false,
+                      "markers": [],
+                      "sizes": [
+                        {
+                          "id": "001",
+                          "label": "XS",
+                          "in_stock": true,
+                          "stock_level": 2
+                        },
+                        {
+                          "id": "002",
+                          "label": "S",
+                          "in_stock": true,
+                          "stock_level": 2
+                        },
+                        "… 5 more"
+                      ],
+                      "other_colors": [
+                        {
+                          "id": "0685816001",
+                          "color": "White",
+                          "hex": "FFFFFF",
+                          "url": "https://www2.hm.com/en_us/productpage.0685816001.html",
+                          "image": "https://image.hm.com/assets/hm/bd/e4/bde4ef42f917ccb678c4ff1d218520ce2f10ff6d.jpg"
+                        },
+                        {
+                          "id": "0685816002",
+                          "color": "Black",
+                          "hex": "272628",
+                          "url": "https://www2.hm.com/en_us/productpage.0685816002.html",
+                          "image": "https://image.hm.com/assets/hm/44/42/4442fbac4e3080ec20b2f14e353fea267249b0dd.jpg"
+                        },
+                        "… 12 more"
+                      ],
+                      "url": "https://www2.hm.com/en_us/productpage.0685816001.html",
+                      "image": "https://image.hm.com/assets/hm/bd/e4/bde4ef42f917ccb678c4ff1d218520ce2f10ff6d.jpg",
+                      "model_image": "https://image.hm.com/assets/hm/fe/4b/fe4bc3765fc41e4b116394a8e6c0f83a6597d5ff.jpg",
+                      "images": [
+                        "https://image.hm.com/assets/hm/14/a1/14a1c834892a334f858a5ad260526b2737a84133.jpg",
+                        "https://image.hm.com/assets/hm/97/a3/97a3d1b31de464b85f4ef15a23173fb9f8b1166a.jpg",
+                        "… 2 more"
+                      ]
+                    },
+                    {
+                      "id": "0570002002",
+                      "name": "Slim Fit T-shirt",
+                      "brand": "H&M",
+                      "price": 9.99,
+                      "regular_price": 9.99,
+                      "on_sale": false,
+                      "price_label": "$9.99",
+                      "color": "White",
+                      "color_hex": "FFFFFF",
+                      "color_groups": [
+                        "white_ffffff"
+                      ],
+                      "category": "men_tshirtstanks_shortsleeve",
+                      "availability": "Available",
+                      "coming_soon": false,
+                      "new_arrival": false,
+                      "markers": [],
+                      "sizes": [
+                        {
+                          "id": "001",
+                          "label": "XS",
+                          "in_stock": true,
+                          "stock_level": 2
+                        },
+                        {
+                          "id": "002",
+                          "label": "S",
+                          "in_stock": true,
+                          "stock_level": 2
+                        },
+                        "… 5 more"
+                      ],
+                      "other_colors": [
+                        {
+                          "id": "0570002002",
+                          "color": "White",
+                          "hex": "FFFFFF",
+                          "url": "https://www2.hm.com/en_us/productpage.0570002002.html",
+                          "image": "https://image.hm.com/assets/hm/c5/91/c5915289f322a3803646ce39b0bb3e3996f05921.jpg"
+                        },
+                        {
+                          "id": "0570002001",
+                          "color": "Black",
+                          "hex": "272628",
+                          "url": "https://www2.hm.com/en_us/productpage.0570002001.html",
+                          "image": "https://image.hm.com/assets/hm/09/58/0958cc08f86b7127b5dd8e0d0091824a337b6588.jpg"
+                        },
+                        "… 6 more"
+                      ],
+                      "url": "https://www2.hm.com/en_us/productpage.0570002002.html",
+                      "image": "https://image.hm.com/assets/hm/c5/91/c5915289f322a3803646ce39b0bb3e3996f05921.jpg",
+                      "model_image": "https://image.hm.com/assets/hm/9d/41/9d4137ef0214f27ff041d26e811c756b952fce99.jpg",
+                      "images": [
+                        "https://image.hm.com/assets/hm/1f/a2/1fa22f352e80dc8e8023a5d8518dde3fa88789e2.jpg",
+                        "https://image.hm.com/assets/hm/fd/1e/fd1e2f79baf5262ee7dc4714118af86f1dea0caf.jpg",
+                        "… 1 more"
+                      ]
+                    },
+                    "… 34 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hm/v1/product": {
+      "get": {
+        "operationId": "hmProduct",
+        "summary": "H&M product",
+        "description": "One H&M article by number or link: name, brand, price and regular price, sale flag, colour, category, availability, sizes with stock levels, the other colours (article ids, links, images), markers, link and images, in the given market.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hm-product",
+        "tags": [
+          "H&M"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Article number, e.g. 1359796003.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1359796003"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "An hm.com product link (its locale sets the market), instead of `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Market for `id`: en_us (default), en_gb, de_de, ...",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "locale": "en_us",
+                  "id": "1359796003",
+                  "name": "Teddy Fleece Sweatshirt",
+                  "brand": "H&M",
+                  "price": 44.99,
+                  "regular_price": 44.99,
+                  "on_sale": false,
+                  "price_label": "$44.99",
+                  "color": "Ivory/patterned",
+                  "color_hex": "DFD7CA",
+                  "color_groups": [
+                    "white_ffffff",
+                    "multi_000000"
+                  ],
+                  "category": "ladies_hoodiesswetshirts_sweatshirts",
+                  "availability": "Available",
+                  "coming_soon": false,
+                  "new_arrival": false,
+                  "markers": [],
+                  "sizes": [
+                    {
+                      "id": "002",
+                      "label": "XS",
+                      "in_stock": true,
+                      "stock_level": 2
+                    },
+                    {
+                      "id": "003",
+                      "label": "S",
+                      "in_stock": false,
+                      "stock_level": 0
+                    },
+                    "… 4 more"
+                  ],
+                  "other_colors": [
+                    {
+                      "id": "1359796003",
+                      "color": "Ivory/patterned",
+                      "hex": "DFD7CA",
+                      "url": "https://www2.hm.com/en_us/productpage.1359796003.html",
+                      "image": "https://image.hm.com/assets/hm/f6/33/f633da6eb92fde81c953c6c56fa48e3a965ba7c5.jpg"
+                    },
+                    {
+                      "id": "1359796001",
+                      "color": "Light taupe/hearts",
+                      "hex": "A29588",
+                      "url": "https://www2.hm.com/en_us/productpage.1359796001.html",
+                      "image": "https://image.hm.com/assets/hm/e4/23/e423eb1f512cbe40ef801a66db4a976fadf91650.jpg"
+                    }
+                  ],
+                  "url": "https://www2.hm.com/en_us/productpage.1359796003.html",
+                  "image": "https://image.hm.com/assets/hm/f6/33/f633da6eb92fde81c953c6c56fa48e3a965ba7c5.jpg",
+                  "model_image": "https://image.hm.com/assets/hm/5a/8e/5a8e42e61eb7d30dcbb1015f6a191b01a82a36b2.jpg",
+                  "images": [
+                    "https://image.hm.com/assets/hm/01/63/0163b80f4db5a0a129b16dd4cef2423ac4f5ad89.jpg",
+                    "https://image.hm.com/assets/hm/5f/ad/5fad301de459754fa44638d522bdbfebeb71b4bc.jpg",
+                    "… 2 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hm/v1/search": {
+      "get": {
+        "operationId": "hmSearch",
+        "summary": "H&M product search",
+        "description": "Products on H&M for keywords in one market (locale such as en_us, en_gb, de_de, fr_fr, sv_se), with sort, department and facet filters (one or several combined). Each product: article id, name, brand, price, regular price and sale flag, colour (name, hex, colour groups), category, availability, new-arrival flag, markers, sizes with stock levels, other colours, link, images and `raw`. Also the departments and facets (each with its filter values and counts) for narrowing the search. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hm-search",
+        "tags": [
+          "H&M"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Keywords, e.g. `shirt`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "shirt"
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Market and language as in hm.com links: en_us (default), en_gb, de_de, fr_fr, sv_se, ...",
+            "schema": {
+              "type": "string"
+            },
+            "example": "en_us"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), newest, price_asc, price_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "price_asc",
+                "price_desc"
+              ]
+            }
+          },
+          {
+            "name": "department",
+            "in": "query",
+            "required": false,
+            "description": "A department id from `departments`, e.g. men_all, ladies_all.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "A facet value from `facets` (its `value`), e.g. colorWithNames:black_000000. Repeat `filter` (or join values with `||`) to combine up to 10 facets, e.g. `filter=colorWithNames:black_000000&filter=fits:Loose fit`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Products per page (1-100, default 36).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "t-shirt",
+                  "locale": "en_us",
+                  "sort": "relevance",
+                  "page": 1,
+                  "total": 2104,
+                  "total_pages": 59,
+                  "count": 36,
+                  "next_page": 2,
+                  "did_you_mean": [],
+                  "departments": [
+                    {
+                      "id": "all",
+                      "name": "All",
+                      "count": 2104
+                    },
+                    {
+                      "id": "ladies_all",
+                      "name": "Women",
+                      "count": 503
+                    },
+                    "… 6 more"
+                  ],
+                  "facets": [
+                    {
+                      "id": "priceRange",
+                      "name": "Price",
+                      "type": "RANGE",
+                      "min": 2.99,
+                      "max": 69.99,
+                      "values": []
+                    },
+                    {
+                      "id": "colorWithNames",
+                      "name": "ColorWithNames",
+                      "type": "TEXT",
+                      "values": [
+                        {
+                          "value": "colorWithNames:beige_f5f5dc",
+                          "name": "beige_f5f5dc",
+                          "count": 180
+                        },
+                        {
+                          "value": "colorWithNames:black_000000",
+                          "name": "black_000000",
+                          "count": 278
+                        },
+                        "… 12 more"
+                      ]
+                    },
+                    "… 28 more"
+                  ],
+                  "url": "https://www2.hm.com/en_us/search-results.html?q=t-shirt",
+                  "items": [
+                    {
+                      "id": "0963662139",
+                      "name": "Cotton T-shirt",
+                      "brand": "H&M",
+                      "price": 9.99,
+                      "regular_price": 9.99,
+                      "on_sale": false,
+                      "price_label": "$9.99",
+                      "color": "White",
+                      "color_hex": "FFFFFF",
+                      "color_groups": [
+                        "white_ffffff"
+                      ],
+                      "category": "ladies_basics_tops_shortsleeve",
+                      "availability": "Available",
+                      "coming_soon": false,
+                      "new_arrival": false,
+                      "markers": [],
+                      "sizes": [
+                        {
+                          "id": "001",
+                          "label": "XXS",
+                          "in_stock": false,
+                          "stock_level": 0
+                        },
+                        {
+                          "id": "002",
+                          "label": "XS",
+                          "in_stock": true,
+                          "stock_level": 2
+                        },
+                        "… 7 more"
+                      ],
+                      "other_colors": [
+                        {
+                          "id": "0963662139",
+                          "color": "White",
+                          "hex": "FFFFFF",
+                          "url": "https://www2.hm.com/en_us/productpage.0963662139.html",
+                          "image": "https://image.hm.com/assets/hm/e4/af/e4af2eae840fddf244b30cb264ef4bf04e5c45b6.jpg"
+                        },
+                        {
+                          "id": "0963662002",
+                          "color": "Black",
+                          "hex": "272628",
+                          "url": "https://www2.hm.com/en_us/productpage.0963662002.html",
+                          "image": "https://image.hm.com/assets/hm/05/5e/055e2e9c63b3e9fc54c848282e2987fbf33552b6.jpg"
+                        },
+                        "… 8 more"
+                      ],
+                      "url": "https://www2.hm.com/en_us/productpage.0963662139.html",
+                      "image": "https://image.hm.com/assets/hm/e4/af/e4af2eae840fddf244b30cb264ef4bf04e5c45b6.jpg",
+                      "model_image": "https://image.hm.com/assets/hm/fa/be/fabedf3f372872334b0d22f6ae76018e681e8de6.jpg",
+                      "images": [
+                        "https://image.hm.com/assets/hm/4b/6d/4b6df2e5bcac894fd454509172f3f55ab4432465.jpg",
+                        "https://image.hm.com/assets/hm/79/b1/79b1e73d4fcfa866463083ac3c0a2dfb4440a3fa.jpg"
+                      ]
+                    },
+                    {
+                      "id": "0685816001",
+                      "name": "Regular Fit T-shirt",
+                      "brand": "H&M",
+                      "price": 7.99,
+                      "regular_price": 7.99,
+                      "on_sale": false,
+                      "price_label": "$7.99",
+                      "color": "White",
+                      "color_hex": "FFFFFF",
+                      "color_groups": [
+                        "white_ffffff"
+                      ],
+                      "category": "men_tshirtstanks_shortsleeve",
+                      "availability": "Available",
+                      "coming_soon": false,
+                      "new_arrival": false,
+                      "markers": [],
+                      "sizes": [
+                        {
+                          "id": "001",
+                          "label": "XS",
+                          "in_stock": true,
+                          "stock_level": 2
+                        },
+                        {
+                          "id": "002",
+                          "label": "S",
+                          "in_stock": true,
+                          "stock_level": 2
+                        },
+                        "… 5 more"
+                      ],
+                      "other_colors": [
+                        {
+                          "id": "0685816001",
+                          "color": "White",
+                          "hex": "FFFFFF",
+                          "url": "https://www2.hm.com/en_us/productpage.0685816001.html",
+                          "image": "https://image.hm.com/assets/hm/bd/e4/bde4ef42f917ccb678c4ff1d218520ce2f10ff6d.jpg"
+                        },
+                        {
+                          "id": "0685816002",
+                          "color": "Black",
+                          "hex": "272628",
+                          "url": "https://www2.hm.com/en_us/productpage.0685816002.html",
+                          "image": "https://image.hm.com/assets/hm/44/42/4442fbac4e3080ec20b2f14e353fea267249b0dd.jpg"
+                        },
+                        "… 12 more"
+                      ],
+                      "url": "https://www2.hm.com/en_us/productpage.0685816001.html",
+                      "image": "https://image.hm.com/assets/hm/bd/e4/bde4ef42f917ccb678c4ff1d218520ce2f10ff6d.jpg",
+                      "model_image": "https://image.hm.com/assets/hm/fe/4b/fe4bc3765fc41e4b116394a8e6c0f83a6597d5ff.jpg",
+                      "images": [
+                        "https://image.hm.com/assets/hm/14/a1/14a1c834892a334f858a5ad260526b2737a84133.jpg",
+                        "https://image.hm.com/assets/hm/97/a3/97a3d1b31de464b85f4ef15a23173fb9f8b1166a.jpg",
+                        "… 2 more"
+                      ]
+                    },
+                    "… 34 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hm/v1/stores": {
+      "get": {
+        "operationId": "hmStores",
+        "summary": "H&M stores",
+        "description": "Every H&M store in the locale's country: store code, name, status, phone, address, city, state, postal code, coordinates, opening hours and exceptions, and departments. Filter by name, city, state or postal code with `q`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hm-stores",
+        "tags": [
+          "H&M"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Market as in hm.com links, e.g. en_us, en_gb, de_de (default en_us).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "en_us"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only stores whose name, city, state or postal code contains this text.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "locale": "en_us",
+                  "q": null,
+                  "total": 478,
+                  "count": 478,
+                  "stores": [
+                    {
+                      "id": "PR0001",
+                      "name": "The Mall of San Juan",
+                      "status": "OPEN",
+                      "store_class": "Red",
+                      "phone": "+1 555 010 0000",
+                      "address": "The Mall of San Juan, 1000 Mall of San Juan Boulevard",
+                      "city": "San Juan",
+                      "state": null,
+                      "postal_code": "00924",
+                      "country": "United States",
+                      "country_code": "PR",
+                      "lat": 18.41238973091739,
+                      "lng": -66.02539797558586,
+                      "opening_hours": [
+                        {
+                          "day": "Mon",
+                          "opens": "09:00",
+                          "closes": "20:00"
+                        },
+                        {
+                          "day": "Tue",
+                          "opens": "09:00",
+                          "closes": "20:00"
+                        },
+                        "… 5 more"
+                      ],
+                      "exceptions": [],
+                      "departments": [],
+                      "opened": null,
+                      "closing": null
+                    },
+                    {
+                      "id": "PR0002",
+                      "name": "Plaza del Sol",
+                      "status": "OPEN",
+                      "store_class": "Red",
+                      "phone": "+1 555 010 0000",
+                      "address": "Plaza del Sol, 725 West Main Avenue",
+                      "city": "Bayamón",
+                      "state": null,
+                      "postal_code": "00961",
+                      "country": "United States",
+                      "country_code": "PR",
+                      "lat": 18.40589315983806,
+                      "lng": -66.16296494714356,
+                      "opening_hours": [
+                        {
+                          "day": "Mon",
+                          "opens": "09:00",
+                          "closes": "21:00"
+                        },
+                        {
+                          "day": "Tue",
+                          "opens": "09:00",
+                          "closes": "21:00"
+                        },
+                        "… 5 more"
+                      ],
+                      "exceptions": [],
+                      "departments": [],
+                      "opened": null,
+                      "closing": null
+                    },
+                    "… 476 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

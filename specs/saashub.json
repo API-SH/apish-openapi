@@ -1,0 +1,1438 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: SaaSHub",
+    "version": "1.0.0",
+    "description": "The SaaSHub API from API.SH: public SaaSHub data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "SaaSHub",
+      "description": "5 endpoints (jobs & b2b)",
+      "x-slug": "saashub",
+      "x-domains": [
+        "saashub.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/saashub/v1/alternatives": {
+      "get": {
+        "operationId": "saashubAlternatives",
+        "summary": "SaaSHub alternatives to a product",
+        "description": "The ranked alternatives to a product on SaaSHub, with the product's header (name, tagline, rating, alternatives count). Each alternative has its rank, name, slug, link, tagline, logo, upvotes, website, key features, pricing model and price, and flags for verified and sponsored entries. Page 1 also lists verified alternatives and popular comparisons. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/saashub-alternatives",
+        "tags": [
+          "SaaSHub"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "The product's SaaSHub slug, or a saashub.com link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "slack"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "product": {
+                    "slug": "slack",
+                    "url": "https://www.saashub.com/slack",
+                    "name": "Slack",
+                    "tagline": "A messaging app for teams who see through the Earth!",
+                    "logo": "https://cdn-b.saashub.com/images/app/service_logos/5/1c2ffc8237fa/large.png?1525414106",
+                    "origin": "the United States",
+                    "website": "https://slack.com/",
+                    "alternatives_count": null,
+                    "rating": 4.3,
+                    "reviews_count": 9,
+                    "pricing": {
+                      "text": "Official pricing",
+                      "url": "https://slack.com/pricing"
+                    },
+                    "status": "UP",
+                    "links": [
+                      {
+                        "title": "Blog",
+                        "url": "https://slack.com/blog"
+                      }
+                    ],
+                    "breadcrumbs": [
+                      "Project Management",
+                      "Communication",
+                      "… 13 more"
+                    ]
+                  },
+                  "page": 1,
+                  "count": 14,
+                  "next_page": 2,
+                  "alternatives": [
+                    {
+                      "rank": 1,
+                      "name": "Trello",
+                      "slug": "trello",
+                      "url": "https://www.saashub.com/trello",
+                      "alternatives_url": "https://www.saashub.com/trello-alternatives",
+                      "tagline": "Infinitely flexible. Incredibly easy to use. Great mobile apps. It's free. Trello keeps track of everything, from the big picture to the min…",
+                      "logo": "https://cdn-b.saashub.com/images/app/service_logos/0/8493346fb012/medium.png?1525414095",
+                      "upvotes": 275,
+                      "website": "https://trello.com/",
+                      "features": [
+                        "User-Friendly Interface",
+                        "Collaborative Features",
+                        "… 2 more"
+                      ],
+                      "pricing_model": "freemium",
+                      "price": "$12.5 / Monthly (Per user - Business Class)",
+                      "open_source": null,
+                      "verified": false,
+                      "sponsored": false
+                    },
+                    {
+                      "rank": 2,
+                      "name": "Asana",
+                      "slug": "asana",
+                      "url": "https://www.saashub.com/asana",
+                      "alternatives_url": "https://www.saashub.com/asana-alternatives",
+                      "tagline": "Asana project management is an effort to re-imagine how we work together, through modern productivity software. Fast and versatile, Asana he…",
+                      "logo": "https://cdn-b.saashub.com/images/app/service_logos/1/cab5d7b9e2b4/medium.png?1632899889",
+                      "upvotes": 197,
+                      "website": "https://asana.com/",
+                      "features": [
+                        "User-friendly Interface",
+                        "Collaboration Features",
+                        "… 2 more"
+                      ],
+                      "pricing_model": "freemium",
+                      "price": "$11.99 / Monthly (Per user - Premium)",
+                      "open_source": null,
+                      "verified": false,
+                      "sponsored": false
+                    },
+                    "… 12 more"
+                  ],
+                  "verified_alternatives": [
+                    {
+                      "name": "Velkri",
+                      "slug": "velkri",
+                      "url": "https://www.saashub.com/velkri",
+                      "logo": "https://cdn-b.saashub.com/images/app/service_logos/391/p6c2cwglwt0f/medium.png?1793309699",
+                      "tagline": "Velkri is a project workspace where chat, calls, meeting notes, files and tasks live together, and it remembers what was decided, by whom an…"
+                    },
+                    {
+                      "name": "Octopus Prime",
+                      "slug": "octopus-prime",
+                      "url": "https://www.saashub.com/octopus-prime",
+                      "logo": "https://cdn-b.saashub.com/images/app/service_logos/383/6eopgocilira/medium.png?1792422702",
+                      "tagline": "The communication and productivity app that keeps your OpenClaw agents working: scheduled wake-ups, tasks and calendar events that wake agen…"
+                    },
+                    "… 8 more"
+                  ],
+                  "popular_comparisons": [
+                    {
+                      "title": "VS Bizagi",
+                      "a": "slack",
+                      "b": "bizagi"
+                    },
+                    {
+                      "title": "VS Signal",
+                      "a": "slack",
+                      "b": "signal"
+                    },
+                    "… 11 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/saashub/v1/categories": {
+      "get": {
+        "operationId": "saashubCategories",
+        "summary": "SaaSHub categories",
+        "description": "Every category SaaSHub lists (slug, name, group, link) and its verticals. Use a slug with /saashub/v1/category or as `category` in /saashub/v1/search.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/saashub-categories",
+        "tags": [
+          "SaaSHub"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 154,
+                  "verticals": [
+                    {
+                      "slug": "ai",
+                      "name": "AI",
+                      "url": "https://www.saashub.com/v/ai"
+                    },
+                    {
+                      "slug": "nocode",
+                      "name": "No Code",
+                      "url": "https://www.saashub.com/v/nocode"
+                    },
+                    "… 3 more"
+                  ],
+                  "categories": [
+                    {
+                      "slug": "crm",
+                      "name": "CRM",
+                      "group": "Popular categories",
+                      "url": "https://www.saashub.com/best-crm-software"
+                    },
+                    {
+                      "slug": "help-desk",
+                      "name": "Help Desk",
+                      "group": "Popular categories",
+                      "url": "https://www.saashub.com/best-help-desk-software"
+                    },
+                    "… 152 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/saashub/v1/category": {
+      "get": {
+        "operationId": "saashubCategory",
+        "summary": "SaaSHub category ranking",
+        "description": "The best products in a SaaSHub category, in the site's ranking order: rank, name, slug, link, tagline, logo, upvotes, website, key features, pricing model and price, verified and sponsored flags, plus the category's name and description. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/saashub-category",
+        "tags": [
+          "SaaSHub"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "Category slug (from /saashub/v1/categories) or a saashub.com/best-...-software link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "team-collaboration"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": {
+                    "slug": "team-collaboration",
+                    "name": "Team Collaboration",
+                    "title": "Best Team Collaboration Products in 2026",
+                    "description": "Platforms facilitating team collaboration and communication.",
+                    "url": "https://www.saashub.com/best-team-collaboration-software"
+                  },
+                  "page": 1,
+                  "count": 14,
+                  "next_page": 2,
+                  "products": [
+                    {
+                      "rank": 1,
+                      "name": "Asana",
+                      "slug": "asana",
+                      "url": "https://www.saashub.com/asana",
+                      "alternatives_url": "https://www.saashub.com/asana-alternatives",
+                      "tagline": "Asana project management is an effort to re-imagine how we work together, through modern productivity software. Fast and versatile, Asana he…",
+                      "logo": "https://cdn-b.saashub.com/images/app/service_logos/1/cab5d7b9e2b4/medium.png?1632899889",
+                      "upvotes": 165,
+                      "website": "https://asana.com/",
+                      "features": [
+                        "User-friendly Interface",
+                        "Collaboration Features",
+                        "… 2 more"
+                      ],
+                      "pricing_model": "freemium",
+                      "price": "$11.99 / Monthly (Per user - Premium)",
+                      "open_source": null,
+                      "verified": false,
+                      "sponsored": false
+                    },
+                    {
+                      "rank": null,
+                      "name": "InboxAgent",
+                      "slug": "inboxagent",
+                      "url": "https://www.saashub.com/inboxagent",
+                      "alternatives_url": null,
+                      "tagline": "InboxAgent uses AI to read your shared mailboxes, like info@ and sales@, plus everyone's own inbox, on Microsoft 365, Gmail, Zoho Mail or IM…",
+                      "logo": "https://cdn-b.saashub.com/images/app/service_logos/363/avwcafxmtxct/medium.png?1788885868",
+                      "upvotes": null,
+                      "website": null,
+                      "features": [
+                        "Triage-based inbox system",
+                        "AI Classification",
+                        "… 2 more"
+                      ],
+                      "pricing_model": "paid",
+                      "price": "Free Trial",
+                      "open_source": null,
+                      "verified": true,
+                      "sponsored": true
+                    },
+                    "… 12 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/saashub/v1/product": {
+      "get": {
+        "operationId": "saashubProduct",
+        "summary": "SaaSHub product details",
+        "description": "One software product on SaaSHub: name, tagline, logo, country of origin, website, alternatives count, rating and review count, pricing link, status, links, categories, features with descriptions, screenshots, videos, user reviews (author, role, rating, date, title, text, competitors, pros, cons), external research links, social mentions (title, excerpt, source, link, age), the summary of public opinion and the discussion comments.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/saashub-product",
+        "tags": [
+          "SaaSHub"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "The product's SaaSHub slug, or a saashub.com link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "slack"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "slack",
+                  "url": "https://www.saashub.com/slack",
+                  "name": "Slack",
+                  "tagline": "A messaging app for teams who see through the Earth!",
+                  "logo": "https://cdn-b.saashub.com/images/app/service_logos/5/1c2ffc8237fa/large.png?1525414106",
+                  "origin": "the United States",
+                  "website": "https://slack.com/",
+                  "alternatives_count": 240,
+                  "rating": 4.3,
+                  "reviews_count": 9,
+                  "pricing": {
+                    "text": "Official pricing",
+                    "url": "https://slack.com/pricing"
+                  },
+                  "status": "UP",
+                  "links": [
+                    {
+                      "title": "Blog",
+                      "url": "https://slack.com/blog"
+                    }
+                  ],
+                  "breadcrumbs": [
+                    "Project Management",
+                    "Communication"
+                  ],
+                  "categories": [
+                    {
+                      "name": "Communication",
+                      "slug": "communication",
+                      "url": "https://www.saashub.com/best-communication-software"
+                    },
+                    {
+                      "name": "Group Chat & Notifications",
+                      "slug": "group-chat-and-notifications",
+                      "url": "https://www.saashub.com/best-group-chat-and-notifications-software"
+                    },
+                    "… 2 more"
+                  ],
+                  "features": [
+                    {
+                      "name": "Real-Time Communication",
+                      "description": "Slack allows for instant messaging and real-time communication, which facilitates quick decision-making and immediate problem solving among …"
+                    },
+                    {
+                      "name": "Channel Organization",
+                      "description": "Users can create channels for different teams, projects, or topics, keeping discussions organized and easy to follow."
+                    },
+                    "… 4 more"
+                  ],
+                  "screenshots": [
+                    {
+                      "title": "Slack Landing page",
+                      "url": "https://cdn-b.saashub.com/images/app/screenshots/4/6e04c5fae8dd/landing-original.jpg?1689708815"
+                    }
+                  ],
+                  "videos": [
+                    {
+                      "youtube_id": "LyQ8wubqxio",
+                      "title": "Review: How & Why We  Use Slack At Our Office",
+                      "url": "https://www.youtube.com/watch?v=LyQ8wubqxio"
+                    },
+                    {
+                      "youtube_id": "EYqxQGmQkVw",
+                      "title": "What is Slack?",
+                      "url": "https://www.youtube.com/watch?v=EYqxQGmQkVw"
+                    },
+                    "… 1 more"
+                  ],
+                  "reviews": [
+                    {
+                      "author": "MeganMills",
+                      "author_url": "https://www.saashub.com/u/Maggyy",
+                      "author_role": null,
+                      "rating": 4,
+                      "date": "2026-01-12",
+                      "url": "https://www.saashub.com/slack-reviews/review-f0h3m3egcgli",
+                      "title": "A good chat messenger for teams",
+                      "body": "i use it at my job it has really helped me keep myself updated with team news and updates. i would prefer it over teams and discord",
+                      "competitors": [
+                        {
+                          "name": "Microsoft Teams",
+                          "slug": "microsoft-teams"
+                        },
+                        {
+                          "name": "Discord",
+                          "slug": "discord"
+                        }
+                      ],
+                      "pros": [
+                        "Super simple"
+                      ],
+                      "cons": [
+                        "Channel swithcing"
+                      ]
+                    },
+                    {
+                      "author": "San93",
+                      "author_url": "https://www.saashub.com/u/San93",
+                      "author_role": "Director at Polar credit",
+                      "rating": 4,
+                      "date": "2025-02-18",
+                      "url": "https://www.saashub.com/slack-reviews/review-cabgmfoyq8fk",
+                      "title": "Essential for Team Collaboration but Needs Better Notification Management",
+                      "body": "Slack has transformed how we communicate at Polar Credit, making collaboration faster and more organized. The channel-based messaging, direc…",
+                      "competitors": [
+                        {
+                          "name": "Discord",
+                          "slug": "discord"
+                        }
+                      ],
+                      "pros": [
+                        "Organized team communication through channels and threads",
+                        "Seamless integrations with apps like google drive, trello, and zoom"
+                      ],
+                      "cons": [
+                        "Initial setup and implementation take time",
+                        "Limited message history on the free plan"
+                      ]
+                    },
+                    "… 7 more"
+                  ],
+                  "external_links": [
+                    {
+                      "title": "Public traffic stats of Slack",
+                      "url": "https://www.similarweb.com/website/slack.com/#ranking"
+                    },
+                    {
+                      "title": "Domain Rating (DR)",
+                      "url": "https://ahrefs.com/website-authority-checker/?input=slack.com"
+                    },
+                    "… 2 more"
+                  ],
+                  "mentions": [
+                    {
+                      "title": "Native edges: principles for native apps with a shared core",
+                      "saashub_url": "https://www.saashub.com/alternatives/post-dev-2026-11-04-native-edges-principles-for-native-apps-with-a-shared-core-2423294",
+                      "excerpt": "Electron, React Native, and more recently Tauri came out of that. They gave teams a dynamic runtime, hot reloading, and the whole ecosystem …",
+                      "source": "dev.to",
+                      "url": "https://dev.to/tuist/native-edges-principles-for-native-apps-with-a-shared-core-4ff1",
+                      "when": "about 11 hours ago"
+                    },
+                    {
+                      "title": "Webhook Testing on Localhost: Tunnels, Signatures, and Reliable Replays",
+                      "saashub_url": "https://www.saashub.com/alternatives/post-dev-2026-11-02-webhook-testing-on-localhost-tunnels-signatures-and-reliable-replays-2423151",
+                      "excerpt": "The problem is that the URL has to be reachable from the public internet. During development, your application runs on localhost:3000, behin…",
+                      "source": "dev.to",
+                      "url": "https://dev.to/lightningdev123/webhook-testing-on-localhost-tunnels-signatures-and-reliable-replays-3adn",
+                      "when": "2 days ago"
+                    },
+                    "… 19 more"
+                  ],
+                  "public_opinion_summary": "Summary of Public Opinion on Slack\nSlack, a cloud-based collaboration platform, has consistently been recognized for its effectiveness in en…",
+                  "comments": [
+                    {
+                      "id": "cm-xqworpbh",
+                      "author": "Myhu",
+                      "author_url": "https://www.saashub.com/u/Myhu",
+                      "when": "2 months ago",
+                      "text": "Been using Slack for years now; it keeps getting better with useful features."
+                    },
+                    {
+                      "id": "cm-jc14lvy1",
+                      "author": "Xspiral",
+                      "author_url": "https://www.saashub.com/u/Xspiral",
+                      "when": "about 2 years ago",
+                      "text": "Great tool which drastically increased our productivity."
+                    },
+                    "… 4 more"
+                  ],
+                  "alternatives_url": "https://www.saashub.com/slack-alternatives",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/saashub/v1/search": {
+      "get": {
+        "operationId": "saashubSearch",
+        "summary": "Search SaaSHub products",
+        "description": "Search SaaSHub products by words, or list a category with filters. With `q` the 20 best matches come back on one page; without `q` (a category listing) results page with `page`. Filters: category, feature, open source only and EU-based only. Each product has the same fields as the category ranking; `related_categories` lists the categories of the matches with product counts.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/saashub-search",
+        "tags": [
+          "SaaSHub"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words (or give category).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "password manager"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category slug.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "feature",
+            "in": "query",
+            "required": false,
+            "description": "A feature name as the site lists it, e.g. Ease of Use.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "open_source",
+            "in": "query",
+            "required": false,
+            "description": "Only open-source products.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "eu",
+            "in": "query",
+            "required": false,
+            "description": "Only EU-based products.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (category listings without q).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "password manager",
+                  "applied_filters": {
+                    "category": null,
+                    "feature": null,
+                    "open_source": false,
+                    "eu": false
+                  },
+                  "page": 1,
+                  "count": 20,
+                  "next_page": null,
+                  "products": [
+                    {
+                      "rank": 1,
+                      "name": "Vaulteq",
+                      "slug": "vaulteq",
+                      "url": "https://www.saashub.com/vaulteq",
+                      "alternatives_url": "https://www.saashub.com/vaulteq-alternatives",
+                      "tagline": "Password manager.",
+                      "logo": null,
+                      "upvotes": null,
+                      "website": "https://www.vaulteq.com",
+                      "features": [],
+                      "pricing_model": null,
+                      "price": null,
+                      "open_source": null,
+                      "verified": false,
+                      "sponsored": false
+                    },
+                    {
+                      "rank": 2,
+                      "name": "F-Secure KEY",
+                      "slug": "f-secure-key",
+                      "url": "https://www.saashub.com/f-secure-key",
+                      "alternatives_url": "https://www.saashub.com/f-secure-key-alternatives",
+                      "tagline": "Password manager.",
+                      "logo": "https://cdn-b.saashub.com/images/app/service_logos/85/2128d25423d7/medium.png?1569735642",
+                      "upvotes": null,
+                      "website": "https://www.f-secure.com/en/id-protection",
+                      "features": [],
+                      "pricing_model": null,
+                      "price": null,
+                      "open_source": null,
+                      "verified": false,
+                      "sponsored": false
+                    },
+                    "… 18 more"
+                  ],
+                  "related_categories": [
+                    {
+                      "slug": "security-and-privacy",
+                      "name": "Security & Privacy",
+                      "products": 681
+                    },
+                    {
+                      "slug": "password-management",
+                      "name": "Password Management",
+                      "products": 677
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

@@ -1,0 +1,1438 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Brave",
+    "version": "1.0.0",
+    "description": "The Brave API from API.SH: public Brave data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Brave",
+      "description": "5 endpoints (search & seo)",
+      "x-slug": "brave",
+      "x-domains": [
+        "search.brave.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/brave/v1/images": {
+      "get": {
+        "operationId": "braveImages",
+        "summary": "Brave image search",
+        "description": "Brave image search (up to 200 per page): title, full image URL, thumbnail, width and height, source page and source site. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/brave-images",
+        "tags": [
+          "Brave"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "cats"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter country, e.g. us, de.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1 = first).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results to return from the page (default 50, max 200).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "safe",
+            "in": "query",
+            "required": false,
+            "description": "Safe search.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "strict",
+                "moderate",
+                "off"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "search_parameters": {
+                    "engine": "brave_images",
+                    "q": "eiffel tower",
+                    "country": null,
+                    "page": 1,
+                    "safe": null
+                  },
+                  "query": "eiffel tower",
+                  "page": 1,
+                  "count": 50,
+                  "results": [
+                    {
+                      "position": 1,
+                      "title": "Eiffel Tower Guided Tour by Stairs with Reserved Access",
+                      "image": "https://media.tacdn.com/media/attractions-splice-spp-360x240/15/4c/a8/55.jpg",
+                      "thumbnail": "https://imgs.search.brave.com/OdJL0-Pm7FqqcjIROc93Z_kPLWMoeTmQPbs1GCnWKtM/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9tZWRp/YS50YWNkbi5jb20v/bWVkaWEvYX…",
+                      "width": 360,
+                      "height": 240,
+                      "page_url": "https://www.viator.com/Paris-attractions/Eiffel-Tower/d479-a89",
+                      "source": "viator.com",
+                      "favicon": "https://imgs.search.brave.com/RP4LLiAY0Jj6T2ofL_Wum4hwbktPj3PDz5vQYIOjgC8/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb2…"
+                    },
+                    {
+                      "position": 2,
+                      "title": "Free Eiffel Tower Landmark photo and picture",
+                      "image": "https://cdn.pixabay.com/photo/2013/08/29/02/47/eiffel-tower-176935_640.jpg",
+                      "thumbnail": "https://imgs.search.brave.com/cnGUnRyxIBAbivO2TTYdqaG0X5IKuDhrN9dcdTZEP5c/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9jZG4u/cGl4YWJheS5jb20v/cGhvdG8vMj…",
+                      "width": 640,
+                      "height": 428,
+                      "page_url": "https://pixabay.com/photos/search/eiffel%20tower/",
+                      "source": "pixabay.com",
+                      "favicon": "https://imgs.search.brave.com/uByasw0ydwRrYCXn4aH6zgHjGFdETkgwpGxQ6stvM0Y/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb2…"
+                    },
+                    "… 48 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/brave/v1/news": {
+      "get": {
+        "operationId": "braveNews",
+        "summary": "Brave News",
+        "description": "Brave News articles (up to 50 per page): title, URL, source, date, description, thumbnail. Pass `next_page` back as `page`. Every response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/brave-news",
+        "tags": [
+          "Brave"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "nvidia"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter country, e.g. us, de.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1 = first).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "description": "Only articles from the past day, week, month or year.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month",
+                "year"
+              ]
+            }
+          },
+          {
+            "name": "safe",
+            "in": "query",
+            "required": false,
+            "description": "Safe search.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "strict",
+                "moderate",
+                "off"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "search_parameters": {
+                    "engine": "brave_news",
+                    "q": "nvidia",
+                    "country": null,
+                    "page": 1,
+                    "time": null,
+                    "safe": null
+                  },
+                  "query": "nvidia",
+                  "page": 1,
+                  "count": 50,
+                  "articles": [
+                    {
+                      "position": 1,
+                      "title": "Nvidia China Clients to Get 1% of $70 Billion RTX Chips Ordered - Bloomberg",
+                      "url": "https://www.bloomberg.com/news/articles/2026-11-04/nvidia-china-clients-to-get-1-of-70-billion-rtx-chips-ordered",
+                      "source": "Bloomberg",
+                      "date": "3 hours ago",
+                      "relative_date": "3 hours ago",
+                      "snippet": "Chinese AI developers expect to receive just a small fraction of the advanced Nvidia Corp. chips they’ve ordered over the next several month…",
+                      "thumbnail": "https://imgs.search.brave.com/9POMoyb-2gbxs2CbCOvZuwW7jXCn-VT6qWYWAeiPpwk/rs:fit:200:200:1:0/g:ce/aHR0cHM6Ly9hc3Nl/dHMuYndieC5pby9p/bWFnZXMv…",
+                      "favicon": "https://imgs.search.brave.com/JdflViMvNONX2cNzOInZ7EQWaTzeYAgL8uCSDVicA8Y/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb2…",
+                      "is_live": false
+                    },
+                    {
+                      "position": 2,
+                      "title": "Nvidia Stock Climbs Amid Oil Price Drop - NVIDIA (NASDAQ:NVDA) - Benzinga",
+                      "url": "https://www.benzinga.com/trading-ideas/movers/26/11/62838137/nvidia-stock-climbs-amid-oil-price-drop",
+                      "source": "Benzinga",
+                      "date": "10 hours ago",
+                      "relative_date": "10 hours ago",
+                      "snippet": "Nvidia is rising Tuesday as chipmakers rebound from a sharp Friday selloff, aided by lower oil prices and optimism over potential Iran talks…",
+                      "thumbnail": "https://imgs.search.brave.com/I0FCn2PYRA5TesZNP5t9qJiT71ojtoqHIqFFYoMiBCA/rs:fit:200:200:1:0/g:ce/aHR0cHM6Ly9jZG4u/YmVuemluZ2EuY29t/L2Nkbi1j…",
+                      "favicon": "https://imgs.search.brave.com/DiYVmcwpsRdadwlLLFwu7vI7n5fzKgfTgW58clS0Juo/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb2…",
+                      "is_live": false
+                    },
+                    "… 48 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/brave/v1/search": {
+      "get": {
+        "operationId": "braveSearch",
+        "summary": "Brave Search",
+        "description": "Brave Search web results (about 20 per page, up to 6 pages) from Brave's independent index: title, URL, displayed URL, snippet, date, source, favicon, sitelinks and rich data (products, ratings, articles); plus related searches, FAQ (people also ask), knowledge panel, top news, videos, discussions and places when shown. Pass `next_page` back as `page`. Every response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/brave-search",
+        "tags": [
+          "Brave"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "coffee machine"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter country, e.g. us, de, fr.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "us"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1 = first).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "description": "Only results from the past day, week, month or year.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month",
+                "year"
+              ]
+            }
+          },
+          {
+            "name": "safe",
+            "in": "query",
+            "required": false,
+            "description": "Safe search.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "strict",
+                "moderate",
+                "off"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "search_parameters": {
+                    "engine": "brave",
+                    "q": "Eiffel Tower",
+                    "country": "us",
+                    "page": 1,
+                    "time": null,
+                    "safe": null
+                  },
+                  "query": "Eiffel Tower",
+                  "page": 1,
+                  "count": 20,
+                  "results": [
+                    {
+                      "position": 1,
+                      "title": "Eiffel Tower - Wikipedia",
+                      "url": "https://en.wikipedia.org/wiki/Eiffel_Tower",
+                      "displayed_url": "en.wikipedia.org › wiki › Eiffel_Tower",
+                      "snippet": "The Eiffel Tower (/ˈaɪfəl/ ⓘ EYE-fəl; French: Tour Eiffel [tuʁ ɛfɛl] ⓘ) is a lattice tower on the Champ de Mars in Paris, France. It is name…",
+                      "date": "2026-11-01T15:22:00",
+                      "source": "Wikipedia",
+                      "favicon": "https://imgs.search.brave.com/m6XxME4ek8DGIUcEPCqjRoDjf2e54EwL9pQzyzogLYk/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb2…",
+                      "thumbnail": null,
+                      "language": "en",
+                      "sitelinks": [
+                        {
+                          "title": "History",
+                          "url": "https://en.wikipedia.org/wiki/Eiffel_Tower#History"
+                        },
+                        {
+                          "title": "Design",
+                          "url": "https://en.wikipedia.org/wiki/Eiffel_Tower#Design"
+                        },
+                        "… 6 more"
+                      ],
+                      "extra": {}
+                    },
+                    {
+                      "position": 2,
+                      "title": "The OFFICIAL Eiffel Tower website: tickets, news, info...",
+                      "url": "https://www.toureiffel.paris/en",
+                      "displayed_url": "toureiffel.paris › en",
+                      "snippet": "The limited edition rivet is made of genuine iron from the Tower. Only a few pieces left! ... To celebrate the 140th anniversary of the Stat…",
+                      "date": "2026-10-26T12:02:29",
+                      "source": "La Tour Eiffel",
+                      "favicon": "https://imgs.search.brave.com/QHhvoQ4n8DNADjihDraqB39z-5VsDQVX6-wD5rKiimc/rs:fit:32:32:1:0/g:ce/aHR0cDovL2Zhdmlj/b25zLnNlYXJjaC5i/cmF2ZS5jb2…",
+                      "thumbnail": "https://imgs.search.brave.com/q-FXI8-ZyPifNviO5p7-GYzO105vD4Xr8ooNdHiA1MI/rs:fit:200:200:1:0/g:ce/aHR0cHM6Ly93d3cu/dG91cmVpZmZlbC5w/YXJpcy9z…",
+                      "language": "en",
+                      "sitelinks": [],
+                      "extra": {}
+                    },
+                    "… 18 more"
+                  ],
+                  "related_searches": [
+                    "eiffel tower photos",
+                    "eiffel tower pronunciation",
+                    "… 8 more"
+                  ],
+                  "people_also_ask": [
+                    {
+                      "question": "What was the Eiffel Tower built for?",
+                      "answer": "When the French government was organizing the International Exposition of 1889 to celebrate the centenary of the French Revolution, a compet…",
+                      "title": "Eiffel Tower | History, Height, & Facts | Britannica",
+                      "url": "https://www.britannica.com/topic/Eiffel-Tower-Paris-France"
+                    },
+                    {
+                      "question": "What is the Eiffel Tower made of?",
+                      "answer": "The Eiffel Tower is made almost entirely of open-lattice wrought iron. Gustave Eiffel used his advanced knowledge of the behaviour of metal …",
+                      "title": "Eiffel Tower | History, Height, & Facts | Britannica",
+                      "url": "https://www.britannica.com/topic/Eiffel-Tower-Paris-France"
+                    },
+                    "… 3 more"
+                  ],
+                  "knowledge_panel": {
+                    "title": "Eiffel Tower",
+                    "subtitle": "tower located on the Champ de Mars in Paris, France",
+                    "description": "The Eiffel Tower (/ˈaɪfəl/ ⓘ EYE-fəl; French: Tour Eiffel [tuʁ ɛfɛl] ⓘ) is a lattice tower on the Champ de Mars in Paris, France. It is name…",
+                    "url": "https://en.wikipedia.org/wiki/Eiffel_Tower",
+                    "image": null,
+                    "website": "https://www.toureiffel.paris/en",
+                    "attributes": [
+                      {
+                        "name": null,
+                        "value": "Tallest in the world from 1889 to 1930"
+                      },
+                      {
+                        "name": "Preceded by",
+                        "value": "Washington Monument"
+                      },
+                      "… 23 more"
+                    ],
+                    "profiles": [
+                      {
+                        "name": "Wikipedia",
+                        "url": "https://en.wikipedia.org/wiki/Eiffel_Tower"
+                      },
+                      {
+                        "name": "Facebook",
+                        "url": "https://www.facebook.com/TourEiffel"
+                      },
+                      "… 8 more"
+                    ]
+                  },
+                  "news": [],
+                  "videos": [
+                    {
+                      "position": 1,
+                      "title": "Gustave Eiffel, The Eiffel Tower",
+                      "url": "https://www.youtube.com/watch?v=vurh8_SO6_c&xstg=CAMSEBUJ_b-oH-PhF0yjBgbwzzE%3D",
+                      "source": "youtube.com",
+                      "date": null,
+                      "duration": null,
+                      "creator": null,
+                      "views": null,
+                      "thumbnail": "https://imgs.search.brave.com/KgiSity1W7w-Ae5byEJzlVdBeoDr5Xn35-mcvSR8JYw/rs:fit:200:200:1:0/g:ce/aHR0cHM6Ly9pLnl0/aW1nLmNvbS92aS85/eHAxWFdt…"
+                    },
+                    {
+                      "position": 2,
+                      "title": "Paris, as no one should ever see it. The Eiffel Tower. ...",
+                      "url": "https://www.facebook.com/cypriotai/videos/paris-as-no-one-should-ever-see-it-the-eiffel-tower-the-louvre-the-arc-de-triomp/27194365243595373…",
+                      "source": "facebook.com",
+                      "date": null,
+                      "duration": null,
+                      "creator": null,
+                      "views": null,
+                      "thumbnail": null
+                    },
+                    "… 3 more"
+                  ],
+                  "discussions": [],
+                  "local_results": [],
+                  "query_info": {
+                    "original": "Eiffel Tower",
+                    "altered": null,
+                    "country": "us"
+                  },
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/brave/v1/suggest": {
+      "get": {
+        "operationId": "braveSuggest",
+        "summary": "Brave Search suggestions",
+        "description": "Brave Search autocomplete for what a user is typing: suggested queries, and entity cards (name, description, category, image) when the suggestion is a known thing.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/brave-suggest",
+        "tags": [
+          "Brave"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "What the user typed.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "pyth"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country, 2 letters (optional).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "pyth",
+                  "count": 8,
+                  "items": [
+                    {
+                      "query": "python",
+                      "entity": true,
+                      "name": "Python (programming language)",
+                      "description": "general-purpose programming language",
+                      "category": "programming",
+                      "image": "https://imgs.search.brave.com/yFehApYnkQhIKB2Eejp8kylmmTJ8iE237AWUZHoVojg/rs:fit:60:60:1:1/g:ce/aHR0cHM6Ly91cGxv/YWQud2lraW1lZGlh/Lm9yZy93aW…"
+                    },
+                    {
+                      "query": "python download",
+                      "entity": false,
+                      "name": null,
+                      "description": null,
+                      "category": null,
+                      "image": null
+                    },
+                    "… 6 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/brave/v1/videos": {
+      "get": {
+        "operationId": "braveVideos",
+        "summary": "Brave video search",
+        "description": "Brave video search (up to 50 per page): title, URL, description, thumbnail, duration, views, publisher, creator, date and tags. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/brave-videos",
+        "tags": [
+          "Brave"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search query.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "cats"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter country, e.g. us, de.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1 = first).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "description": "Only videos from the past day, week, month or year.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "week",
+                "month",
+                "year"
+              ]
+            }
+          },
+          {
+            "name": "safe",
+            "in": "query",
+            "required": false,
+            "description": "Safe search.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "strict",
+                "moderate",
+                "off"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "search_parameters": {
+                    "engine": "brave_videos",
+                    "q": "cats",
+                    "country": null,
+                    "page": 1,
+                    "time": null,
+                    "safe": null
+                  },
+                  "query": "cats",
+                  "page": 1,
+                  "count": 50,
+                  "results": [
+                    {
+                      "position": 1,
+                      "title": "ALL THE CATS, EXPLAINED - YouTube",
+                      "url": "https://www.youtube.com/watch?v=UWagM1FBB4c",
+                      "description": "🐱 Get your feline poster at https://store.dftba.com/products/feline-poster 🐱🐶 🐱 Save 15% when you buy the Cat and Dog Posters as a bundle: h…",
+                      "thumbnail": "https://imgs.search.brave.com/InpcdwfX5TsPt_QYAIT2JdhGF4dUoOpttThAVn-DdrA/rs:fit:200:200:1:0/g:ce/aHR0cHM6Ly9pLnl0/aW1nLmNvbS92aS9V/V2FnTTFG…",
+                      "duration": "12:42",
+                      "views": null,
+                      "publisher": "YouTube",
+                      "creator": "MinuteEarth",
+                      "creator_url": "http://www.youtube.com/@MinuteEarth",
+                      "date": "2025-11-13T17:04:46",
+                      "relative_date": "November 13, 2025",
+                      "tags": [
+                        "maine coon"
+                      ],
+                      "source": "www.youtube.com"
+                    },
+                    {
+                      "position": 2,
+                      "title": "15 Cat Breeds you should meet because they're perfect 💚💙💜 - YouTube",
+                      "url": "https://www.youtube.com/watch?v=-QPAdnHPocQ",
+                      "description": "🎨 SMART+FUN coloring pages with animal facts: https://socraticafoundation.gumroad.com/l/ovsuw🧩 An activity bundle (includes word search & cr…",
+                      "thumbnail": "https://imgs.search.brave.com/mY6NLsz_937NiPjqVp-tPFRw5taljYLP4tQOxiMNYCc/rs:fit:200:200:1:0/g:ce/aHR0cHM6Ly9pLnl0/aW1nLmNvbS92aS8t/UVBBZG5I…",
+                      "duration": "10:16",
+                      "views": 112069,
+                      "publisher": "YouTube",
+                      "creator": "Socratica Kids",
+                      "creator_url": "http://www.youtube.com/@SocraticaKids",
+                      "date": "2024-01-19T11:00:00",
+                      "relative_date": "January 19, 2024",
+                      "tags": [
+                        "how do you get a ginger cat"
+                      ],
+                      "source": "www.youtube.com"
+                    },
+                    "… 48 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

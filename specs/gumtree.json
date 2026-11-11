@@ -1,0 +1,1451 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Gumtree",
+    "version": "1.0.0",
+    "description": "The Gumtree API from API.SH: public Gumtree data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Gumtree",
+      "description": "4 endpoints (e-commerce)",
+      "x-slug": "gumtree",
+      "x-domains": [
+        "gumtree.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gumtree/v1/categories": {
+      "get": {
+        "operationId": "gumtreeCategories",
+        "summary": "Gumtree categories",
+        "description": "Gumtree UK categories with their live ad counts: the top level by default, or a category's sub-categories (with its parent path), optionally within a location. Use a slug as category with /gumtree/v1/search.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gumtree-categories",
+        "tags": [
+          "Gumtree"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category slug (default all: the top level).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "for-sale"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Location slug (default uk), e.g. london.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": "for-sale",
+                  "location": "uk",
+                  "parents": [],
+                  "count": 23,
+                  "categories": [
+                    {
+                      "slug": "home-garden",
+                      "name": "Home & Garden",
+                      "ads": 421636,
+                      "url": "https://www.gumtree.com/search?search_category=home-garden&search_location=uk&sort=relevance"
+                    },
+                    {
+                      "slug": "clothing",
+                      "name": "Clothes, Footwear & Accessories",
+                      "ads": 172826,
+                      "url": "https://www.gumtree.com/search?search_category=clothing&search_location=uk&sort=relevance"
+                    },
+                    "… 21 more"
+                  ],
+                  "note": "Leaf categories have no sub-categories; use a slug as category with /gumtree/v1/search",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gumtree/v1/listing": {
+      "get": {
+        "operationId": "gumtreeListing",
+        "summary": "Gumtree UK ad details",
+        "description": "One Gumtree UK ad: price, description, condition, photos, location, created, published and expiry dates, category and breadcrumbs, seller type and, for trade sellers, the seller name and ads link, plus `attributes`: the ad's Details list as key, name, value, unit and group (cars: make, model, year, mileage, fuel, body type, transmission, engine, emissions, performance; property: bedrooms, property type, availability; other categories as the site lists them). Pass `id`, `url`, or `latest=1` with search params. Private sellers' names, phone numbers and email addresses are never returned (masked in ad text).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gumtree-listing",
+        "tags": [
+          "Gumtree"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Gumtree ad id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Gumtree ad url.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`1`: open the first current result of a search made with this route's search params (q, location and filters) instead of an id. Ads expire, so this keeps a link working.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search keywords (with latest=1).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "bike"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Location (with latest=1).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category slug (with latest=1).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1804472256",
+                  "url": "https://www.gumtree.com/p/road-bikes/merida-scultura-6000-2025-road-bike-as-good-as-new/1804472256",
+                  "title": "Merida Scultura 6000 2025 Road Bike - As Good As New",
+                  "description": "Merida Scultura 6000 road bike, 2025 model, in black. It's in as good as new condition, barely ridden, and well-maintained. Features disc br…",
+                  "price": 1400,
+                  "currency": "GBP",
+                  "condition": "new",
+                  "availability": "InStock",
+                  "location": "Hebburn, Tyne and Wear",
+                  "posted": "2026-11-01T08:30:25.332Z",
+                  "published": "2026-11-03T15:22:46.946Z",
+                  "expires": "2027-02-01T00:00:00.000Z",
+                  "posted_ago": "14 hours ago",
+                  "images": [
+                    "https://img.gumtree.com/ePR8PyKf84wPHx7_RYmEag/390be175ea9d46e599_33d21f3069ea/86",
+                    "https://img.gumtree.com/ePR8PyKf84wPHx7_RYmEag/c902d09d1f7a4d1384_533a89e61c90/86",
+                    "… 1 more"
+                  ],
+                  "category": "Sporting Goods > Outdoor Recreation > Cycling > Bicycles",
+                  "breadcrumbs": [
+                    {
+                      "name": "Home",
+                      "url": "https://www.gumtree.com/"
+                    },
+                    {
+                      "name": "For Sale",
+                      "url": "https://www.gumtree.com/for-sale/uk/hebburn"
+                    },
+                    "… 4 more"
+                  ],
+                  "seller_type": "private",
+                  "seller": null,
+                  "attributes": [],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gumtree/v1/search": {
+      "get": {
+        "operationId": "gumtreeSearch",
+        "summary": "Search Gumtree UK ads",
+        "description": "Gumtree UK classified ads for a keyword, category and location with distance, price, seller type, condition and sort, plus category filters (cars: year, mileage, make, model, fuel, transmission, body type; property: bedrooms and property type; any other filter the site offers through `attributes`). Each result has price, location, age, photo, photo count, seller type, delivery option, promotions and `attributes` (the ad's key/value details such as make, model, year, mileage, fuel, bedrooms, property type); `applied` shows the category, location and radius the site resolved, `applied_filters` every filter the site applied, and `filters` the filter groups the page offers (key, label, type, values with ad counts; range filters list their `min_key`/`max_key` for `attributes`). Featured ads come first, as on the site. Private sellers' names, phone numbers and email addresses are never returned (masked in ad text).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gumtree-search",
+        "tags": [
+          "Gumtree"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "bike"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Gumtree category slug (all, for-sale, bicycles, mobile-phones, cars, motorbikes-scooters, flats-houses, property-to-rent, home-garden, jobs).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Town, city, area or postcode (default uk).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "london"
+          },
+          {
+            "name": "distance",
+            "in": "query",
+            "required": false,
+            "description": "Radius in miles around the location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price (GBP).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price (GBP).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seller_type",
+            "in": "query",
+            "required": false,
+            "description": "private or trade.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "private",
+                "trade"
+              ]
+            }
+          },
+          {
+            "name": "condition",
+            "in": "query",
+            "required": false,
+            "description": "Item condition.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "new",
+                "used",
+                "refurbished",
+                "for_parts"
+              ]
+            }
+          },
+          {
+            "name": "min_year",
+            "in": "query",
+            "required": false,
+            "description": "Cars: earliest registration year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_year",
+            "in": "query",
+            "required": false,
+            "description": "Cars: latest registration year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_mileage",
+            "in": "query",
+            "required": false,
+            "description": "Cars: minimum mileage (miles).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_mileage",
+            "in": "query",
+            "required": false,
+            "description": "Cars: maximum mileage (miles).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "vehicle_make",
+            "in": "query",
+            "required": false,
+            "description": "Cars: make, e.g. bmw, ford, volkswagen (see the vehicle_make values in `filters`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vehicle_model",
+            "in": "query",
+            "required": false,
+            "description": "Cars: model as the site lists it, e.g. `3 SERIES` (with vehicle_make; see `filters`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fuel_type",
+            "in": "query",
+            "required": false,
+            "description": "Cars: fuel type, e.g. petrol, diesel, electric, hybrid.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transmission",
+            "in": "query",
+            "required": false,
+            "description": "Cars: automatic or manual.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "body_type",
+            "in": "query",
+            "required": false,
+            "description": "Cars: body type, e.g. hatchback, saloon, estate, convertible, coupe, mpv.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_beds",
+            "in": "query",
+            "required": false,
+            "description": "Property: minimum bedrooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_beds",
+            "in": "query",
+            "required": false,
+            "description": "Property: maximum bedrooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "property_type",
+            "in": "query",
+            "required": false,
+            "description": "Property: flat, house or other.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attributes",
+            "in": "query",
+            "required": false,
+            "description": "Any other site filter as comma-separated key:value pairs using the keys in `filters`, e.g. `vehicle_colour:black,min_vehicle_engine_size:999,pets_allowed:true`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "price_asc",
+                "price_desc",
+                "distance"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Results page, 1 for the first. Pass back `next_page`; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "bike",
+                  "page": 1,
+                  "total": 8871,
+                  "count": 29,
+                  "next_page": 2,
+                  "applied": {
+                    "category_id": 86,
+                    "location_id": 10000344,
+                    "radius": null,
+                    "location_name": "London",
+                    "price_min": null,
+                    "price_max": null
+                  },
+                  "applied_filters": {
+                    "search_location": "london",
+                    "search_category": "other-bikes",
+                    "q": "bike",
+                    "sort": "relevance"
+                  },
+                  "filters": [
+                    {
+                      "key": "featured_filter",
+                      "label": "Feature ads",
+                      "type": "boolean",
+                      "values": []
+                    },
+                    {
+                      "key": "search_location",
+                      "label": "Location",
+                      "type": "enum",
+                      "values": [
+                        {
+                          "value": "central-london",
+                          "label": "Central London",
+                          "count": 1727
+                        },
+                        {
+                          "value": "east-london",
+                          "label": "East London",
+                          "count": 1969
+                        },
+                        "… 7 more"
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "results": [
+                    {
+                      "id": "1804561131",
+                      "url": "https://www.gumtree.com/p/other-bikes/rockrider-expl-100-mountain-bike-large-perfect-as-new-condition/1804561131",
+                      "title": "Rockrider EXPL 100 Mountain Bike (Large) - Perfect (As-New) Condition",
+                      "price": 219,
+                      "currency": "GBP",
+                      "location": "North London, London",
+                      "age": "0 days",
+                      "image": "https://img.gumtree.com/ePR8PyKf84wPHx7_RYmEag/f87cd0dcad5f49fa8f_d6626b66d98a/86",
+                      "image_count": 9,
+                      "seller_type": "private",
+                      "verified": false,
+                      "delivery": false,
+                      "delivery_option": "collection only",
+                      "promotions": [
+                        "FEATURED"
+                      ],
+                      "has_video": false,
+                      "category_id": 86,
+                      "category_path_ids": [
+                        2549,
+                        2516,
+                        "… 2 more"
+                      ],
+                      "attributes": [
+                        {
+                          "key": "common_for_sale_condition",
+                          "name": "Condition",
+                          "value": "As good as new",
+                          "unit": null
+                        },
+                        {
+                          "key": "payment_option",
+                          "name": "Payment Option",
+                          "value": "ONLINE_PAYMENT",
+                          "unit": null
+                        },
+                        "… 5 more"
+                      ]
+                    },
+                    {
+                      "id": "1804573268",
+                      "url": "https://www.gumtree.com/p/city-bikes/felt-road-bike-black-and-orange-good-condition/1804573268",
+                      "title": "Felt Road Bike – Black and Orange, Good Condition",
+                      "price": 500,
+                      "currency": "GBP",
+                      "location": "Hackney, London",
+                      "age": "0 days",
+                      "image": "https://img.gumtree.com/ePR8PyKf84wPHx7_RYmEag/899d6c5f2f1742c9b5_8692f3173446/86",
+                      "image_count": 5,
+                      "seller_type": "private",
+                      "verified": false,
+                      "delivery": false,
+                      "delivery_option": "cash on collection",
+                      "promotions": [],
+                      "has_video": false,
+                      "category_id": 12745,
+                      "category_path_ids": [
+                        2549,
+                        2516,
+                        "… 2 more"
+                      ],
+                      "attributes": [
+                        {
+                          "key": "common_for_sale_condition",
+                          "name": "Condition",
+                          "value": "Good condition",
+                          "unit": null
+                        },
+                        {
+                          "key": "payment_option",
+                          "name": "Payment Option",
+                          "value": "PAY_IN_PERSON",
+                          "unit": null
+                        },
+                        "… 4 more"
+                      ]
+                    },
+                    "… 27 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gumtree/v1/seller": {
+      "get": {
+        "operationId": "gumtreeSeller",
+        "summary": "Gumtree trade seller",
+        "description": "A trade seller's profile on Gumtree UK: name (when shown), years on Gumtree, rating with its 1-5 breakdown, feedback tags, recent reviews (rating, date, category, tags; reviewers' names are left out), all-time ad counts per category and the live ads with price, location, date, description, photos and attributes. Pass the seller's public id or one of its ad ids. Private sellers' profiles are not returned. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gumtree-seller",
+        "tags": [
+          "Gumtree"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Public seller id (the hex id in gumtree.com/profile/account/<id>). Either id or ad is required.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "58d009c0fe7a21f25cddf553559f2ae4"
+          },
+          {
+            "name": "ad",
+            "in": "query",
+            "required": false,
+            "description": "One of the seller's ad ids or ad links, instead of id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page of live ads (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "58d009c0fe7a21f25cddf553559f2ae4",
+                  "url": "https://www.gumtree.com/profile/account/58d009c0fe7a21f25cddf553559f2ae4",
+                  "name": null,
+                  "from_ad": null,
+                  "seller_type": "trade",
+                  "posting_for": "19+ years",
+                  "badges": [],
+                  "rating": 0,
+                  "rating_count": 0,
+                  "rating_breakdown": {
+                    "1": 0,
+                    "2": 0,
+                    "3": 0,
+                    "4": 0,
+                    "5": 0
+                  },
+                  "feedback": [],
+                  "reviews": [],
+                  "total_ads_all_time": 1485,
+                  "ads_by_category": {
+                    "Motors": 1485
+                  },
+                  "live_ads": 166,
+                  "page": 1,
+                  "pages": 7,
+                  "next_page": 2,
+                  "ads": [
+                    {
+                      "id": "1511351224",
+                      "url": "https://www.gumtree.com/p/volkswagen/2020-volkswagen-tiguan-1.5-tsi-evo-match-euro-6-s-s-5dr-estate-petrol-manual/1511351224",
+                      "title": "2020 Volkswagen Tiguan 1.5 TSI EVO Match Euro 6 (s/s) 5dr ESTATE Petrol Manual",
+                      "price_text": "£11,495.00",
+                      "price": 11495,
+                      "currency": "GBP",
+                      "vat": null,
+                      "location": "Harrow, London",
+                      "posted_ago": "Just now",
+                      "posted": "2026-11-04T06:00:16.171Z",
+                      "description": "\nWith only one owner and remarkably low mileage for its age, this 2020 Volkswagen Tiguan TSI EVO Match presents an exceptional find. This Eu…",
+                      "image": "https://img.gumtree.com/ePR8PyKf84wPHx7_RYmEag/7edf6dffe4784e03bd_f445c05ee14e/86",
+                      "images": [
+                        "https://img.gumtree.com/ePR8PyKf84wPHx7_RYmEag/7edf6dffe4784e03bd_f445c05ee14e/86"
+                      ],
+                      "image_count": 1,
+                      "category_id": 10323,
+                      "l1_category_id": 2551,
+                      "l2_category_id": 9311,
+                      "type": "Car",
+                      "attributes": [
+                        {
+                          "key": "vehicle_cap_code",
+                          "name": "Cap Code",
+                          "value": "VWTI15MA55EPTM  2",
+                          "unit": null
+                        },
+                        {
+                          "key": "vehicle_estimated_mileage",
+                          "name": "Estimated Mileage",
+                          "value": "30092",
+                          "unit": null
+                        },
+                        "… 47 more"
+                      ],
+                      "urgent": false,
+                      "featured": true,
+                      "has_video": false,
+                      "delivery": false,
+                      "status": "LIVE"
+                    },
+                    {
+                      "id": "1512451893",
+                      "url": "https://www.gumtree.com/p/bmw/2019-bmw-5-series-2.0-530e-9.2kwh-m-sport-auto-euro-6-s-s-4dr-saloon-petrol-el/1512451893",
+                      "title": "2019 BMW 5 Series 2.0 530e 9.2kWh M Sport Auto Euro 6 (s/s) 4dr SALOON Petrol/El",
+                      "price_text": "£11,995.00",
+                      "price": 11995,
+                      "currency": "GBP",
+                      "vat": null,
+                      "location": "Harrow, London",
+                      "posted_ago": "11 mins ago",
+                      "posted": "2026-11-04T05:50:15.951Z",
+                      "description": "\nThis 2019 BMW 530e M Sport is a superb example, boasting a full service history and having had only one owner from new. This Euro 6 complia…",
+                      "image": "https://img.gumtree.com/ePR8PyKf84wPHx7_RYmEag/c879d3afc4684800b0_b412ff249d78/86",
+                      "images": [
+                        "https://img.gumtree.com/ePR8PyKf84wPHx7_RYmEag/c879d3afc4684800b0_b412ff249d78/86"
+                      ],
+                      "image_count": 1,
+                      "category_id": 10303,
+                      "l1_category_id": 2551,
+                      "l2_category_id": 9311,
+                      "type": "Car",
+                      "attributes": [
+                        {
+                          "key": "vehicle_cap_code",
+                          "name": "Cap Code",
+                          "value": "BM5A20MS 4SXTA  6",
+                          "unit": null
+                        },
+                        {
+                          "key": "radio_with_speakers",
+                          "name": "Radio CD with Speakers",
+                          "value": "Yes",
+                          "unit": null
+                        },
+                        "… 45 more"
+                      ],
+                      "urgent": false,
+                      "featured": true,
+                      "has_video": false,
+                      "delivery": false,
+                      "status": "LIVE"
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

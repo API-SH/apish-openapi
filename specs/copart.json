@@ -1,0 +1,1063 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Copart",
+    "version": "1.0.0",
+    "description": "The Copart API from API.SH: public Copart data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Copart",
+      "description": "2 endpoints (automotive)",
+      "x-slug": "copart",
+      "x-domains": [
+        "copart.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/copart/v1/lot": {
+      "get": {
+        "operationId": "copartLot",
+        "summary": "Copart lot",
+        "description": "One Copart lot by number (or link): the vehicle (year, make, model, trim, masked VIN, body, colour, engine, fuel, transmission, drive, keys), odometer, primary and secondary damage, condition, title type, state and group, estimated retail value, current bid, buy-now price, sale status, sale date and time, yard, lane and location, highlights, link and all photos (full-size and thumbnail). Lots stay available while Copart lists them.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/copart-lot",
+        "tags": [
+          "Copart"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "lot",
+            "in": "query",
+            "required": false,
+            "description": "The lot number, e.g. `59411236`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "59411236"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A copart.com/lot/<number> link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "lot_number": "59411236",
+                  "title": "2015 TOYOTA TACOMA BASE",
+                  "year": 2015,
+                  "make": "TOYOTA",
+                  "model": "TACOMA",
+                  "model_group": "TACOMA",
+                  "trim": null,
+                  "vin": "5TFUX4EN4FX******",
+                  "vehicle_type": "AUTOMOBILE",
+                  "body_style": "PICKUP",
+                  "color": "WHITE",
+                  "engine": "2.7L 4",
+                  "cylinders": "4",
+                  "fuel": "GAS",
+                  "transmission": "MANUAL",
+                  "drive": "FOUR BY FOUR",
+                  "keys": "YES",
+                  "odometer": 185516,
+                  "odometer_unit": "mi",
+                  "odometer_status": "NOT ACTUAL",
+                  "primary_damage": "FRONT END",
+                  "secondary_damage": "MECHANICAL",
+                  "condition": "ENHANCED VEHICLES",
+                  "title_type": "CERTIFICATE OF TITLE (P)",
+                  "title_state": "VA",
+                  "title_group": "CLEAN TITLE",
+                  "estimated_retail_value": null,
+                  "current_bid": 4500,
+                  "buy_now_price": null,
+                  "currency": "USD",
+                  "sale_status": "Sold",
+                  "sold": true,
+                  "sale_date": "2026-11-03T15:00:00.000Z",
+                  "sale_time": "10:00:00",
+                  "time_zone": "America/New_York",
+                  "last_updated": "2026-11-03T18:32:50.000Z",
+                  "yard_name": "MD - BALTIMORE EAST",
+                  "yard_number": 342,
+                  "lane": "C",
+                  "item_number": 3166,
+                  "…": "14 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/copart/v1/search": {
+      "get": {
+        "operationId": "copartSearch",
+        "summary": "Copart lot search",
+        "description": "Vehicle lots on Copart (US auctions) for keywords and/or filters, as a logged-out visitor sees them. Each lot: lot number, title, year, make, model, trim, masked VIN, body, colour, engine, fuel, transmission, drive, keys, odometer, damage, condition, title type and state, estimated retail value, current bid, buy-now price, sale status and date, yard and location, highlights, link, thumbnail and `raw`. Filter by damage, title type, vehicle type, fuel, drive, body style, transmission, seller source, Buy It Now, newly added lots and sale dates. `facets` lists the site's filter groups with counts for the current search (values for fuel, drive, body_style and transmission are matched as written there). Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/copart-search",
+        "tags": [
+          "Copart"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords, e.g. `toyota camry`. Optional when a filter is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "toyota camry"
+          },
+          {
+            "name": "make",
+            "in": "query",
+            "required": false,
+            "description": "Make, e.g. `TOYOTA`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "description": "Model, e.g. `CAMRY`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year_min",
+            "in": "query",
+            "required": false,
+            "description": "Oldest model year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "year_max",
+            "in": "query",
+            "required": false,
+            "description": "Newest model year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "odometer_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest odometer reading.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "odometer_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest odometer reading.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "yard",
+            "in": "query",
+            "required": false,
+            "description": "Yard name as shown on lots, e.g. `CA - SACRAMENTO`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "damage",
+            "in": "query",
+            "required": false,
+            "description": "Primary damage, one or more comma-separated (either matches): all_over, biohazard_chemical, burn, burn_engine, burn_interior, damage_history, frame_damage, front_end, hail, mechanical, minor_dent_scratches, missing_altered_vin, normal_wear, partial_repair, rear_end, rejected_repair, replaced_vin, rollover, side, stripped, top_roof, undercarriage, unknown, vandalism, water_flood.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "title_type",
+            "in": "query",
+            "required": false,
+            "description": "Title group, one or more comma-separated: clean, salvage, non_repairable.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vehicle_type",
+            "in": "query",
+            "required": false,
+            "description": "Vehicle type, one or more comma-separated: automobiles, pickup_trucks, suvs, motorcycle, atvs, dirt_bikes, snowmobile, jet_skis, boats, rvs, trailers, bus, medium_duty_box_trucks, heavy_duty_trucks, construction_equipment, industrial_equipment, agriculture_farm_equipment.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fuel",
+            "in": "query",
+            "required": false,
+            "description": "Fuel type as Copart writes it, one or more comma-separated, e.g. `GAS`, `DIESEL`, `ELECTRIC`, `ELECTRIC AND GAS HYBRID`, `FLEXIBLE`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "drive",
+            "in": "query",
+            "required": false,
+            "description": "Drive train as Copart writes it, one or more comma-separated, e.g. `ALL WHEEL DRIVE`, `FRONT WHEEL DRIVE`, `REAR WHEEL DRIVE`, `4X4 W/REAR WHEEL DRV`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "body_style",
+            "in": "query",
+            "required": false,
+            "description": "Body style as Copart writes it, one or more comma-separated, e.g. `SEDAN 4D`, `4DR SPORT UTILITY`, `PICKUP`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transmission",
+            "in": "query",
+            "required": false,
+            "description": "Transmission, e.g. `AUTOMATIC` or `MANUAL`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "buy_now",
+            "in": "query",
+            "required": false,
+            "description": "true: only lots with a Buy It Now price.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "newly_added",
+            "in": "query",
+            "required": false,
+            "description": "Only lots added in the last 24 hours or 7 days.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "24h",
+                "7d"
+              ]
+            }
+          },
+          {
+            "name": "sale_date_from",
+            "in": "query",
+            "required": false,
+            "description": "Earliest sale date (YYYY-MM-DD, UTC).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sale_date_to",
+            "in": "query",
+            "required": false,
+            "description": "Latest sale date, inclusive (YYYY-MM-DD, UTC). Same as sale_date_from for one day's auctions.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "auction_date (default), newest_year, oldest_year, odometer_low, odometer_high.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "auction_date",
+                "newest_year",
+                "oldest_year",
+                "odometer_low",
+                "odometer_high"
+              ]
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "description": "Lots per page, 1-100 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "toyota camry",
+                  "sort": "auction_date",
+                  "page": 1,
+                  "size": 20,
+                  "total": 49895,
+                  "count": 20,
+                  "next_page": 2,
+                  "facets": [
+                    {
+                      "group": "FETI",
+                      "name": "Featured Items",
+                      "values": [
+                        {
+                          "name": "Used Vehicles",
+                          "count": 1046
+                        },
+                        {
+                          "name": "Buy It Now",
+                          "count": 2495
+                        },
+                        "… 19 more"
+                      ]
+                    },
+                    {
+                      "group": "WHSL",
+                      "name": "Wholesale Vehicles",
+                      "values": [
+                        {
+                          "name": "Wholesale Vehicles",
+                          "count": 284
+                        }
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "items": [
+                    {
+                      "lot_number": "71037216",
+                      "title": "2017 TOYOTA CAMRY LE",
+                      "year": 2017,
+                      "make": "TOYOTA",
+                      "model": "CAMRY",
+                      "model_group": "CAMRY",
+                      "trim": "LE",
+                      "vin": "4T1BF1FK7HU******",
+                      "vehicle_type": "SEDAN",
+                      "body_style": "SEDAN",
+                      "color": "GOLD",
+                      "engine": "2.5L 4",
+                      "cylinders": "4",
+                      "fuel": "GAS",
+                      "transmission": "AUTOMATIC",
+                      "drive": "FRONT WHEEL DRIVE",
+                      "keys": "YES",
+                      "odometer": 30794,
+                      "odometer_unit": "mi",
+                      "odometer_status": "NOT ACTUAL",
+                      "primary_damage": "FRONT END",
+                      "secondary_damage": "SIDE",
+                      "condition": "ENGINE START PROGRAM",
+                      "title_type": "CERT OF TITLE-SALVAGE",
+                      "title_state": "SC",
+                      "title_group": "SALVAGE TITLE",
+                      "estimated_retail_value": 16873,
+                      "current_bid": 0,
+                      "buy_now_price": 3000,
+                      "currency": "USD",
+                      "sale_status": "Minimum Bid",
+                      "sold": false,
+                      "sale_date": "2026-11-04T15:00:00.000Z",
+                      "sale_time": "10:00:00",
+                      "time_zone": "EDT",
+                      "last_updated": "2026-09-28T07:00:00.000Z",
+                      "yard_name": "SC - SPARTANBURG",
+                      "yard_number": 144,
+                      "lane": null,
+                      "item_number": 0,
+                      "…": "10 more fields"
+                    },
+                    {
+                      "lot_number": "55768876",
+                      "title": "2017 TOYOTA COROLLA LE",
+                      "year": 2017,
+                      "make": "TOYOTA",
+                      "model": "COROLLA",
+                      "model_group": "COROLLA",
+                      "trim": "LE",
+                      "vin": "2T1BURHE8HC******",
+                      "vehicle_type": "SEDAN",
+                      "body_style": "SEDAN",
+                      "color": "GRAY",
+                      "engine": "1.8L 4",
+                      "cylinders": "4",
+                      "fuel": "GAS",
+                      "transmission": "ECVT AUTOMATIC",
+                      "drive": "FRONT WHEEL DRIVE",
+                      "keys": "YES",
+                      "odometer": 65243,
+                      "odometer_unit": "mi",
+                      "odometer_status": "ACTUAL",
+                      "primary_damage": "FRONT END",
+                      "secondary_damage": null,
+                      "condition": "ENGINE START PROGRAM",
+                      "title_type": "SALVAGE CERTIFICATE OF TITLE",
+                      "title_state": "ID",
+                      "title_group": "SALVAGE TITLE",
+                      "estimated_retail_value": 14650,
+                      "current_bid": 0,
+                      "buy_now_price": null,
+                      "currency": "USD",
+                      "sale_status": "Pure Sale",
+                      "sold": false,
+                      "sale_date": "2026-11-04T15:00:00.000Z",
+                      "sale_time": "10:00:00",
+                      "time_zone": "EDT",
+                      "last_updated": "2026-05-29T07:00:00.000Z",
+                      "yard_name": "MA - FREETOWN",
+                      "yard_number": 361,
+                      "lane": null,
+                      "item_number": 0,
+                      "…": "10 more fields"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

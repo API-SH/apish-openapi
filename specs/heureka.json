@@ -1,0 +1,2538 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Heureka",
+    "version": "1.0.0",
+    "description": "The Heureka API from API.SH: public Heureka data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Heureka",
+      "description": "7 endpoints (e-commerce)",
+      "x-slug": "heureka",
+      "x-domains": [
+        "heureka.cz"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/heureka/v1/category": {
+      "get": {
+        "operationId": "heurekaCategory",
+        "summary": "Heureka category listing with every filter",
+        "description": "A Heureka category (or section) by slug or link: the category (name, breadcrumbs, product and review counts, page title and description), its products and product lines (same fields as search), every filter group of the category with option ids and counts, sub-categories, guides and quick filters (`filter_string`). Filter with `filters`, `price_min`/`price_max`, a quick filter's `filter_string` or `q`. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/heureka-category",
+        "tags": [
+          "Heureka"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "A category slug (mobilni-telefony) or link (https://mobilni-telefony.heureka.cz/).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "mobilni-telefony"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Heureka.cz or Heureka.sk (Slovak slugs differ, e.g. mobilne-telefony).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk"
+              ],
+              "default": "cz"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "Filters as `filterId:optionId|optionId;filterId:optionId`, from the answer's `filters` (each option has a ready `param`), e.g. `1666:2|5;availability:1`. Stock (availability), rating (review), price bands and price drops work the same way.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter_string",
+            "in": "query",
+            "required": false,
+            "description": "A quick filter's `filter_string` from `related`, e.g. f:d:1 (price drops).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords within the category.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "rank",
+                "price_asc",
+                "price_desc",
+                "reviews"
+              ],
+              "default": "relevance"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (24 results per page).",
+            "schema": {
+              "type": "integer",
+              "default": "1"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "cz",
+                  "sort": "relevance",
+                  "applied_filters": {},
+                  "category": {
+                    "id": "731",
+                    "uuid": "a9f16cf0-5161-5346-8751-fef019a5e445",
+                    "slug": "mobilni-telefony",
+                    "name": "Mobilní telefony",
+                    "type": "category",
+                    "url": "https://mobilni-telefony.heureka.cz/",
+                    "parent_id": "664",
+                    "breadcrumbs": [
+                      {
+                        "id": "659",
+                        "name": "Elektronika",
+                        "slug": "elektronika"
+                      },
+                      {
+                        "id": "664",
+                        "name": "Mobily, tablety, nositelná elektronika",
+                        "slug": "telekomunikace"
+                      }
+                    ],
+                    "leaf": true,
+                    "products": 2754,
+                    "reviews": 56473,
+                    "restricted": false,
+                    "title": "Mobilní telefony - 1 911 produktů - Heureka.cz",
+                    "heading": "Mobilní telefony",
+                    "meta_description": "Heureka.cz vám poradí, jak vybírat mobilní telefony. Vybírejte si mobilní telefony podle parametrů a srovnávejte ceny z internetových obchod…",
+                    "description_top": null,
+                    "description_bottom": null
+                  },
+                  "total": 1911,
+                  "page": 1,
+                  "next_page": 2,
+                  "count": 28,
+                  "items": [
+                    {
+                      "type": "productAd",
+                      "id": "1442824885",
+                      "uuid": "cf710b91-b322-54ef-87fa-fbb13f663b67",
+                      "product_line_id": null,
+                      "name": "Motorola Moto G77 8GB/256GB PANTONE Black Olive",
+                      "main_variant": null,
+                      "url": "https://mobilni-telefony.heureka.cz/motorola-moto-g77-8gb-256gb-pantone-black-olive/",
+                      "currency": "CZK",
+                      "min_price": 6260,
+                      "max_price": 9378,
+                      "price_drop": null,
+                      "offer_count": 22,
+                      "shop_count": 21,
+                      "rating_percent": 85,
+                      "review_count": 30,
+                      "category": {
+                        "id": "731",
+                        "slug": "mobilni-telefony",
+                        "name": "Mobilní telefony"
+                      },
+                      "description": "Špičkový systém fotoaparátu, ultra jasný displej Extreme AMOLED, stylové a odolné provedení, dechberoucí výkon, masivní baterie s kapacitou …",
+                      "specs": {
+                        "Výrobce": "Motorola",
+                        "Třída energetické účinnosti": "A",
+                        "Kapacita baterie": "5200 mAh",
+                        "Velikost displeje": "6.8 \"",
+                        "Rozlišení hlavního fotoaparátu": "108.0 Mpx",
+                        "Nabíjecí konektor": "s nabíjením přes USB-C"
+                      },
+                      "energy_label": {
+                        "valueName": "a",
+                        "range": "A-G",
+                        "paramName": "Třída energetické účinnosti",
+                        "order": 1,
+                        "firstLetter": "a",
+                        "lastLetter": "g",
+                        "color": "colored"
+                      },
+                      "variants": [],
+                      "top_badge": null,
+                      "sponsored": true,
+                      "image": "https://img-cdn.heureka.group/v1/p/cf710b91-b322-54ef-87fa-fbb13f663b67.jpg?width=400&height=400"
+                    },
+                    {
+                      "type": "productAd",
+                      "id": "1448629068",
+                      "uuid": "0cf3e264-ac2d-53f8-ad09-733bc97e7c34",
+                      "product_line_id": null,
+                      "name": "Motorola Edge 70 Fusion 12GB/256GB PANTONE Silhouette",
+                      "main_variant": null,
+                      "url": "https://mobilni-telefony.heureka.cz/motorola-edge-70-fusion-12gb-256gb-pantone-silhouette/",
+                      "currency": "CZK",
+                      "min_price": 8810,
+                      "max_price": 11235,
+                      "price_drop": null,
+                      "offer_count": 24,
+                      "shop_count": 23,
+                      "rating_percent": 91,
+                      "review_count": 24,
+                      "category": {
+                        "id": "731",
+                        "slug": "mobilni-telefony",
+                        "name": "Mobilní telefony"
+                      },
+                      "description": "Odolný, výkonný a připravený na dlouhý den. 50Mpx fotoaparát se Sony senzorem a OIS, plynulý 144Hz AMOLED displej, výkonný Snapdragon 7s Gen…",
+                      "specs": {
+                        "Výrobce": "Motorola",
+                        "Třída energetické účinnosti": "A",
+                        "Kapacita baterie": "7000 mAh",
+                        "Velikost displeje": "6.78 \"",
+                        "Rozlišení hlavního fotoaparátu": "50 Mpx",
+                        "Nabíjecí konektor": "s nabíjením přes USB-C"
+                      },
+                      "energy_label": {
+                        "valueName": "a",
+                        "range": "A-G",
+                        "paramName": "Třída energetické účinnosti",
+                        "order": 1,
+                        "firstLetter": "a",
+                        "lastLetter": "g",
+                        "color": "colored"
+                      },
+                      "variants": [],
+                      "top_badge": null,
+                      "sponsored": true,
+                      "image": "https://img-cdn.heureka.group/v1/p/0cf3e264-ac2d-53f8-ad09-733bc97e7c34.jpg?width=400&height=400"
+                    },
+                    "… 26 more"
+                  ],
+                  "filters": [
+                    {
+                      "id": "price",
+                      "name": "Cena",
+                      "type": "range",
+                      "unit": null,
+                      "options": [
+                        {
+                          "id": "1",
+                          "label": "Méně než 3 000 Kč",
+                          "count": 577,
+                          "param": "price:1"
+                        },
+                        {
+                          "id": "2",
+                          "label": "3 000 – 5 900 Kč",
+                          "count": 541,
+                          "param": "price:2"
+                        },
+                        "… 5 more"
+                      ]
+                    },
+                    {
+                      "id": "review",
+                      "name": "Zákaznické hodnocení",
+                      "type": "pick",
+                      "unit": null,
+                      "options": [
+                        {
+                          "id": "1",
+                          "label": "95",
+                          "count": 654,
+                          "param": "review:1"
+                        },
+                        {
+                          "id": "2",
+                          "label": "90",
+                          "count": 977,
+                          "param": "review:2"
+                        },
+                        "… 1 more"
+                      ]
+                    },
+                    "… 61 more"
+                  ],
+                  "related": [
+                    {
+                      "type": "customPriceDropFilter",
+                      "id": "priceDrop-1",
+                      "name": "Cenopád na Heurece!",
+                      "slug": null,
+                      "products": 248,
+                      "filter_string": "f:d:1",
+                      "url": null
+                    },
+                    {
+                      "type": "guide",
+                      "id": "21305",
+                      "name": "Jak vybrat mobilní telefon?",
+                      "slug": "jak-vybrat-mobilni-telefon",
+                      "products": null,
+                      "filter_string": null,
+                      "url": "https://www.heureka.cz/a/jak-vybrat-mobilni-telefon-c731-21305/"
+                    },
+                    "… 17 more"
+                  ],
+                  "corrected_query": null,
+                  "redirect": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/heureka/v1/offers": {
+      "get": {
+        "operationId": "heurekaOffers",
+        "summary": "Heureka shop offers for a product",
+        "description": "The shops selling a Heureka product: on page 1 the top offer, promoted and highlighted offers, then the regular offers (20 per page) with price, cheapest delivery, discount, availability and delivery date, Heureka cart, variants, pickup points, offer link and the shop (name, link, logo, rating, review count, recommendation share, customer verification, Shop of the Year, badges). Sort and filter like the page. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/heureka-offers",
+        "tags": [
+          "Heureka"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A Heureka product link (https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/); links from search and category results work.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `url`: the link's subdomain (e.g. mobilni-telefony).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `url`: the link's path (e.g. apple-iphone-16-128gb-black).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "With category and slug: Heureka.cz or Heureka.sk (a link sets it itself).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk"
+              ],
+              "default": "cz"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order of the regular offers.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recommended",
+                "price",
+                "price_with_delivery",
+                "shop_rating"
+              ],
+              "default": "recommended"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: in_stock, free_shipping, cart (buy on Heureka), verified_by_customers, card (card payment), authorized_sellers, sustainable_shop.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "description": "Only shops with pickup or delivery in this place, e.g. Praha.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (20 offers per page).",
+            "schema": {
+              "type": "integer",
+              "default": "1"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/",
+                  "country": "cz",
+                  "sort": "recommended",
+                  "applied_filters": {
+                    "filters": [],
+                    "region": null
+                  },
+                  "page": 1,
+                  "top_offer": {
+                    "id": "6118474371",
+                    "uuid": "0ac9cac8-75e3-5b75-8394-35a8cc70f533",
+                    "name": "Apple iPhone 16 128GB Black",
+                    "price": 19890,
+                    "currency": "CZK",
+                    "min_delivery_price": 59,
+                    "discount_percent": null,
+                    "availability": {
+                      "type": "IN_STOCK",
+                      "days": 0,
+                      "delivery_date": null
+                    },
+                    "buyable_on_heureka": true,
+                    "digital_licence": false,
+                    "online_delivery": false,
+                    "pickup_points": null,
+                    "variant_count": 1,
+                    "attributes": [],
+                    "tags": [],
+                    "image": "https://img-cdn.heureka.group/v1/aaee94a5-0572-51c5-81c9-bef6513bc228.jpg",
+                    "offer_url": "https://www.heureka.cz/exit-click-web?si=bf823d9c-b1da-5812-975f-d5005d2cfe1a&cs=1&bb=0&lb=1&to=1&et=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0…",
+                    "shop": {
+                      "id": "41894",
+                      "uuid": "bf823d9c-b1da-5812-975f-d5005d2cfe1a",
+                      "slug": "quikset-cz",
+                      "name": "Quikset s.r.o.",
+                      "url": "https://obchody.heureka.cz/quikset-cz/recenze/",
+                      "logo": "https://im9.cz/iR/importobchod-orig/41894_logo--mm160x30.png",
+                      "verified_by_customers": "BLUE",
+                      "rating_percent": 0,
+                      "review_count": 1646,
+                      "recommend_percent": 95,
+                      "reviews_url": "https://obchody.heureka.cz/quikset-cz/recenze/",
+                      "shop_of_the_year": null,
+                      "flags": []
+                    }
+                  },
+                  "promoted": [
+                    {
+                      "id": "6087150298",
+                      "uuid": "64adb789-24e9-550b-a016-812e15adb1e9",
+                      "name": "Smartphone Apple iPhone 16 8 GB / 128 GB 5G černý",
+                      "price": 19276,
+                      "currency": "CZK",
+                      "min_delivery_price": 55,
+                      "discount_percent": null,
+                      "availability": {
+                        "type": "THREE_DAYS",
+                        "days": 2,
+                        "delivery_date": null
+                      },
+                      "buyable_on_heureka": false,
+                      "digital_licence": false,
+                      "online_delivery": false,
+                      "pickup_points": null,
+                      "variant_count": 1,
+                      "attributes": [],
+                      "tags": [],
+                      "image": "https://img-cdn.heureka.group/v1/2038dcea-e1e8-5b3c-ae84-d3a277db5056.jpg",
+                      "offer_url": "https://www.heureka.cz/exit-click-web?si=c37166d4-e4df-54c0-b84a-d3ed7501d130&cs=1&bb=1&lb=1&to=0&et=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0…",
+                      "shop": {
+                        "id": "91641",
+                        "uuid": "c37166d4-e4df-54c0-b84a-d3ed7501d130",
+                        "slug": "allegro-cz",
+                        "name": "Allegro.cz",
+                        "url": "https://obchody.heureka.cz/allegro-cz/recenze/",
+                        "logo": "https://im9.cz/iR/importobchod-orig/91641_logo--mm160x30.png",
+                        "verified_by_customers": "BLUE",
+                        "rating_percent": 0,
+                        "review_count": 73880,
+                        "recommend_percent": 94,
+                        "reviews_url": "https://obchody.heureka.cz/allegro-cz/recenze/",
+                        "shop_of_the_year": null,
+                        "flags": []
+                      }
+                    },
+                    {
+                      "id": "6118474371",
+                      "uuid": "0ac9cac8-75e3-5b75-8394-35a8cc70f533",
+                      "name": "Apple iPhone 16 128GB Black",
+                      "price": 19890,
+                      "currency": "CZK",
+                      "min_delivery_price": 59,
+                      "discount_percent": null,
+                      "availability": {
+                        "type": "IN_STOCK",
+                        "days": 0,
+                        "delivery_date": null
+                      },
+                      "buyable_on_heureka": true,
+                      "digital_licence": false,
+                      "online_delivery": false,
+                      "pickup_points": null,
+                      "variant_count": 1,
+                      "attributes": [],
+                      "tags": [],
+                      "image": "https://img-cdn.heureka.group/v1/aaee94a5-0572-51c5-81c9-bef6513bc228.jpg",
+                      "offer_url": "https://www.heureka.cz/exit-click-web?si=bf823d9c-b1da-5812-975f-d5005d2cfe1a&cs=1&bb=1&lb=1&to=0&et=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0…",
+                      "shop": {
+                        "id": "41894",
+                        "uuid": "bf823d9c-b1da-5812-975f-d5005d2cfe1a",
+                        "slug": "quikset-cz",
+                        "name": "Quikset s.r.o.",
+                        "url": "https://obchody.heureka.cz/quikset-cz/recenze/",
+                        "logo": "https://im9.cz/iR/importobchod-orig/41894_logo--mm160x30.png",
+                        "verified_by_customers": "BLUE",
+                        "rating_percent": 0,
+                        "review_count": 1646,
+                        "recommend_percent": 95,
+                        "reviews_url": "https://obchody.heureka.cz/quikset-cz/recenze/",
+                        "shop_of_the_year": null,
+                        "flags": []
+                      }
+                    },
+                    "… 2 more"
+                  ],
+                  "highlighted": [],
+                  "total": 32,
+                  "count": 20,
+                  "next_page": 2,
+                  "offers": [
+                    {
+                      "id": "5857549172",
+                      "uuid": "04f49228-fc16-511e-9bfa-0aa5546c623e",
+                      "name": "Apple iPhone 16 128GB Barva: Černá",
+                      "price": 17939,
+                      "currency": "CZK",
+                      "min_delivery_price": 0,
+                      "discount_percent": null,
+                      "availability": {
+                        "type": "IN_STOCK",
+                        "days": 0,
+                        "delivery_date": null
+                      },
+                      "buyable_on_heureka": false,
+                      "digital_licence": false,
+                      "online_delivery": false,
+                      "pickup_points": null,
+                      "variant_count": 1,
+                      "attributes": [],
+                      "tags": [],
+                      "image": "https://img-cdn.heureka.group/v1/8533ccd4-3021-5e75-b86d-e35a1894aa28.jpg",
+                      "offer_url": "https://www.heureka.cz/exit-click-web?si=950731ad-a880-5458-b7e5-d132776d50ab&cs=1&bb=0&lb=1&to=0&et=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0…",
+                      "shop": {
+                        "id": "53720",
+                        "uuid": "950731ad-a880-5458-b7e5-d132776d50ab",
+                        "slug": "elektroshock-cz",
+                        "name": "elektroshock.cz",
+                        "url": "https://obchody.heureka.cz/elektroshock-cz/recenze/",
+                        "logo": "https://im9.cz/iR/importobchod-orig/53720_logo--mm160x30.png",
+                        "verified_by_customers": "BLUE",
+                        "rating_percent": 0,
+                        "review_count": 5304,
+                        "recommend_percent": 95,
+                        "reviews_url": "https://obchody.heureka.cz/elektroshock-cz/recenze/",
+                        "shop_of_the_year": null,
+                        "flags": []
+                      }
+                    },
+                    {
+                      "id": "6073270192",
+                      "uuid": "0eb9576b-e218-52f4-a782-c3aa358ce0de",
+                      "name": "Apple iPhone 16 128GB Black Svět distribuce",
+                      "price": 17940,
+                      "currency": "CZK",
+                      "min_delivery_price": 0,
+                      "discount_percent": null,
+                      "availability": {
+                        "type": "IN_STOCK",
+                        "days": 0,
+                        "delivery_date": null
+                      },
+                      "buyable_on_heureka": false,
+                      "digital_licence": false,
+                      "online_delivery": false,
+                      "pickup_points": null,
+                      "variant_count": 1,
+                      "attributes": [],
+                      "tags": [
+                        {
+                          "type": "SALES_VOUCHER",
+                          "extra": {
+                            "…": "1 fields"
+                          }
+                        }
+                      ],
+                      "image": "https://img-cdn.heureka.group/v1/c1ebb830-6fb0-5bc3-9509-ede8bbfb2309.jpg",
+                      "offer_url": "https://www.heureka.cz/exit-click-web?si=b1ae507f-6e62-5a7f-95b8-c229434577b8&cs=1&bb=0&lb=1&to=0&et=eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0…",
+                      "shop": {
+                        "id": "58204",
+                        "uuid": "b1ae507f-6e62-5a7f-95b8-c229434577b8",
+                        "slug": "imobily-eu",
+                        "name": "iMobily.eu",
+                        "url": "https://obchody.heureka.cz/imobily-eu/recenze/",
+                        "logo": "https://im9.cz/iR/importobchod-orig/58204_logo--mm160x30.png",
+                        "verified_by_customers": "GOLD",
+                        "rating_percent": 0,
+                        "review_count": 8619,
+                        "recommend_percent": 98,
+                        "reviews_url": "https://obchody.heureka.cz/imobily-eu/recenze/",
+                        "shop_of_the_year": null,
+                        "flags": []
+                      }
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/heureka/v1/price-history": {
+      "get": {
+        "operationId": "heurekaPriceHistory",
+        "summary": "Heureka product price history",
+        "description": "The price chart of a Heureka product: the lowest and average offer price by day, plus the current lowest and average price.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/heureka-price-history",
+        "tags": [
+          "Heureka"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A Heureka product link (https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/); links from search and category results work.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `url`: the link's subdomain (e.g. mobilni-telefony).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `url`: the link's path (e.g. apple-iphone-16-128gb-black).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "With category and slug: Heureka.cz or Heureka.sk (a link sets it itself).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk"
+              ],
+              "default": "cz"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1302850615",
+                  "name": "Apple iPhone 16 128GB Black",
+                  "url": "https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/",
+                  "country": "cz",
+                  "currency": "CZK",
+                  "min_price": 17939,
+                  "avg_price": null,
+                  "count": 111,
+                  "history": [
+                    {
+                      "date": "2024-09-15",
+                      "min_price": 23680,
+                      "avg_price": 23989.83
+                    },
+                    {
+                      "date": "2024-09-22",
+                      "min_price": 23890,
+                      "avg_price": 24033.79
+                    },
+                    "… 109 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/heureka/v1/product": {
+      "get": {
+        "operationId": "heurekaProduct",
+        "summary": "Heureka product details",
+        "description": "One Heureka.cz or Heureka.sk product: name, lowest and highest price, price drops, top badge, producers, category and breadcrumbs, short and full description, highlight blocks, photos, videos, energy labels, every specification grouped as on the page, the product line's variant parameters (colour, memory...) with each variant's link and lowest price, and the review summary (rating, counts, stars, recommendations, pros and cons keywords and the written summary). Shop offers, all reviews and the price history have their own endpoints.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/heureka-product",
+        "tags": [
+          "Heureka"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A Heureka product link (https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/); links from search and category results work.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `url`: the link's subdomain (e.g. mobilni-telefony).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `url`: the link's path (e.g. apple-iphone-16-128gb-black).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "With category and slug: Heureka.cz or Heureka.sk (a link sets it itself).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk"
+              ],
+              "default": "cz"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1302850615",
+                  "uuid": "9e1f8508-0a86-585a-b689-68df03dc3d46",
+                  "name": "Apple iPhone 16 128GB Black",
+                  "url": "https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/",
+                  "country": "cz",
+                  "currency": "CZK",
+                  "min_price": 17939,
+                  "max_price": 26948,
+                  "price_drops": [],
+                  "top_badge": 26,
+                  "producers": [
+                    {
+                      "id": "8589e1b4-c434-5e37-872b-ae8c5db8fbb1",
+                      "name": "Apple",
+                      "type": "MANUFACTURER",
+                      "slug": "apple"
+                    }
+                  ],
+                  "category": {
+                    "name": "Mobilní telefony",
+                    "slug": "mobilni-telefony",
+                    "restricted": false,
+                    "breadcrumbs": [
+                      {
+                        "id": "659",
+                        "name": "Elektronika",
+                        "slug": "elektronika",
+                        "url": "https://elektronika.heureka.cz/"
+                      },
+                      {
+                        "id": "664",
+                        "name": "Mobily, tablety, nositelná elektronika",
+                        "slug": "telekomunikace",
+                        "url": "https://telekomunikace.heureka.cz/"
+                      },
+                      "… 1 more"
+                    ]
+                  },
+                  "short_description": "Apple iPhone 16 je ideální volbou pro všechny, kteří hledají smartphone se špičkovým fotoaparátem, vysokým výkonem a odolným designem.",
+                  "description_html": "<p>\n\tU iPhone 16 představujeme nové ovládání fotoaparátu, 48MP Fusion fotoaparát. A čip A18. A to vše v pěti výrazných barvách.<br />\n\t<br /…",
+                  "highlights": {
+                    "perex": "Smartphone Apple iPhone 16 128GB vám díky vyspělé dvojité fotosoustavě (48MP Fusion fotoaparát s 2x zoomem + 12MP ultraširokoúhlý fotoaparát…",
+                    "blocks": [
+                      {
+                        "title": "Apple iPhone 16 128GB",
+                        "text": null,
+                        "image": "https://im9.cz/iR/short-tail/1166386.jpg",
+                        "video": null
+                      },
+                      {
+                        "title": "Klíčové vlastnosti",
+                        "text": "<ul data-ls-cob-id=\"0e99\"><li data-ls-cob-id=\"0e9a\" style=\"text-align: left;\">48MP Fusion fotoaparát + 12MP ultraširokoúhlý fotoaparát</li><…",
+                        "image": "https://im9.cz/iR/short-tail/1166387.jpg",
+                        "video": null
+                      },
+                      "… 6 more"
+                    ]
+                  },
+                  "image": "https://img-cdn.heureka.group/v1/983998ab-5cdb-4393-9397-e018c58c804e.jpg",
+                  "images": [
+                    {
+                      "url": "https://img-cdn.heureka.group/v1/983998ab-5cdb-4393-9397-e018c58c804e.jpg",
+                      "thumbnail": "https://img-cdn.heureka.group/v1/983998ab-5cdb-4393-9397-e018c58c804e.jpg?width=130&height=130",
+                      "alt": "Apple iPhone 16 128GB Black, pohled na zadní stranu s fotoaparáty."
+                    },
+                    {
+                      "url": "https://img-cdn.heureka.group/v1/1e96a904-7268-4dfd-afc6-372c63d7666d.jpg",
+                      "thumbnail": "https://img-cdn.heureka.group/v1/1e96a904-7268-4dfd-afc6-372c63d7666d.jpg?width=130&height=130",
+                      "alt": "Apple iPhone 16 128GB Black pohled na zadní a přední stranu"
+                    },
+                    "… 7 more"
+                  ],
+                  "videos": [
+                    {
+                      "youtube_id": "GDlkCkcIqTs",
+                      "url": "https://www.youtube.com/watch?v=GDlkCkcIqTs",
+                      "thumbnail": "https://img.youtube.com/vi/GDlkCkcIqTs/default.jpg"
+                    },
+                    {
+                      "youtube_id": "vRiS5pEj4t8",
+                      "url": "https://www.youtube.com/watch?v=vRiS5pEj4t8",
+                      "thumbnail": "https://img.youtube.com/vi/vRiS5pEj4t8/default.jpg"
+                    },
+                    "… 1 more"
+                  ],
+                  "energy_classes": [
+                    {
+                      "type": "CLASSIC",
+                      "class": "B",
+                      "label_url": null
+                    }
+                  ],
+                  "specs": [
+                    {
+                      "id": "15",
+                      "name": "Hlavní charakteristiky",
+                      "specs": [
+                        {
+                          "id": "2479",
+                          "name": "Operační systém",
+                          "value": "s iOS",
+                          "unit": null,
+                          "value_type": "STRING",
+                          "importance": "PRIMARY",
+                          "description": "Říká, na jakém systému telefon běží. Android je nejrozšířenější a nabízí velkou volnost, iOS používají iPhony a je známý svou jednoduchostí …",
+                          "value_id": "109084763"
+                        },
+                        {
+                          "id": "22940",
+                          "name": "Verze operačního systému",
+                          "value": "s iOS 18",
+                          "unit": null,
+                          "value_type": "STRING",
+                          "importance": "PRIMARY",
+                          "description": "Označuje <b>výchozí verzi</b> mobilního operačního systému.* Novější verze přináší více funkcí, lepší bezpečnost a podporu nových aplikací. …",
+                          "value_id": "109085018"
+                        },
+                        "… 11 more"
+                      ]
+                    },
+                    {
+                      "id": "17",
+                      "name": "Rozměry",
+                      "specs": [
+                        {
+                          "id": "1608",
+                          "name": "Výška telefonu",
+                          "value": "147.6",
+                          "unit": "mm",
+                          "value_type": "STRING",
+                          "importance": "SECONDARY",
+                          "description": null,
+                          "value_id": null
+                        },
+                        {
+                          "id": "1609",
+                          "name": "Šířka telefonu",
+                          "value": "71.6",
+                          "unit": "mm",
+                          "value_type": "STRING",
+                          "importance": "SECONDARY",
+                          "description": null,
+                          "value_id": null
+                        },
+                        "… 1 more"
+                      ]
+                    },
+                    "… 14 more"
+                  ],
+                  "product_line": {
+                    "id": "9f964e49-8ce5-4e7e-8117-30d90897208c",
+                    "name": "Apple iPhone 16",
+                    "status": "ACTIVE",
+                    "variant_parameters": [
+                      {
+                        "id": "40945",
+                        "name": "Barva",
+                        "unit": null,
+                        "display": "THUMBNAILS",
+                        "values": [
+                          {
+                            "…": "2 fields"
+                          },
+                          {
+                            "…": "2 fields"
+                          },
+                          "… 3 more"
+                        ]
+                      },
+                      {
+                        "id": "1611",
+                        "name": "Uživatelská paměť",
+                        "unit": "GB",
+                        "display": "BUTTONS",
+                        "values": [
+                          {
+                            "…": "2 fields"
+                          },
+                          {
+                            "…": "2 fields"
+                          },
+                          "… 1 more"
+                        ]
+                      }
+                    ]
+                  },
+                  "reviews": {
+                    "rating_percent": 94,
+                    "review_count": 90,
+                    "rating_count": 198,
+                    "counts": {
+                      "verified": 79,
+                      "positive": 78,
+                      "negative": 1,
+                      "expert_text": 6,
+                      "expert_video": 5,
+                      "foreign": 0
+                    },
+                    "recommendations": {
+                      "negative": 1,
+                      "positive": 77
+                    },
+                    "stars": [
+                      {
+                        "stars": 5,
+                        "count": 180,
+                        "percent": 91
+                      },
+                      {
+                        "stars": 4,
+                        "count": 5,
+                        "percent": 3
+                      },
+                      "… 3 more"
+                    ],
+                    "summary": {
+                      "pros": "Zákazníci nejvíce chválí fotoaparát, ostré snímky i makro, navíc tlačítko fotoaparátu. Líbí se rychlé reakce, delší výdrž baterie a pohodlná…",
+                      "cons": "Bez obalu klouže v ruce a výrazně vystouplé čočky kývají telefon. Někomu chybí otisk prstu, vadí 60 Hz, občas horší odezva.",
+                      "recommendation": "Uživatelé přecházející ze starších iPhonů nebo Androidu, chtějící bezbolestné nastavení. Hodí se pro každodenní práci i rodinné používání be…"
+                    },
+                    "keywords": {
+                      "pros": [
+                        "výdrž baterie (9)",
+                        "fotoaparát (7)",
+                        "… 8 more"
+                      ],
+                      "cons": [
+                        "cena (4)",
+                        "displej (2)",
+                        "… 4 more"
+                      ]
+                    }
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/heureka/v1/reviews": {
+      "get": {
+        "operationId": "heurekaReviews",
+        "summary": "Heureka product reviews",
+        "description": "Reviews of a Heureka product. type=all is the page's own mix (customer, expert and translated foreign reviews); type=customer lists customer reviews by filter (verified, positive or negative) with rating, recommendation, pros, cons, summary, verified purchase, date, the reviewer's first name and initial (`author`) and name as the page shows it (`author_name`), the shop it was bought at, photos and the shop's or producer's reply; type=expert lists expert articles or videos (title, extract, link, date). Page 1 also carries the review summary. 10 per page; pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/heureka-reviews",
+        "tags": [
+          "Heureka"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A Heureka product link (https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/); links from search and category results work.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `url`: the link's subdomain (e.g. mobilni-telefony).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `url`: the link's path (e.g. apple-iphone-16-128gb-black).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "With category and slug: Heureka.cz or Heureka.sk (a link sets it itself).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk"
+              ],
+              "default": "cz"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Which reviews.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "customer",
+                "expert"
+              ],
+              "default": "all"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "For type=customer: verified (default), positive or negative. For type=expert: text (default) or video.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (10 per page).",
+            "schema": {
+              "type": "integer",
+              "default": "1"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1302850615",
+                  "name": "Apple iPhone 16 128GB Black",
+                  "url": "https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/",
+                  "country": "cz",
+                  "type": "all",
+                  "filter": null,
+                  "page": 1,
+                  "total": null,
+                  "count": 10,
+                  "next_page": 2,
+                  "reviews": [
+                    {
+                      "kind": "customer",
+                      "id": "a62050ba-4b0a-57fc-888c-74a2014ae8e2",
+                      "legacy_id": "19796779",
+                      "rating": 10,
+                      "recommends": "RECOMMENDS",
+                      "summary": "Pokud ho chcete, kupte si ho, budete spokojeni",
+                      "pros": [
+                        "Foťák",
+                        "Kvalita",
+                        "… 6 more"
+                      ],
+                      "cons": [
+                        "Cena",
+                        "60 Hz displej"
+                      ],
+                      "verified": true,
+                      "date": "2025-05-25T09:09:56",
+                      "author": null,
+                      "author_name": null,
+                      "bought_at": {
+                        "name": "Alza.cz",
+                        "url": "https://obchody.heureka.cz/alza-cz/recenze/"
+                      },
+                      "images": [],
+                      "response": null
+                    },
+                    {
+                      "kind": "customer",
+                      "id": "5e76aa29-94e1-5cdb-bdbe-5cc568ce29e9",
+                      "legacy_id": "19392978",
+                      "rating": 8,
+                      "recommends": "RECOMMENDS",
+                      "summary": "Na telefon slušný foťák a výdrž baterie je taky znatelně lepší oproti předchozímu modelu. Záleží jak dlouho baterie zůstane v této kondici.\n…",
+                      "pros": [
+                        "Foťák",
+                        "Baterie"
+                      ],
+                      "cons": [
+                        "Bez obalu klouže v ruce"
+                      ],
+                      "verified": true,
+                      "date": "2025-04-17T08:27:50",
+                      "author": null,
+                      "author_name": null,
+                      "bought_at": {
+                        "name": "O2.cz",
+                        "url": "https://obchody.heureka.cz/eshop-o2-cz/recenze/"
+                      },
+                      "images": [],
+                      "response": null
+                    },
+                    "… 8 more"
+                  ],
+                  "stats": {
+                    "rating_percent": 94,
+                    "review_count": 90,
+                    "rating_count": 198,
+                    "counts": {
+                      "verified": 79,
+                      "positive": 78,
+                      "negative": 1,
+                      "expert_text": 6,
+                      "expert_video": 5,
+                      "foreign": 0
+                    },
+                    "recommendations": {
+                      "negative": 1,
+                      "positive": 77
+                    },
+                    "stars": [
+                      {
+                        "stars": 5,
+                        "count": 180,
+                        "percent": 91
+                      },
+                      {
+                        "stars": 4,
+                        "count": 5,
+                        "percent": 3
+                      },
+                      "… 3 more"
+                    ],
+                    "summary": {
+                      "pros": "Zákazníci nejvíce chválí fotoaparát, ostré snímky i makro, navíc tlačítko fotoaparátu. Líbí se rychlé reakce, delší výdrž baterie a pohodlná…",
+                      "cons": "Bez obalu klouže v ruce a výrazně vystouplé čočky kývají telefon. Někomu chybí otisk prstu, vadí 60 Hz, občas horší odezva.",
+                      "recommendation": "Uživatelé přecházející ze starších iPhonů nebo Androidu, chtějící bezbolestné nastavení. Hodí se pro každodenní práci i rodinné používání be…"
+                    },
+                    "keywords": {
+                      "pros": [
+                        "výdrž baterie (9)",
+                        "fotoaparát (7)",
+                        "… 8 more"
+                      ],
+                      "cons": [
+                        "cena (4)",
+                        "displej (2)",
+                        "… 4 more"
+                      ]
+                    }
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/heureka/v1/search": {
+      "get": {
+        "operationId": "heurekaSearch",
+        "summary": "Heureka product search (Czech Republic and Slovakia)",
+        "description": "Search Heureka.cz or Heureka.sk: products and product lines with the lowest and highest price across shops, number of shops and offers, rating (percent) and review count, category, key specifications, energy label, variants with their own lowest price, badges, image, link and `raw`. The answer lists every filter group with option ids and counts (pass them back in `filters`), related categories and guides, and a corrected query when the site corrects it. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/heureka-search",
+        "tags": [
+          "Heureka"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search keywords.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "iphone 15"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Heureka.cz (CZK) or Heureka.sk (EUR).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk"
+              ],
+              "default": "cz"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "Filters as `filterId:optionId|optionId;filterId:optionId`, from the answer's `filters` (each option has a ready `param`), e.g. `1666:2|5;availability:1`. Stock (availability), rating (review), price bands and price drops work the same way.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "filter_string",
+            "in": "query",
+            "required": false,
+            "description": "A quick filter's `filter_string` from `related`, e.g. f:d:1 (price drops).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "rank",
+                "price_asc",
+                "price_desc",
+                "reviews"
+              ],
+              "default": "relevance"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (24 results per page).",
+            "schema": {
+              "type": "integer",
+              "default": "1"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "iphone 15",
+                  "country": "cz",
+                  "sort": "relevance",
+                  "applied_filters": {},
+                  "total": 20000,
+                  "page": 1,
+                  "next_page": 2,
+                  "count": 24,
+                  "items": [
+                    {
+                      "type": "product",
+                      "id": "1197593301",
+                      "uuid": "40416efd-5f80-50d6-a959-92eee54187e9",
+                      "product_line_id": null,
+                      "name": "mmCase Gelové iPhone 15 - vlak",
+                      "main_variant": null,
+                      "url": "https://pouzdra-kryty-mobily-apple.heureka.cz/mmcase-gelove-iphone-15-vlak/",
+                      "currency": "CZK",
+                      "min_price": 289,
+                      "max_price": 289,
+                      "price_drop": null,
+                      "offer_count": 1,
+                      "shop_count": 1,
+                      "rating_percent": null,
+                      "review_count": null,
+                      "category": {
+                        "id": "8307",
+                        "slug": "pouzdra-kryty-mobily-apple",
+                        "name": "Pouzdra a kryty na mobilní telefony Apple"
+                      },
+                      "description": "Pouzdro s motivem vlak na iPhone 15 poskytuje všechny výhody gelových obalů, a to v zajímavém designu.\n\n- Účinně chrání strany i záda telefo…",
+                      "specs": {
+                        "Výrobce": "mmCase",
+                        "Typ": "zadní kryty",
+                        "Materiál": "gelová",
+                        "Barva": "vícebarevná"
+                      },
+                      "energy_label": null,
+                      "variants": [],
+                      "top_badge": null,
+                      "sponsored": false,
+                      "image": "https://img-cdn.heureka.group/v1/p/40416efd-5f80-50d6-a959-92eee54187e9.jpg?width=400&height=400"
+                    },
+                    {
+                      "type": "product",
+                      "id": "1467734600",
+                      "uuid": "431bd4f3-4456-5250-b173-bd564260cb7a",
+                      "product_line_id": null,
+                      "name": "Picasee silikonový průhledný obal pro Apple iPhone 15 Plus Matcha club",
+                      "main_variant": null,
+                      "url": "https://pouzdra-kryty-mobily-apple.heureka.cz/picasee-silikonovy-pruhledny-obal-pro-apple-iphone-15-plus-matcha-club/",
+                      "currency": "CZK",
+                      "min_price": 448,
+                      "max_price": 448,
+                      "price_drop": null,
+                      "offer_count": 1,
+                      "shop_count": 1,
+                      "rating_percent": null,
+                      "review_count": null,
+                      "category": {
+                        "id": "8307",
+                        "slug": "pouzdra-kryty-mobily-apple",
+                        "name": "Pouzdra a kryty na mobilní telefony Apple"
+                      },
+                      "description": "Picasee průhledný silikonový obal je vyroben z odolného, velice pevného a lesklého materiálu, na kterém je UV technologií natisknut design P…",
+                      "specs": {
+                        "Výrobce": "Picasee",
+                        "Materiál": "silikonová",
+                        "Barva": "zelená"
+                      },
+                      "energy_label": null,
+                      "variants": [],
+                      "top_badge": null,
+                      "sponsored": false,
+                      "image": "https://img-cdn.heureka.group/v1/p/431bd4f3-4456-5250-b173-bd564260cb7a.jpg?width=400&height=400"
+                    },
+                    "… 22 more"
+                  ],
+                  "filters": [
+                    {
+                      "id": "price",
+                      "name": "Cena",
+                      "type": "range",
+                      "unit": null,
+                      "options": [
+                        {
+                          "id": "1",
+                          "label": "Méně než 300 Kč",
+                          "count": 45589,
+                          "param": "price:1"
+                        },
+                        {
+                          "id": "2",
+                          "label": "300 – 400 Kč",
+                          "count": 26781,
+                          "param": "price:2"
+                        },
+                        "… 5 more"
+                      ]
+                    },
+                    {
+                      "id": "review",
+                      "name": "Zákaznické hodnocení",
+                      "type": "pick",
+                      "unit": null,
+                      "options": [
+                        {
+                          "id": "1",
+                          "label": "95",
+                          "count": 414,
+                          "param": "review:1"
+                        },
+                        {
+                          "id": "2",
+                          "label": "90",
+                          "count": 488,
+                          "param": "review:2"
+                        },
+                        "… 1 more"
+                      ]
+                    },
+                    "… 2 more"
+                  ],
+                  "related": [
+                    {
+                      "type": "category",
+                      "id": "8307",
+                      "name": "Pouzdra a kryty na mobilní telefony Apple",
+                      "slug": "pouzdra-kryty-mobily-apple",
+                      "products": 142267,
+                      "filter_string": null,
+                      "url": "https://pouzdra-kryty-mobily-apple.heureka.cz/"
+                    },
+                    {
+                      "type": "attributeCategory",
+                      "id": "23520",
+                      "name": "Apple iPhone 15",
+                      "slug": "mobilni-telefony",
+                      "products": 13,
+                      "filter_string": "26540:51662741",
+                      "url": null
+                    },
+                    "… 13 more"
+                  ],
+                  "corrected_query": null,
+                  "redirect": null,
+                  "destination": "fulltext",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/heureka/v1/specs": {
+      "get": {
+        "operationId": "heurekaSpecs",
+        "summary": "Heureka product specifications",
+        "description": "Every specification of a Heureka product, grouped by the page's sections: name, value, unit, value type, primary or secondary importance and the explanation the site gives.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/heureka-specs",
+        "tags": [
+          "Heureka"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A Heureka product link (https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/); links from search and category results work.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `url`: the link's subdomain (e.g. mobilni-telefony).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `url`: the link's path (e.g. apple-iphone-16-128gb-black).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "With category and slug: Heureka.cz or Heureka.sk (a link sets it itself).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk"
+              ],
+              "default": "cz"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1302850615",
+                  "name": "Apple iPhone 16 128GB Black",
+                  "url": "https://mobilni-telefony.heureka.cz/apple-iphone-16-128gb-black/",
+                  "country": "cz",
+                  "count": 127,
+                  "groups": [
+                    {
+                      "id": "15",
+                      "name": "Hlavní charakteristiky",
+                      "specs": [
+                        {
+                          "id": "2479",
+                          "name": "Operační systém",
+                          "value": "s iOS",
+                          "unit": null,
+                          "value_type": "STRING",
+                          "importance": "PRIMARY",
+                          "description": "Říká, na jakém systému telefon běží. Android je nejrozšířenější a nabízí velkou volnost, iOS používají iPhony a je známý svou jednoduchostí …",
+                          "value_id": "109084763"
+                        },
+                        {
+                          "id": "22940",
+                          "name": "Verze operačního systému",
+                          "value": "s iOS 18",
+                          "unit": null,
+                          "value_type": "STRING",
+                          "importance": "PRIMARY",
+                          "description": "Označuje <b>výchozí verzi</b> mobilního operačního systému.* Novější verze přináší více funkcí, lepší bezpečnost a podporu nových aplikací. …",
+                          "value_id": "109085018"
+                        },
+                        "… 11 more"
+                      ]
+                    },
+                    {
+                      "id": "17",
+                      "name": "Rozměry",
+                      "specs": [
+                        {
+                          "id": "1608",
+                          "name": "Výška telefonu",
+                          "value": "147.6",
+                          "unit": "mm",
+                          "value_type": "STRING",
+                          "importance": "SECONDARY",
+                          "description": null,
+                          "value_id": null
+                        },
+                        {
+                          "id": "1609",
+                          "name": "Šířka telefonu",
+                          "value": "71.6",
+                          "unit": "mm",
+                          "value_type": "STRING",
+                          "importance": "SECONDARY",
+                          "description": null,
+                          "value_id": null
+                        },
+                        "… 1 more"
+                      ]
+                    },
+                    "… 14 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

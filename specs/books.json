@@ -1,0 +1,2267 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Books",
+    "version": "1.0.0",
+    "description": "The Books API from API.SH: public Books data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Books",
+      "description": "8 endpoints (public data)",
+      "x-slug": "books",
+      "x-domains": []
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/books/v1/author": {
+      "get": {
+        "operationId": "booksAuthor",
+        "summary": "Book author",
+        "description": "An author by Open Library id or name: names, birth and death dates, biography, photos, links, identifiers (Wikidata, VIAF, ISNI...), work count and works (title, first publish date, subjects, cover). `list=true` with `q` lists matching authors instead.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/books-author",
+        "tags": [
+          "Books"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Open Library author id, e.g. OL34184A.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Author name instead of id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "roald dahl"
+          },
+          {
+            "name": "works_limit",
+            "in": "query",
+            "required": false,
+            "description": "Works to include (default 20, max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "list",
+            "in": "query",
+            "required": false,
+            "description": "`true`: list the authors matching `q`.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "OL34184A",
+                  "name": "Roald Dahl",
+                  "personal_name": "Dahl, Roald.",
+                  "alternate_names": [
+                    "ロアルド・ダール",
+                    "达尔",
+                    "… 2 more"
+                  ],
+                  "birth_date": "13 September 1916",
+                  "death_date": "23 November 1990",
+                  "bio": "Roald Dahl was a British novelist, short story writer, and screenwriter.\r\n\r\nBorn in north Cardiff, Wales, to Norwegian parents, Dahl served …",
+                  "photos": [
+                    "https://covers.openlibrary.org/a/id/9395323-L.jpg",
+                    "https://covers.openlibrary.org/a/id/9395316-L.jpg",
+                    "… 3 more"
+                  ],
+                  "links": [
+                    {
+                      "title": "roalddahl.com",
+                      "url": "http://www.roalddahl.com/"
+                    },
+                    {
+                      "title": "Wikipedia entry",
+                      "url": "http://en.wikipedia.org/wiki/Roald_Dahl"
+                    }
+                  ],
+                  "identifiers": {
+                    "viaf": "108159131",
+                    "wikidata": "Q25161",
+                    "isni": "0000000121468188",
+                    "amazon": "B000AQ0WGQ",
+                    "goodreads": "4273",
+                    "bookbrainz": "54a68d4a-c54d-44d9-8d5f-9cd3ad8a50e0",
+                    "musicbrainz": "cb802a9c-efc9-4a1d-9dd2-b6fd080f6298",
+                    "imdb": "nm0001094",
+                    "lc_naf": "n79055236",
+                    "librarything": "dahlroald",
+                    "opac_sbn": "CFIV035247"
+                  },
+                  "wikipedia": null,
+                  "work_count": 545,
+                  "works": [
+                    {
+                      "id": "OL15158644W",
+                      "title": "Adventures in English literature",
+                      "first_publish_date": null,
+                      "subjects": [
+                        "English literature",
+                        "short story",
+                        "… 7 more"
+                      ],
+                      "cover": "https://covers.openlibrary.org/b/id/14533453-M.jpg"
+                    },
+                    {
+                      "id": "OL9978632W",
+                      "title": "Denni - chempion mira",
+                      "first_publish_date": null,
+                      "subjects": [],
+                      "cover": null
+                    },
+                    "… 18 more"
+                  ],
+                  "url": "https://openlibrary.org/authors/OL34184A",
+                  "attribution": "Source: Open Library (openlibrary.org), Internet Archive",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/books/v1/author/works": {
+      "get": {
+        "operationId": "booksAuthorWorks",
+        "summary": "Works by an author",
+        "description": "Every work by an author in Open Library, paged: title, first publish date, description, subjects, covers and links. Pass `next_page` back as `page`, null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/books-author-works",
+        "tags": [
+          "Books"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Open Library author id, or an openlibrary.org/authors link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "OL34184A"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (default 50, max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "OL34184A",
+                  "total": 545,
+                  "page": 1,
+                  "limit": 50,
+                  "count": 50,
+                  "items": [
+                    {
+                      "id": "OL15158644W",
+                      "title": "Adventures in English literature",
+                      "subtitle": null,
+                      "first_publish_date": null,
+                      "description": null,
+                      "subjects": [
+                        "English literature",
+                        "short story",
+                        "… 7 more"
+                      ],
+                      "subject_places": [
+                        "India",
+                        "British Empire"
+                      ],
+                      "subject_people": [
+                        "Harry Pope",
+                        "Timber Woods",
+                        "… 1 more"
+                      ],
+                      "subject_times": [],
+                      "covers": [
+                        "https://covers.openlibrary.org/b/id/14533453-L.jpg",
+                        "https://covers.openlibrary.org/b/id/7169546-L.jpg",
+                        "… 4 more"
+                      ],
+                      "authors": [
+                        "OL2246237A",
+                        "OL22098A",
+                        "… 4 more"
+                      ],
+                      "created": "2010-05-10T21:35:27.684096",
+                      "last_modified": "2026-10-25T16:36:56.091715",
+                      "url": "https://openlibrary.org/works/OL15158644W"
+                    },
+                    {
+                      "id": "OL9978632W",
+                      "title": "Denni - chempion mira",
+                      "subtitle": null,
+                      "first_publish_date": null,
+                      "description": null,
+                      "subjects": [],
+                      "subject_places": [],
+                      "subject_people": [],
+                      "subject_times": [],
+                      "covers": [],
+                      "authors": [
+                        "OL34184A"
+                      ],
+                      "created": "2009-12-11T01:53:26.623184",
+                      "last_modified": "2026-09-23T23:29:26.613717",
+                      "url": "https://openlibrary.org/works/OL9978632W"
+                    },
+                    "… 48 more"
+                  ],
+                  "next_page": 2,
+                  "url": "https://openlibrary.org/authors/OL34184A",
+                  "attribution": "Source: Open Library (openlibrary.org), Internet Archive",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/books/v1/edition": {
+      "get": {
+        "operationId": "booksEdition",
+        "summary": "Book edition",
+        "description": "One edition by its Open Library id: title, publishers, publish date and place, ISBNs, pages, format, languages, contents, covers, with its work, authors and rating.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/books-edition",
+        "tags": [
+          "Books"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Open Library edition id, or an openlibrary.org/books link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "OL7353617M"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "OL7353617M",
+                  "title": "Fantastic Mr. Fox",
+                  "subtitle": null,
+                  "full_title": null,
+                  "publish_date": "October 1, 1988",
+                  "publishers": [
+                    "Puffin"
+                  ],
+                  "publish_places": [],
+                  "isbn_10": [
+                    "0140328726"
+                  ],
+                  "isbn_13": [
+                    "9780140328721"
+                  ],
+                  "lccn": [],
+                  "oclc": [],
+                  "pages": 96,
+                  "pagination": null,
+                  "physical_format": null,
+                  "weight": null,
+                  "dimensions": null,
+                  "languages": [
+                    "eng"
+                  ],
+                  "series": [],
+                  "edition_name": null,
+                  "contributions": [
+                    "Tony Ross (Illustrator)"
+                  ],
+                  "subjects": [],
+                  "dewey": [],
+                  "lc_classifications": [],
+                  "identifiers": {
+                    "goodreads": [
+                      "1507552"
+                    ],
+                    "librarything": [
+                      "6446"
+                    ]
+                  },
+                  "covers": [
+                    "https://covers.openlibrary.org/b/id/15152634-L.jpg",
+                    "https://covers.openlibrary.org/b/id/8739161-L.jpg"
+                  ],
+                  "description": null,
+                  "first_sentence": "Down in the valley there were three farms.",
+                  "url": "https://openlibrary.org/books/OL7353617M",
+                  "ocaid": "fantasticmrfoxpu00roal",
+                  "internet_archive": {
+                    "id": "fantasticmrfoxpu00roal",
+                    "url": "https://archive.org/details/fantasticmrfoxpu00roal"
+                  },
+                  "contributors": [],
+                  "table_of_contents": [],
+                  "classifications": {},
+                  "by_statement": null,
+                  "notes": null,
+                  "authors": [
+                    {
+                      "id": "OL34184A",
+                      "name": "Roald Dahl",
+                      "url": "https://openlibrary.org/authors/OL34184A"
+                    }
+                  ],
+                  "work": {
+                    "id": "OL45804W",
+                    "title": "Fantastic Mr Fox",
+                    "subtitle": null,
+                    "description": "The main character of Fantastic Mr. Fox is an extremely clever anthropomorphized fox named Mr. Fox. He lives with his wife and four little f…",
+                    "first_publish_date": null,
+                    "subjects": [
+                      "Animals",
+                      "Hunger",
+                      "… 29 more"
+                    ],
+                    "subject_places": [
+                      "English countryside"
+                    ],
+                    "subject_people": [
+                      "Bean",
+                      "Boggis",
+                      "… 2 more"
+                    ],
+                    "subject_times": [
+                      "20th Century"
+                    ],
+                    "covers": [
+                      "https://covers.openlibrary.org/b/id/6498519-L.jpg",
+                      "https://covers.openlibrary.org/b/id/8904777-L.jpg",
+                      "… 33 more"
+                    ],
+                    "links": [],
+                    "excerpt_count": 0,
+                    "url": "https://openlibrary.org/works/OL45804W"
+                  },
+                  "rating": {
+                    "average": 3.950413223140496,
+                    "count": 121,
+                    "counts": {
+                      "1": 11,
+                      "2": 6,
+                      "3": 18,
+                      "4": 29,
+                      "5": 57
+                    }
+                  },
+                  "attribution": "Source: Open Library (openlibrary.org), Internet Archive",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/books/v1/isbn": {
+      "get": {
+        "operationId": "booksIsbn",
+        "summary": "Book by ISBN",
+        "description": "A book edition by ISBN-10 or ISBN-13 from Open Library: title, subtitle, publish date, publishers, places, ISBNs, LCCN, OCLC, pages, format, languages, series, contributors, subjects, Dewey and LC classes, identifiers (Goodreads, LibraryThing...), covers, first sentence, contributors with roles, table of contents, classifications, Internet Archive id and link (`ocaid`), authors, the work (description, subjects, first publish date) and readers' rating.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/books-isbn",
+        "tags": [
+          "Books"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "isbn",
+            "in": "query",
+            "required": true,
+            "description": "ISBN-10 or ISBN-13.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9780140328721"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "isbn": "9780140328721",
+                  "id": "OL7353617M",
+                  "title": "Fantastic Mr. Fox",
+                  "subtitle": null,
+                  "full_title": null,
+                  "publish_date": "October 1, 1988",
+                  "publishers": [
+                    "Puffin"
+                  ],
+                  "publish_places": [],
+                  "isbn_10": [
+                    "0140328726"
+                  ],
+                  "isbn_13": [
+                    "9780140328721"
+                  ],
+                  "lccn": [],
+                  "oclc": [],
+                  "pages": 96,
+                  "pagination": null,
+                  "physical_format": null,
+                  "weight": null,
+                  "dimensions": null,
+                  "languages": [
+                    "eng"
+                  ],
+                  "series": [],
+                  "edition_name": null,
+                  "contributions": [
+                    "Tony Ross (Illustrator)"
+                  ],
+                  "subjects": [],
+                  "dewey": [],
+                  "lc_classifications": [],
+                  "identifiers": {
+                    "goodreads": [
+                      "1507552"
+                    ],
+                    "librarything": [
+                      "6446"
+                    ]
+                  },
+                  "covers": [
+                    "https://covers.openlibrary.org/b/id/15152634-L.jpg",
+                    "https://covers.openlibrary.org/b/id/8739161-L.jpg"
+                  ],
+                  "description": null,
+                  "first_sentence": "Down in the valley there were three farms.",
+                  "url": "https://openlibrary.org/books/OL7353617M",
+                  "ocaid": "fantasticmrfoxpu00roal",
+                  "internet_archive": {
+                    "id": "fantasticmrfoxpu00roal",
+                    "url": "https://archive.org/details/fantasticmrfoxpu00roal"
+                  },
+                  "contributors": [],
+                  "table_of_contents": [],
+                  "classifications": {},
+                  "by_statement": null,
+                  "notes": null,
+                  "authors": [
+                    {
+                      "id": "OL34184A",
+                      "name": "Roald Dahl",
+                      "url": "https://openlibrary.org/authors/OL34184A"
+                    }
+                  ],
+                  "work": {
+                    "id": "OL45804W",
+                    "title": "Fantastic Mr Fox",
+                    "subtitle": null,
+                    "description": "The main character of Fantastic Mr. Fox is an extremely clever anthropomorphized fox named Mr. Fox. He lives with his wife and four little f…",
+                    "first_publish_date": null,
+                    "subjects": [
+                      "Animals",
+                      "Hunger",
+                      "… 29 more"
+                    ],
+                    "subject_places": [
+                      "English countryside"
+                    ],
+                    "subject_people": [
+                      "Bean",
+                      "Boggis",
+                      "… 2 more"
+                    ],
+                    "subject_times": [
+                      "20th Century"
+                    ],
+                    "covers": [
+                      "https://covers.openlibrary.org/b/id/6498519-L.jpg",
+                      "https://covers.openlibrary.org/b/id/8904777-L.jpg",
+                      "… 33 more"
+                    ],
+                    "links": [],
+                    "excerpt_count": 0,
+                    "url": "https://openlibrary.org/works/OL45804W"
+                  },
+                  "rating": {
+                    "average": 3.950413223140496,
+                    "count": 121,
+                    "counts": {
+                      "1": 11,
+                      "2": 6,
+                      "3": 18,
+                      "4": 29,
+                      "5": 57
+                    }
+                  },
+                  "attribution": "Source: Open Library (openlibrary.org), Internet Archive",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/books/v1/search": {
+      "get": {
+        "operationId": "booksSearch",
+        "summary": "Book search",
+        "description": "Searches Open Library's 20M+ books by keywords, title, author, subject, publisher, ISBN, person, place or time period, with language, first-publication-year, full-text and e-book access filters: work id, title, authors, first publish year, edition count, cover, ISBNs, languages, subjects, publishers, median pages, rating, want-to-read and read counts, e-book access. Sort by relevance, newest, oldest, rating, editions, title or random. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/books-search",
+        "tags": [
+          "Books"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "dune"
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "description": "Title.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "required": false,
+            "description": "Author.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subject",
+            "in": "query",
+            "required": false,
+            "description": "Subject.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "publisher",
+            "in": "query",
+            "required": false,
+            "description": "Publisher.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language (3-letter MARC code: eng, fre, spa, ger...).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from_year",
+            "in": "query",
+            "required": false,
+            "description": "First published in or after.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "to_year",
+            "in": "query",
+            "required": false,
+            "description": "First published in or before.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "new",
+                "old",
+                "rating",
+                "editions",
+                "title",
+                "random"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Per page (default 20, max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "isbn",
+            "in": "query",
+            "required": false,
+            "description": "ISBN-10 or ISBN-13.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "person",
+            "in": "query",
+            "required": false,
+            "description": "Person the book is about or features, e.g. sherlock holmes.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "place",
+            "in": "query",
+            "required": false,
+            "description": "Place the book is about or set in, e.g. london.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "required": false,
+            "description": "Time period the book is about, e.g. 19th century.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "has_fulltext",
+            "in": "query",
+            "required": false,
+            "description": "true: books with a readable or borrowable digital copy; false: without.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "ebook_access",
+            "in": "query",
+            "required": false,
+            "description": "Minimum e-book access: public (free to read), borrowable (public or borrowable) or printdisabled (any digital copy).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "public",
+                "borrowable",
+                "printdisabled"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "The Hobbit",
+                  "applied_filters": {
+                    "title": null,
+                    "author": null,
+                    "subject": null,
+                    "publisher": null,
+                    "language": null,
+                    "from_year": null,
+                    "to_year": null
+                  },
+                  "sort": "relevance",
+                  "total": 461,
+                  "page": 1,
+                  "count": 20,
+                  "items": [
+                    {
+                      "work_id": "OL27482W",
+                      "title": "The Hobbit",
+                      "subtitle": null,
+                      "authors": [
+                        {
+                          "name": "J.R.R. Tolkien",
+                          "id": "OL26320A"
+                        }
+                      ],
+                      "first_publish_year": 1937,
+                      "edition_count": 482,
+                      "cover": "https://covers.openlibrary.org/b/id/14627509-M.jpg",
+                      "isbn": [
+                        "3763252088",
+                        "9782253049418",
+                        "… 8 more"
+                      ],
+                      "languages": [
+                        "bre",
+                        "yid",
+                        "… 30 more"
+                      ],
+                      "subjects": [
+                        "Fantasy",
+                        "Arkenstone",
+                        "… 13 more"
+                      ],
+                      "publishers": [
+                        "Астролябія",
+                        "Công ty văn hóa & truyền thông Nhã Nam",
+                        "… 8 more"
+                      ],
+                      "pages_median": 310,
+                      "rating": 4.2978306,
+                      "ratings_count": 507,
+                      "want_to_read": 4080,
+                      "already_read": 853,
+                      "ebook_access": "borrowable",
+                      "has_fulltext": true,
+                      "goodreads_ids": [
+                        "289901",
+                        "4506446",
+                        "… 193 more"
+                      ],
+                      "url": "https://openlibrary.org/works/OL27482W"
+                    },
+                    {
+                      "work_id": "OL219602W",
+                      "title": "The Hobbit",
+                      "subtitle": null,
+                      "authors": [
+                        {
+                          "name": "Charles Dixon",
+                          "id": "OL2453782A"
+                        },
+                        {
+                          "name": "Sean Deming",
+                          "id": "OL758306A"
+                        },
+                        "… 1 more"
+                      ],
+                      "first_publish_year": 1990,
+                      "edition_count": 10,
+                      "cover": "https://covers.openlibrary.org/b/id/8406766-M.jpg",
+                      "isbn": [
+                        "0345445600",
+                        "0044408129",
+                        "… 8 more"
+                      ],
+                      "languages": [
+                        "ita",
+                        "spa",
+                        "… 1 more"
+                      ],
+                      "subjects": [
+                        "Middle Earth (Imaginary place)",
+                        "Comic books, strips",
+                        "… 4 more"
+                      ],
+                      "publishers": [
+                        "Eclipse Books",
+                        "Del Rey",
+                        "… 6 more"
+                      ],
+                      "pages_median": 144,
+                      "rating": 4.2702703,
+                      "ratings_count": 37,
+                      "want_to_read": 106,
+                      "already_read": 40,
+                      "ebook_access": "printdisabled",
+                      "has_fulltext": true,
+                      "goodreads_ids": [
+                        "1490430",
+                        "1823681",
+                        "… 5 more"
+                      ],
+                      "url": "https://openlibrary.org/works/OL219602W"
+                    },
+                    "… 18 more"
+                  ],
+                  "next_page": 2,
+                  "attribution": "Source: Open Library (openlibrary.org), Internet Archive",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/books/v1/subject": {
+      "get": {
+        "operationId": "booksSubject",
+        "summary": "Books by subject",
+        "description": "Books on a subject (most-edited first): work id, title, authors, first publish year, edition count, cover; with the subject's work count and, on page 1, its top related authors, subjects and publishers. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/books-subject",
+        "tags": [
+          "Books"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "subject",
+            "in": "query",
+            "required": true,
+            "description": "Subject, e.g. science_fiction, love, history, cooking.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "science_fiction"
+          },
+          {
+            "name": "ebooks",
+            "in": "query",
+            "required": false,
+            "description": "`true`: only books with an e-book.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Per page (default 20, max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "subject": "science fiction",
+                  "work_count": 21250,
+                  "page": 1,
+                  "count": 20,
+                  "items": [
+                    {
+                      "work_id": "OL138052W",
+                      "title": "Alice's Adventures in Wonderland",
+                      "authors": [
+                        {
+                          "name": "Lewis Carroll",
+                          "id": "OL22098A"
+                        }
+                      ],
+                      "first_publish_year": 1865,
+                      "edition_count": 3548,
+                      "cover": "https://covers.openlibrary.org/b/id/10527843-M.jpg",
+                      "has_fulltext": true,
+                      "url": "https://openlibrary.org/works/OL138052W"
+                    },
+                    {
+                      "work_id": "OL450063W",
+                      "title": "Frankenstein; or, The Modern Prometheus",
+                      "authors": [
+                        {
+                          "name": "Mary Shelley",
+                          "id": "OL25342A"
+                        }
+                      ],
+                      "first_publish_year": 1818,
+                      "edition_count": 2187,
+                      "cover": "https://covers.openlibrary.org/b/id/12356249-M.jpg",
+                      "has_fulltext": true,
+                      "url": "https://openlibrary.org/works/OL450063W"
+                    },
+                    "… 18 more"
+                  ],
+                  "next_page": 2,
+                  "related": {
+                    "authors": [
+                      {
+                        "name": "Isaac Asimov",
+                        "count": 236
+                      },
+                      {
+                        "name": "Martin H. Greenberg",
+                        "count": 164
+                      },
+                      "… 18 more"
+                    ],
+                    "subjects": [
+                      {
+                        "name": "Fiction",
+                        "count": 9136
+                      },
+                      {
+                        "name": "Children's fiction",
+                        "count": 7315
+                      },
+                      "… 18 more"
+                    ],
+                    "publishers": [
+                      {
+                        "name": "Orion Publishing Group, Limited",
+                        "count": 643
+                      },
+                      {
+                        "name": "Tandem Library",
+                        "count": 589
+                      },
+                      "… 18 more"
+                    ]
+                  },
+                  "attribution": "Source: Open Library (openlibrary.org), Internet Archive",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/books/v1/trending": {
+      "get": {
+        "operationId": "booksTrending",
+        "summary": "Trending books",
+        "description": "The most-read books on Open Library now, today, this week, month, year or all time: rank, title, authors, first publish year, edition count, cover and reading availability. Pass `next_page` back as `page`, null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/books-trending",
+        "tags": [
+          "Books"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "description": "Period (default daily).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "now",
+                "daily",
+                "weekly",
+                "monthly",
+                "yearly",
+                "forever"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (default 50, max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (up to 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "period": "daily",
+                  "page": 1,
+                  "limit": 50,
+                  "count": 50,
+                  "items": [
+                    {
+                      "rank": 1,
+                      "id": "OL17930368W",
+                      "title": "Atomic Habits",
+                      "authors": [
+                        {
+                          "name": "James Clear",
+                          "id": "OL7422948A"
+                        }
+                      ],
+                      "first_publish_year": 2016,
+                      "edition_count": 42,
+                      "cover": "https://covers.openlibrary.org/b/id/12539702-L.jpg",
+                      "cover_edition": "OL36647151M",
+                      "languages": [
+                        "ger",
+                        "ind",
+                        "… 5 more"
+                      ],
+                      "ebook_access": "printdisabled",
+                      "has_fulltext": true,
+                      "public_scan": false,
+                      "ia": [
+                        "hbitosatmicos0000jame",
+                        "hbitosatmicosumm0000jona",
+                        "… 2 more"
+                      ],
+                      "url": "https://openlibrary.org/works/OL17930368W"
+                    },
+                    {
+                      "rank": 2,
+                      "id": "OL1968368W",
+                      "title": "The 48 Laws of Power",
+                      "authors": [
+                        {
+                          "name": "Robert Greene",
+                          "id": "OL236414A"
+                        }
+                      ],
+                      "first_publish_year": 1998,
+                      "edition_count": 51,
+                      "cover": "https://covers.openlibrary.org/b/id/6424160-L.jpg",
+                      "cover_edition": "OL24274306M",
+                      "languages": [
+                        "rus",
+                        "ger",
+                        "… 7 more"
+                      ],
+                      "ebook_access": "borrowable",
+                      "has_fulltext": true,
+                      "public_scan": false,
+                      "ia": [
+                        "powerdie48gesetz0000robe",
+                        "48lawsofpow00gree",
+                        "… 2 more"
+                      ],
+                      "url": "https://openlibrary.org/works/OL1968368W"
+                    },
+                    "… 48 more"
+                  ],
+                  "next_page": 2,
+                  "attribution": "Source: Open Library (openlibrary.org), Internet Archive",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/books/v1/work": {
+      "get": {
+        "operationId": "booksWork",
+        "summary": "Book work and editions",
+        "description": "A work (all editions of a book) by Open Library id: title, description, subjects, places, people, times, first publish date, covers, links, authors, rating with distribution, edition count and its editions (publisher, date, ISBNs, pages, format, languages).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/books-work",
+        "tags": [
+          "Books"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Open Library work id (from search).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "OL45804W"
+          },
+          {
+            "name": "editions_limit",
+            "in": "query",
+            "required": false,
+            "description": "Editions to include (default 20, max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "OL45804W",
+                  "title": "Fantastic Mr Fox",
+                  "subtitle": null,
+                  "description": "The main character of Fantastic Mr. Fox is an extremely clever anthropomorphized fox named Mr. Fox. He lives with his wife and four little f…",
+                  "first_publish_date": null,
+                  "subjects": [
+                    "Animals",
+                    "Hunger",
+                    "… 29 more"
+                  ],
+                  "subject_places": [
+                    "English countryside"
+                  ],
+                  "subject_people": [
+                    "Bean",
+                    "Boggis",
+                    "… 2 more"
+                  ],
+                  "subject_times": [
+                    "20th Century"
+                  ],
+                  "covers": [
+                    "https://covers.openlibrary.org/b/id/6498519-L.jpg",
+                    "https://covers.openlibrary.org/b/id/8904777-L.jpg",
+                    "… 33 more"
+                  ],
+                  "links": [],
+                  "excerpt_count": 0,
+                  "url": "https://openlibrary.org/works/OL45804W",
+                  "authors": [
+                    {
+                      "id": "OL34184A",
+                      "name": "Roald Dahl",
+                      "url": "https://openlibrary.org/authors/OL34184A"
+                    }
+                  ],
+                  "rating": {
+                    "average": 3.950413223140496,
+                    "count": 121,
+                    "counts": {
+                      "1": 11,
+                      "2": 6,
+                      "3": 18,
+                      "4": 29,
+                      "5": 57
+                    }
+                  },
+                  "edition_count": 161,
+                  "editions": [
+                    {
+                      "id": "OL57649219M",
+                      "title": "Mar shuʻal ha-mehulal",
+                      "subtitle": null,
+                      "full_title": "Mar shuʻal ha-mehulal",
+                      "publish_date": "2005",
+                      "publishers": [
+                        "Zemorah-Bitan"
+                      ],
+                      "publish_places": [
+                        "Or Yehudah"
+                      ],
+                      "isbn_10": [],
+                      "isbn_13": [],
+                      "lccn": [],
+                      "oclc": [
+                        "62887933"
+                      ],
+                      "pages": 103,
+                      "pagination": "103 p.",
+                      "physical_format": null,
+                      "weight": null,
+                      "dimensions": null,
+                      "languages": [
+                        "heb"
+                      ],
+                      "series": [
+                        "Marganit"
+                      ],
+                      "edition_name": null,
+                      "contributions": [],
+                      "subjects": [],
+                      "dewey": [],
+                      "lc_classifications": [],
+                      "identifiers": {},
+                      "covers": [],
+                      "description": null,
+                      "first_sentence": null,
+                      "url": "https://openlibrary.org/books/OL57649219M",
+                      "ocaid": null,
+                      "internet_archive": null,
+                      "contributors": [
+                        {
+                          "name": "Binah Ofeḳ",
+                          "role": "Translator"
+                        }
+                      ],
+                      "table_of_contents": [],
+                      "classifications": {},
+                      "by_statement": "Roʾald Dal ; me-Anglit Binah Ofeḳ ; iyurim Ḳṿenṭin Bleiḳ",
+                      "notes": null
+                    },
+                    {
+                      "id": "OL51048152M",
+                      "title": "Fantastic Mr Fox",
+                      "subtitle": null,
+                      "full_title": "Fantastic Mr Fox",
+                      "publish_date": "2024",
+                      "publishers": [
+                        "Penguin Books, Limited"
+                      ],
+                      "publish_places": [],
+                      "isbn_10": [],
+                      "isbn_13": [
+                        "9780241677377"
+                      ],
+                      "lccn": [],
+                      "oclc": [],
+                      "pages": null,
+                      "pagination": "96",
+                      "physical_format": null,
+                      "weight": null,
+                      "dimensions": null,
+                      "languages": [
+                        "eng"
+                      ],
+                      "series": [],
+                      "edition_name": null,
+                      "contributions": [],
+                      "subjects": [
+                        "Children's fiction"
+                      ],
+                      "dewey": [],
+                      "lc_classifications": [
+                        "PZ7.D1515Fa 2024"
+                      ],
+                      "identifiers": {},
+                      "covers": [],
+                      "description": null,
+                      "first_sentence": null,
+                      "url": "https://openlibrary.org/books/OL51048152M",
+                      "ocaid": null,
+                      "internet_archive": null,
+                      "contributors": [
+                        {
+                          "name": "Quentin Blake",
+                          "role": "Illustrator"
+                        }
+                      ],
+                      "table_of_contents": [],
+                      "classifications": {},
+                      "by_statement": null,
+                      "notes": null
+                    },
+                    "… 18 more"
+                  ],
+                  "attribution": "Source: Open Library (openlibrary.org), Internet Archive",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

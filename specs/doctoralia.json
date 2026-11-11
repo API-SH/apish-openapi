@@ -1,0 +1,1202 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Doctoralia",
+    "version": "1.0.0",
+    "description": "The Doctoralia API from API.SH: public Doctoralia data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Doctoralia",
+      "description": "4 endpoints (local services)",
+      "x-slug": "doctoralia",
+      "x-domains": [
+        "doctoralia.com.br"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/doctoralia/v1/clinic": {
+      "get": {
+        "operationId": "doctoraliaClinic",
+        "summary": "Doctoralia clinic profile",
+        "description": "A clinic or hospital profile on a Doctoralia site: name, specialties (with links), about text, company registration, technical lead, address, phone numbers, website and social links, rating, review count and the latest reviews (author, date, rating, text).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 2 credits per successful call. Docs: https://api.sh/docs/doctoralia-clinic",
+        "tags": [
+          "Doctoralia"
+        ],
+        "x-credits": 2,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "A clinic link on a Doctoralia site, e.g. https://www.doctoralia.com.br/clinicas/<name>.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.doctoralia.com.br/clinicas/clinica-rello"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "name": "Clínica Rello",
+                  "url": "https://www.doctoralia.com.br/clinicas/clinica-rello",
+                  "specialties": [
+                    {
+                      "name": "Clínica médica",
+                      "url": "https://www.doctoralia.com.br/clinicas/clinica-medica/sao-paulo"
+                    }
+                  ],
+                  "about": "A Clínica Rello tem sua sede em Santana, na zona norte da cidade de São Paulo. Há mais de 35 anos no mercado, temos a experiência no tratame…",
+                  "registration": "56.768.393/0001-32",
+                  "technical_lead": "Walter Rello de Araujo Filho, CRM: 48278-SP.",
+                  "address": "Rua Banco das Palmas 169, São Paulo 02016020",
+                  "phones": [
+                    "+1 555 010 0000",
+                    "+1 555 010 0000",
+                    "… 2 more"
+                  ],
+                  "links": [
+                    "https://facebook.com/clinicarello",
+                    "https://www.instagram.com/clinicarello",
+                    "… 2 more"
+                  ],
+                  "rating": 5,
+                  "review_count": 1463,
+                  "reviews": [
+                    {
+                      "author": "C.H.",
+                      "date": "2026-11-03T20:18:50-03:00",
+                      "rating": 5,
+                      "text": "Consulta de rotina, excelente profissional, atencioso e muito simpático."
+                    },
+                    {
+                      "author": "João",
+                      "date": "2026-11-03T10:35:39-03:00",
+                      "rating": 5,
+                      "text": "Foi uma consulta de check up e como sempre o dr Walter foi muito solícito e competente, me explicou todos os significados dos exames."
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 2
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/doctoralia/v1/doctor": {
+      "get": {
+        "operationId": "doctoraliaDoctor",
+        "summary": "Doctoralia doctor profile",
+        "description": "One doctor's professional profile on Doctoralia or a sister site: id, name, link, photo, specialties, about, areas of expertise, rating, review count, every practice address (name, street, district, postcode, city, region, country, coordinates, practice phone, payment methods, services with prices, health plans accepted there), the services list, the latest reviews (author, date, rating, text), answered patient questions, breadcrumbs, `insurances_accepted` (every health plan the doctor takes), and the profile's experience, education, diseases treated, languages, awards, publications and certifications where the doctor lists them (`profile_sections` keeps every such list with its heading).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/doctoralia-doctor",
+        "tags": [
+          "Doctoralia"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "The doctor's profile link on a Doctoralia site (from /doctoralia/v1/search).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.doctoralia.com.br/perfil/ludimila-de-paula"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 870707,
+                  "name": "Dra. Ludimila De Paula",
+                  "url": "https://www.doctoralia.com.br/perfil/ludimila-de-paula",
+                  "type": "Physician",
+                  "photo": "https://s3-sa-east-1.amazonaws.com/doctoralia.com.br/doctor/fbb9ca/fbb9ca06c62ab9e110e538d8b0f215e9_220_square.jpg",
+                  "specialties": [
+                    "Dermatologista"
+                  ],
+                  "about": "Médica com pós graduação em dermatologia - NÃO ESPECIALISTA",
+                  "expertise": [
+                    "Tratamentos estéticos faciais",
+                    "Tratamentos estéticos corporais",
+                    "… 5 more"
+                  ],
+                  "rating": 5,
+                  "reviews_count": 166,
+                  "addresses": [
+                    {
+                      "id": 1200163,
+                      "name": "Dra.Ludimila De Paula - Dermatologia e Medicina Estética - Santos",
+                      "street": "Alameda Armênio Mendes 66",
+                      "district": "Aparecida",
+                      "postal_code": "11035-260",
+                      "city": "Santos",
+                      "region": "São Paulo SP",
+                      "country": "BR",
+                      "latitude": -23.9785233,
+                      "longitude": -46.309124,
+                      "phone": "+1 555 010 0000",
+                      "payment_methods": [
+                        "Dinheiro",
+                        "Cartão de Crédito",
+                        "… 1 more"
+                      ],
+                      "services": [
+                        {
+                          "name": "Consulta Dermatologia",
+                          "price": null,
+                          "price_label": null
+                        },
+                        {
+                          "name": "Primeira consulta Dermatologia",
+                          "price": 500,
+                          "price_label": "&bullet; R$ 500"
+                        },
+                        "… 3 more"
+                      ],
+                      "online_only": false,
+                      "insurances": []
+                    },
+                    {
+                      "id": 1200177,
+                      "name": "Dra.Ludimila De Paula - Dermatologia e Medicina Estética - São Paulo",
+                      "street": "Rua da Paz 1601",
+                      "district": "Chácara Santo Antônio (Zona Sul)",
+                      "postal_code": "04713-000",
+                      "city": "São Paulo",
+                      "region": "São Paulo SP",
+                      "country": "BR",
+                      "latitude": -23.6289139,
+                      "longitude": -46.7035141,
+                      "phone": "+1 555 010 0000",
+                      "payment_methods": [
+                        "Cartão de Crédito",
+                        "PIX",
+                        "… 1 more"
+                      ],
+                      "services": [
+                        {
+                          "name": "Consulta Dermatologia",
+                          "price": null,
+                          "price_label": null
+                        },
+                        {
+                          "name": "Consulta Dermatologia",
+                          "price": null,
+                          "price_label": null
+                        },
+                        "… 3 more"
+                      ],
+                      "online_only": false,
+                      "insurances": []
+                    },
+                    "… 3 more"
+                  ],
+                  "services": [
+                    {
+                      "name": "Consulta Dermatologia",
+                      "id": 4074,
+                      "price": null,
+                      "price_label": null
+                    },
+                    {
+                      "name": "Primeira consulta Dermatologia",
+                      "id": 656,
+                      "price": null,
+                      "price_label": null
+                    },
+                    "… 22 more"
+                  ],
+                  "reviews": [
+                    {
+                      "author": "Danielle Bonardi",
+                      "date": "2025-02-27T10:49:28-03:00",
+                      "rating": 5,
+                      "text": "A Doutora Ludimila é uma excelente médica! Explica muito bem com atenção no que você quer, além disso ela planeja um tratamento com você e n…"
+                    },
+                    {
+                      "author": "Bianca Sarti",
+                      "date": "2024-11-13T15:30:07-03:00",
+                      "rating": 5,
+                      "text": "Consulta foi bem explicada referente aos tratamentos que eu queria entender melhor, muito atenciosa, simpática e sorridente. Tudo feito com …"
+                    },
+                    "… 8 more"
+                  ],
+                  "questions": [
+                    {
+                      "question": "Estou com celulite no glúteo e gostaria de saber se posso fazer mais alguma coisa para cuidar além de exercícios físicos e alimentação. A mi…",
+                      "answer": "Olá, com certeza! Além do exercício físico e alimentação saudável, podemos realizar no consultório uma técnica de subcisão da celulite assoc…"
+                    },
+                    {
+                      "question": "Fiz preenchimento com ácido hialuronico faz 1 ano e 9 meses e o preenchimento tanto das olheiras quanto da boca não saiu até hoje. qual o te…",
+                      "answer": "Olá, em média o ácido hialurônico é absorvido entre 12-18 meses. Mas, em alguns casos podem durar até 2 anos, isso depende de fatores como :…"
+                    }
+                  ],
+                  "breadcrumbs": [
+                    {
+                      "name": "Homepage",
+                      "url": "https://www.doctoralia.com.br/"
+                    },
+                    {
+                      "name": "Dermatologista",
+                      "url": "https://www.doctoralia.com.br/dermatologista"
+                    },
+                    "… 2 more"
+                  ],
+                  "experience": [],
+                  "education": [
+                    "Universidade Metropolitana de Santos",
+                    "Istituto Superior de Medicina ISMD"
+                  ],
+                  "diseases_treated": [
+                    "Acne",
+                    "Melasma",
+                    "… 18 more"
+                  ],
+                  "languages": [
+                    "Português",
+                    "Inglês"
+                  ],
+                  "awards": [],
+                  "publications": [],
+                  "certifications": [],
+                  "profile_sections": {
+                    "expertIn": {
+                      "title": "Experiência em:",
+                      "items": [
+                        "Tratamentos estéticos faciais",
+                        "Tratamentos estéticos corporais",
+                        "… 5 more"
+                      ]
+                    },
+                    "school": {
+                      "title": "Formação",
+                      "items": [
+                        "Universidade Metropolitana de Santos",
+                        "Istituto Superior de Medicina ISMD"
+                      ]
+                    },
+                    "disease": {
+                      "title": "Doenças tratadas",
+                      "items": [
+                        "Acne",
+                        "Melasma",
+                        "… 18 more"
+                      ]
+                    },
+                    "language": {
+                      "title": "Idiomas",
+                      "items": [
+                        "Português",
+                        "Inglês"
+                      ]
+                    }
+                  },
+                  "insurances_accepted": [
+                    {
+                      "id": 13172,
+                      "name": "Outro (Reembolso)"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/doctoralia/v1/search": {
+      "get": {
+        "operationId": "doctoraliaSearch",
+        "summary": "Doctoralia doctor search",
+        "description": "Doctors and clinics listed on Doctoralia and its sister sites (Brazil, Spain, Mexico, Colombia, Chile, Peru, Argentina, Portugal, Italy, Poland, Turkey, Czechia) for a specialty in a city: id, name, profile link, type, photo, specialties, areas of expertise, rating, review count, cities, online-only, premium and verified flags, booking calendar flags, and each practice address (name, street, city, region, coordinates) with its services and first-visit price, plus `insurances`: the health plans this search can be narrowed to (name, slug for `insurance`, id). Filter by health plan with `insurance` and to teleconsultation with `online=true`. Professional listing data only. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/doctoralia-search",
+        "tags": [
+          "Doctoralia"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Site country (default br).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "br",
+                "es",
+                "mx",
+                "co",
+                "cl",
+                "pe",
+                "ar",
+                "pt",
+                "it",
+                "pl",
+                "tr",
+                "cz"
+              ]
+            },
+            "example": "br"
+          },
+          {
+            "name": "specialty",
+            "in": "query",
+            "required": true,
+            "description": "Specialty slug in the site's language, e.g. `dermatologista` (br), `dermatologo` (es, mx), `dermatolog` (pl), `ginecologo`, `psicologo`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "dermatologista"
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": true,
+            "description": "City slug, e.g. `sao-paulo`, `rio-de-janeiro`, `madrid`, `ciudad-de-mexico`, `warszawa`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "sao-paulo"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "name": "insurance",
+            "in": "query",
+            "required": false,
+            "description": "Only doctors who accept this health plan: its slug from `insurances` in a search response (e.g. `amil`, `unimed`, `bradesco-saude` in Brazil). An unknown slug gives 404.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "online",
+            "in": "query",
+            "required": false,
+            "description": "true: only doctors who offer teleconsultation (online visits).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/doctoralia/v1/specialties": {
+      "get": {
+        "operationId": "doctoraliaSpecialties",
+        "summary": "Doctoralia specialties",
+        "description": "The medical specialties a Doctoralia site lists: the slug /doctoralia/v1/search takes as specialty, the name, the link, and the specialty's top pages (online consultations and the main cities, with their city slugs).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 2 credits per successful call. Docs: https://api.sh/docs/doctoralia-specialties",
+        "tags": [
+          "Doctoralia"
+        ],
+        "x-credits": 2,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "br (default), es, mx, co, cl, pe or pl.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "br"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "br",
+                  "count": 109,
+                  "specialties": [
+                    {
+                      "specialty": "alergista",
+                      "name": "Alergistas",
+                      "url": "https://www.doctoralia.com.br/alergista",
+                      "pages": [
+                        {
+                          "name": "Alergista online",
+                          "city": null,
+                          "online": true,
+                          "url": "https://www.doctoralia.com.br/alergista/online"
+                        },
+                        {
+                          "name": "Alergista São Paulo",
+                          "city": "sao-paulo",
+                          "online": false,
+                          "url": "https://www.doctoralia.com.br/alergista/sao-paulo"
+                        },
+                        "… 3 more"
+                      ]
+                    },
+                    {
+                      "specialty": "alergista-pediatrico",
+                      "name": "Alergistas Pediátricos",
+                      "url": "https://www.doctoralia.com.br/alergista-pediatrico",
+                      "pages": [
+                        {
+                          "name": "Alergista Pediátrico online",
+                          "city": null,
+                          "online": true,
+                          "url": "https://www.doctoralia.com.br/alergista-pediatrico/online"
+                        },
+                        {
+                          "name": "Alergista Pediátrico Rio de Janeiro",
+                          "city": "rio-de-janeiro",
+                          "online": false,
+                          "url": "https://www.doctoralia.com.br/alergista-pediatrico/rio-de-janeiro"
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    "… 107 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 2
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

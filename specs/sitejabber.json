@@ -1,0 +1,1548 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Sitejabber",
+    "version": "1.0.0",
+    "description": "The Sitejabber API from API.SH: public Sitejabber data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Sitejabber",
+      "description": "4 endpoints (jobs & b2b)",
+      "x-slug": "sitejabber",
+      "x-domains": [
+        "sitejabber.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sitejabber/v1/business": {
+      "get": {
+        "operationId": "sitejabberBusiness",
+        "summary": "Sitejabber business profile",
+        "description": "A business's Sitejabber profile: name, website, logo, summary, categories, rating, review count and star distribution, per-aspect ratings (service, value, shipping, returns, quality), how reviews were collected, verified-review stats, its ratings on other review platforms, yearly trend, response rate, popular terms, questions, similar businesses and the first page of reviews.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/sitejabber-business",
+        "tags": [
+          "Sitejabber"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "description": "The business's website (e.g. zappos.com) or its sitejabber.com/reviews/<domain> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "zappos.com"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 64,
+                  "domain": "amazon.com",
+                  "url": "https://www.sitejabber.com/reviews/amazon.com",
+                  "name": "Amazon",
+                  "title": "Amazon.com. Spend less. Smile more.",
+                  "website": "http://amazon.com",
+                  "logo": "https://static.smartcustomer.com/img/urls/64/logo.1680111037.png",
+                  "description": null,
+                  "summary": "Amazon is a multinational technology and e-commerce company that operates an online marketplace offering a vast selection of products across…",
+                  "review_summary": {
+                    "detailed_summary": "$8a",
+                    "customer_takeaway": null,
+                    "strengths": [
+                      "Offers a vast selection of products across many categories.",
+                      "Provides convenient online shopping with fast shipping options.",
+                      "… 1 more"
+                    ],
+                    "concerns": [
+                      "Customer service is often automated and unhelpful, making issue resolution difficult.",
+                      "Shipping delays are frequent, even for Prime members with guaranteed delivery dates.",
+                      "… 1 more"
+                    ],
+                    "important_things_to_know": [
+                      {
+                        "tip": "Before ordering, verify the seller's identity and check product reviews to avoid counterfeit or used items.",
+                        "evidence_reviews": [
+                          {
+                            "…": "3 fields"
+                          },
+                          {
+                            "…": "3 fields"
+                          },
+                          "… 1 more"
+                        ]
+                      },
+                      {
+                        "tip": "Confirm delivery dates and shipping guarantees before placing an order, as delays are common even for Prime members.",
+                        "evidence_reviews": [
+                          {
+                            "…": "3 fields"
+                          },
+                          {
+                            "…": "3 fields"
+                          }
+                        ]
+                      },
+                      "… 1 more"
+                    ]
+                  },
+                  "founded": null,
+                  "subindustry": null,
+                  "rating": 2.5,
+                  "reviews": 11116,
+                  "positive_reviews": 7897,
+                  "views": 442833,
+                  "sitejabber_score": 80,
+                  "rating_distribution": {
+                    "1": 2121,
+                    "2": 492,
+                    "3": 489,
+                    "4": 1240,
+                    "5": 5374
+                  },
+                  "aspect_ratings": {
+                    "service": {
+                      "average": 2.66,
+                      "count": 1753
+                    },
+                    "value": {
+                      "average": 2.97,
+                      "count": 1638
+                    },
+                    "shipping": {
+                      "average": 2.89,
+                      "count": 1633
+                    },
+                    "returns": {
+                      "average": 2.94,
+                      "count": 1431
+                    },
+                    "quality": {
+                      "average": 3.05,
+                      "count": 1548
+                    }
+                  },
+                  "rating_methods": [
+                    {
+                      "method": "unsolicited",
+                      "number": 10847,
+                      "average": 3.9,
+                      "last_12_months": {
+                        "number": 17,
+                        "average": 1.35
+                      }
+                    },
+                    {
+                      "method": "unsolicited_verified_purchase",
+                      "number": 256,
+                      "average": 1.75,
+                      "last_12_months": {
+                        "number": 7,
+                        "average": 1.14
+                      }
+                    },
+                    "… 1 more"
+                  ],
+                  "review_sources": [
+                    {
+                      "key": "no_invitation",
+                      "label": "No Invitation",
+                      "number": 11103,
+                      "average": 3.85
+                    },
+                    {
+                      "key": "automated_invitation",
+                      "label": "Automated Invitation",
+                      "number": 0,
+                      "average": 0
+                    },
+                    "… 2 more"
+                  ],
+                  "review_collection": {
+                    "proactively_collects_reviews": false,
+                    "solicitation_status": "never",
+                    "has_ever_solicited": false,
+                    "last_solicited_date": null,
+                    "label": "Does not proactively collect reviews"
+                  },
+                  "verified_review_stats": {
+                    "count": 256,
+                    "review_count": 11116,
+                    "last_12_months": {
+                      "count": 7,
+                      "review_count": 24
+                    }
+                  },
+                  "other_platforms": [
+                    {
+                      "platform": "google_store",
+                      "reviews_number": 8800,
+                      "average_rating": 4.5
+                    },
+                    {
+                      "platform": "reviews.io",
+                      "reviews_number": 1466,
+                      "average_rating": 4.48
+                    },
+                    "… 5 more"
+                  ],
+                  "trends": [
+                    {
+                      "year": "2023",
+                      "reviews_number": 10873,
+                      "average_rating": 2.96
+                    },
+                    {
+                      "year": "2024",
+                      "reviews_number": 11029,
+                      "average_rating": 2.98
+                    },
+                    "… 2 more"
+                  ],
+                  "response_rate": {
+                    "total_review_count": 24,
+                    "responded_review_count": 0,
+                    "response_count": 0,
+                    "response_rate_percent": 0,
+                    "average_response_days": null,
+                    "positive_responded_review_count": 0,
+                    "negative_responded_review_count": 0
+                  },
+                  "popular_terms": [
+                    "credit card",
+                    "next day",
+                    "… 1 more"
+                  ],
+                  "categories": [
+                    {
+                      "id": 1033,
+                      "name": "Marketplace",
+                      "slug": "marketplace",
+                      "reviews": 129894,
+                      "businesses": 291
+                    },
+                    {
+                      "id": 1862,
+                      "name": "Discount Designer Clothes",
+                      "slug": "discount-designer-clothes",
+                      "reviews": 60000,
+                      "businesses": 41
+                    },
+                    "… 1 more"
+                  ],
+                  "breadcrumbs": [
+                    {
+                      "id": 13,
+                      "name": "Shopping & Retail",
+                      "slug": "shopping"
+                    },
+                    {
+                      "id": 1033,
+                      "name": "Marketplace",
+                      "slug": "marketplace"
+                    }
+                  ],
+                  "top_category": {
+                    "name": "marketplace",
+                    "display_name": "Marketplace",
+                    "position": 9
+                  },
+                  "social": {},
+                  "is_closed": false,
+                  "claimed": false,
+                  "questions_count": 73,
+                  "questions": [
+                    {
+                      "id": 14192,
+                      "question": "How do I cancel my account with Amazon? I no longer have the e-mail that they sent me about the new rules.",
+                      "answers": 23,
+                      "url": "https://www.sitejabber.com/questions/how-do-i-cancel-my-account-with-amazon-i-no-longer-have-the-e-mail-that-they-sent-me-about-the-new-rule…"
+                    },
+                    {
+                      "id": 41448,
+                      "question": "Has anyone had problems with shipping to Australia?",
+                      "answers": 43,
+                      "url": "https://www.sitejabber.com/questions/has-anyone-had-problems-with-shipping-to-australia"
+                    },
+                    "… 8 more"
+                  ],
+                  "similar": [
+                    {
+                      "id": 824180,
+                      "name": "Rakuten JP",
+                      "domain": "rakuten.co.jp",
+                      "rating": 3.5,
+                      "reviews": 1,
+                      "logo": "https://static.smartcustomer.com/img/urls/824180/logo.1745404660.png"
+                    },
+                    {
+                      "id": 993149,
+                      "name": "M.aliexpress",
+                      "domain": "m.aliexpress.com",
+                      "rating": 4,
+                      "reviews": 1,
+                      "logo": null
+                    },
+                    "… 4 more"
+                  ],
+                  "latest_reviews": [
+                    {
+                      "id": 29135211,
+                      "review_no": 44583,
+                      "title": "AMAZON IS NOT THE COMPANY IT USED TO BE. HERE IS THE RECEIPT.",
+                      "text": "$8b",
+                      "tip": "Beware, their TBA \"free\" shipping is NOT CUSTOMER-CENTRIC AND MORE PACKAGES ARE MISSING THAN DELIVERED (THEY TAKE A PIC AND THEN PICK THE PA…",
+                      "rating": 1,
+                      "ratings": {
+                        "service": 1,
+                        "value": 1,
+                        "shipping": 1,
+                        "returns": 1,
+                        "quality": 1
+                      },
+                      "published": "2026-10-17T18:21:40+00:00",
+                      "experience_date": "2026-10-17T07:00:00+00:00",
+                      "verified": true,
+                      "public_verified": false,
+                      "verification": null,
+                      "helpful_votes": 1,
+                      "unhelpful_votes": 0,
+                      "comments": 0,
+                      "views": 6,
+                      "photos": [],
+                      "videos": [],
+                      "products_used": [
+                        "We had over 100 subscriptions plus other random purchases."
+                      ],
+                      "attributes": [
+                        {
+                          "id": "free_shipping",
+                          "label": "Free shipping",
+                          "value": "Yes"
+                        },
+                        {
+                          "id": "shipping_time",
+                          "label": "Shipping time",
+                          "value": "10+ days"
+                        },
+                        "… 1 more"
+                      ],
+                      "business_reply": null,
+                      "resolution_status": null,
+                      "source": "write_review_page",
+                      "reviewer": {
+                        "country": "United States",
+                        "country_code": "US",
+                        "reviews": 4,
+                        "identity_verified": false
+                      },
+                      "updated_review": null
+                    },
+                    {
+                      "id": 29076848,
+                      "review_no": 44268,
+                      "title": "A-to-z Guarantee Failed After Seller Repeatedly Failed to Follow Amazon's Return Instructions",
+                      "text": "$8c",
+                      "tip": "I wish Amazon had disclosed that the bumper would arrive folded/compressed, that the listing’s shipping information was inaccurate, and that…",
+                      "rating": 1,
+                      "ratings": {
+                        "service": 1,
+                        "value": 1,
+                        "shipping": 1,
+                        "returns": 1,
+                        "quality": 1
+                      },
+                      "published": "2026-09-29T18:04:18+00:00",
+                      "experience_date": "2026-08-05T07:00:00+00:00",
+                      "verified": true,
+                      "public_verified": false,
+                      "verification": null,
+                      "helpful_votes": 0,
+                      "unhelpful_votes": 0,
+                      "comments": 0,
+                      "views": 13,
+                      "photos": [],
+                      "videos": [],
+                      "products_used": [
+                        "Replacement rear bumper cover for a 2005-2006 Infiniti G35 Sedan. It was not installed because my professional body shop would not install i…"
+                      ],
+                      "attributes": [
+                        {
+                          "id": "free_shipping",
+                          "label": "Free shipping",
+                          "value": "No"
+                        },
+                        {
+                          "id": "refund_policy",
+                          "label": "Refund policy",
+                          "value": "Full refund"
+                        }
+                      ],
+                      "business_reply": null,
+                      "resolution_status": null,
+                      "source": "write_review_page",
+                      "reviewer": {
+                        "country": "United States",
+                        "country_code": "US",
+                        "reviews": 1,
+                        "identity_verified": false
+                      },
+                      "updated_review": null
+                    },
+                    "… 18 more"
+                  ],
+                  "reviews_last_page": 486,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/sitejabber/v1/category": {
+      "get": {
+        "operationId": "sitejabberCategory",
+        "summary": "Category ranking",
+        "description": "A Sitejabber category's businesses in the site's ranking order (rating, reviews, description...), or the full category list when no category is given. Pass `next_page` back as `page`, null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/sitejabber-category",
+        "tags": [
+          "Sitejabber"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category slug, or a sitejabber.com/categories/<slug> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "3d-printing"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (20 a page).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": {
+                    "id": 499,
+                    "slug": "3d-printing",
+                    "name": "3d Printing",
+                    "title": "Online 3D Printing Resources",
+                    "description": null,
+                    "parents": [
+                      {
+                        "slug": "hobbies-interests",
+                        "name": "Hobby & Interests"
+                      },
+                      {
+                        "slug": "crafts",
+                        "name": "Craft & DIY Supplies"
+                      }
+                    ],
+                    "url": "https://www.sitejabber.com/categories/3d-printing"
+                  },
+                  "page": 1,
+                  "total": 116,
+                  "count": 20,
+                  "items": [
+                    {
+                      "rank": 1,
+                      "id": 2711,
+                      "name": "Daz3D",
+                      "domain": "daz3d.com",
+                      "website": "http://daz3d.com",
+                      "url": "https://www.sitejabber.com/reviews/daz3d.com",
+                      "rating": 3.62,
+                      "reviews": 1447,
+                      "short_reviews": 22,
+                      "views": 58907,
+                      "description": "As a leader in 3D technology since 2000, Daz 3D empowers 3D artists and designers with a free, comprehensive software suite and a massive 3D…",
+                      "ai_summary": "Daz 3D is a digital marketplace and software provider for 3D artists and designers. The company offers a free 3D creation software suite cal…",
+                      "industry": "Business And Industrial",
+                      "founded": 2000,
+                      "logo": "https://static.smartcustomer.com/img/urls/2711/logo.1755183286.png",
+                      "categories": [
+                        "Graphic Design",
+                        "3d Printing"
+                      ],
+                      "closed": false,
+                      "latest_review_at": null
+                    },
+                    {
+                      "rank": 2,
+                      "id": 102,
+                      "name": "Netflix",
+                      "domain": "netflix.com",
+                      "website": "http://netflix.com",
+                      "url": "https://www.sitejabber.com/reviews/netflix.com",
+                      "rating": 3.16,
+                      "reviews": 1818,
+                      "short_reviews": 21,
+                      "views": 120874,
+                      "description": "Netflix offers streaming movies and TV shows in addition to a DVD by mail rental service.",
+                      "ai_summary": "Netflix is a subscription-based streaming service that offers a wide variety of TV shows, movies, anime, documentaries, and Netflix original…",
+                      "industry": "Technology And Computing",
+                      "founded": 1997,
+                      "logo": "https://static.smartcustomer.com/img/urls/102/logo.1745404613.png",
+                      "categories": [
+                        "Streaming Services & Networks",
+                        "DVD",
+                        "… 1 more"
+                      ],
+                      "closed": false,
+                      "latest_review_at": null
+                    },
+                    "… 18 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/sitejabber/v1/reviews": {
+      "get": {
+        "operationId": "sitejabberReviews",
+        "summary": "Sitejabber reviews",
+        "description": "A business's reviews on Sitejabber, newest first: title, text, tip, stars, aspect ratings, published and experience dates, verification, votes, views, photos, videos, products used, shipping facts, the business's reply and the reviewer's country (never their name or username). Page with `page`; `next_page` is null on the last page. Sort with `sort` (newest, oldest, highest, lowest, helpful, relevant) and narrow with `rating`, `keyword`, `timeframe`, `verified`, `has_photo` and `english`; `total` and `last_page` then count the matching reviews (20 a page).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/sitejabber-reviews",
+        "tags": [
+          "Sitejabber"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "query",
+            "required": true,
+            "description": "The business's website (e.g. zappos.com) or its sitejabber.com/reviews/<domain> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "zappos.com"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-based); `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Review order: newest or oldest first, highest or lowest rating first, most helpful votes first, or the site's relevance order. Default: the business page's own order (newest first).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "oldest",
+                "highest",
+                "lowest",
+                "helpful",
+                "relevant"
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews with these stars: 1-5, or several separated by commas (e.g. `1,2`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews mentioning this word or phrase (100 characters at most).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews published in the last 7, 30, 180 or 365 days.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7",
+                "30",
+                "180",
+                "365"
+              ]
+            }
+          },
+          {
+            "name": "verified",
+            "in": "query",
+            "required": false,
+            "description": "true: only verified-purchase reviews.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "has_photo",
+            "in": "query",
+            "required": false,
+            "description": "true: only reviews with photos or videos.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "english",
+            "in": "query",
+            "required": false,
+            "description": "true: only reviews written in English.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "domain": "zappos.com",
+                  "name": "Zappos",
+                  "rating": 3.7,
+                  "page": 1,
+                  "per_page": 20,
+                  "total": 601,
+                  "last_page": 31,
+                  "next_page": 2,
+                  "all_reviews": 717,
+                  "not_recommended": 116,
+                  "count": 20,
+                  "reviews": [
+                    {
+                      "id": 25921133,
+                      "review_no": 1167,
+                      "title": "Order said delivered but did not receive anything",
+                      "text": "I ordered a pair of shoes from zappos tru the Amazon at work program I got an email saying package delivered but I didn't receive anything I…",
+                      "tip": null,
+                      "rating": 1,
+                      "ratings": {
+                        "service": 1,
+                        "value": 1,
+                        "shipping": 1,
+                        "returns": 3,
+                        "quality": 3
+                      },
+                      "published": "2024-12-08T14:13:11+00:00",
+                      "experience_date": "2024-12-02T08:00:00+00:00",
+                      "verified": true,
+                      "public_verified": false,
+                      "verification": null,
+                      "helpful_votes": 0,
+                      "unhelpful_votes": 0,
+                      "comments": 0,
+                      "views": 184,
+                      "photos": [],
+                      "videos": [],
+                      "products_used": [],
+                      "attributes": [
+                        {
+                          "id": "shipping_time",
+                          "label": "Shipping time",
+                          "value": "Up to 5 days"
+                        }
+                      ],
+                      "business_reply": null,
+                      "resolution_status": null,
+                      "source": "write_review_page",
+                      "reviewer": {
+                        "country": "United States",
+                        "country_code": "US",
+                        "reviews": 1,
+                        "identity_verified": false
+                      },
+                      "updated_review": null
+                    },
+                    {
+                      "id": 25736163,
+                      "review_no": 1163,
+                      "title": "BUYER BEWARE",
+                      "text": "ZAPPOS TAKES THE SHOES OUT OF THE MANUFACTURERS BOX AND SHIPS THE SHOES IN THEIR OWN BOX SO YOU HAVE NO IDEA IF THE SHOES ARE NEW AND NEVER …",
+                      "tip": null,
+                      "rating": 1,
+                      "ratings": {
+                        "service": 0,
+                        "value": 0,
+                        "shipping": 0,
+                        "returns": 0,
+                        "quality": 0
+                      },
+                      "published": "2024-11-07T22:56:38+00:00",
+                      "experience_date": "2024-11-07T08:00:00+00:00",
+                      "verified": true,
+                      "public_verified": false,
+                      "verification": null,
+                      "helpful_votes": 1,
+                      "unhelpful_votes": 0,
+                      "comments": 0,
+                      "views": 256,
+                      "photos": [],
+                      "videos": [],
+                      "products_used": [],
+                      "attributes": [],
+                      "business_reply": null,
+                      "resolution_status": null,
+                      "source": "write_review_page",
+                      "reviewer": {
+                        "country": "United States",
+                        "country_code": "US",
+                        "reviews": 1,
+                        "identity_verified": false
+                      },
+                      "updated_review": null
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/sitejabber/v1/search": {
+      "get": {
+        "operationId": "sitejabberSearch",
+        "summary": "Business search",
+        "description": "Sitejabber businesses matching a name or domain: name, domain, rating, review count, views, description, summary, industry, founded year, logo and categories. Pass `next_page` back as `page`, null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/sitejabber-search",
+        "tags": [
+          "Sitejabber"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Business name or domain.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "amazon"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (20 a page).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "amazon",
+                  "page": 1,
+                  "total": 883,
+                  "count": 20,
+                  "items": [
+                    {
+                      "rank": 1,
+                      "id": 64,
+                      "name": "Amazon",
+                      "domain": "amazon.com",
+                      "website": "http://amazon.com",
+                      "url": "https://www.sitejabber.com/reviews/amazon.com",
+                      "rating": 2.5,
+                      "reviews": 11116,
+                      "short_reviews": 167,
+                      "views": 442833,
+                      "description": "Amazon sells everything (almost).",
+                      "ai_summary": "Amazon is a multinational technology and e-commerce company that operates an online marketplace offering a vast selection of products across…",
+                      "industry": "Style And Fashion",
+                      "founded": 1995,
+                      "logo": "https://static.smartcustomer.com/img/urls/64/logo.1680111037.png",
+                      "categories": [
+                        "Marketplace",
+                        "Discount Designer Clothes",
+                        "… 1 more"
+                      ],
+                      "closed": false,
+                      "latest_review_at": null
+                    },
+                    {
+                      "rank": 2,
+                      "id": 483352877,
+                      "name": "Amazon Book Authors",
+                      "domain": "amazonbookauthors.com",
+                      "website": "http://amazonbookauthors.com",
+                      "url": "https://www.sitejabber.com/reviews/amazonbookauthors.com",
+                      "rating": 4,
+                      "reviews": 62,
+                      "short_reviews": 0,
+                      "views": 106,
+                      "description": null,
+                      "ai_summary": null,
+                      "industry": null,
+                      "founded": null,
+                      "logo": null,
+                      "categories": [],
+                      "closed": false,
+                      "latest_review_at": null
+                    },
+                    "… 18 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

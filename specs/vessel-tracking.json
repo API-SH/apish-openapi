@@ -1,0 +1,1089 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Vessel Tracking",
+    "version": "1.0.0",
+    "description": "The Vessel Tracking API from API.SH: public Vessel Tracking data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Vessel Tracking",
+      "description": "3 endpoints (travel & events)",
+      "x-slug": "vessel-tracking",
+      "x-domains": [
+        "vesselfinder.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vessels/v1/port": {
+      "get": {
+        "operationId": "vesselsPort",
+        "summary": "Port and expected ships",
+        "description": "A port by UN/LOCODE: name, country, and its expected ships, recent arrivals, departures and ships in port as the site shows them publicly (time, ship type, flag, year built, GT, DWT and size; ship names and some columns are subscriber-only and come back null).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/vessels-port",
+        "tags": [
+          "Vessel Tracking"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "UN/LOCODE of the port (e.g. NLRTM Rotterdam, SGSIN Singapore, USLAX Los Angeles), or the site's port id such as NLRTM001.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "NLRTM"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Rows per list (default 50, max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "NLRTM001",
+                  "locode": "NLRTM",
+                  "name": "Rotterdam",
+                  "country": "Netherlands",
+                  "country_code": "nl",
+                  "expected": [
+                    {
+                      "time": "Nov 4, 05:57",
+                      "name": null,
+                      "type": "Tanker",
+                      "flag": "Netherlands",
+                      "url": null,
+                      "built": null,
+                      "gross_tonnage": null,
+                      "deadweight": null,
+                      "length_m": 110,
+                      "beam_m": 11
+                    },
+                    {
+                      "time": "Nov 4, 06:00",
+                      "name": null,
+                      "type": "Crude Oil Tanker",
+                      "flag": "Marshall Islands",
+                      "url": null,
+                      "built": 2012,
+                      "gross_tonnage": 81341,
+                      "deadweight": 158615,
+                      "length_m": 274,
+                      "beam_m": 48
+                    },
+                    "… 8 more"
+                  ],
+                  "arrivals": [],
+                  "departures": [],
+                  "in_port": [],
+                  "note": "Ship names, ETAs and port-call details in these lists are shown only to the site's subscribers; values not shown publicly are null.",
+                  "url": "https://www.vesselfinder.com/ports/NLRTM001",
+                  "attribution": "AIS data: VesselFinder (vesselfinder.com)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/vessels/v1/search": {
+      "get": {
+        "operationId": "vesselsSearch",
+        "summary": "Search ships",
+        "description": "Ships by name, MMSI or IMO, with the site's filters: ship type, flag, length, gross tonnage, deadweight and build year. Each result has name, type, IMO or MMSI, flag, year built, GT, DWT, length, beam, photo and its page. 20 per page; pass `next_page` back as `page` (null on the last page).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/vessels-search",
+        "tags": [
+          "Vessel Tracking"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Ship name, MMSI or IMO (up to 32 characters). Optional when a filter is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "maersk"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Ship type.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cargo",
+                "bulk_carrier",
+                "general_cargo",
+                "container",
+                "reefer",
+                "ro_ro",
+                "vehicles_carrier",
+                "cement_carrier",
+                "wood_chips_carrier",
+                "urea_carrier",
+                "aggregates_carrier",
+                "limestone_carrier",
+                "landing_craft",
+                "livestock_carrier",
+                "heavy_load_carrier",
+                "tanker",
+                "crude_oil_tanker",
+                "oil_products_tanker",
+                "chemical_oil_tanker",
+                "lng_tanker",
+                "lpg_tanker",
+                "asphalt_bitumen",
+                "bunkering_tanker",
+                "fso_fpso",
+                "other_tanker",
+                "passenger",
+                "cruise",
+                "passenger_cargo",
+                "passenger_ro_ro",
+                "passenger_ship",
+                "fishing",
+                "yacht",
+                "military",
+                "tug",
+                "other",
+                "unknown"
+              ]
+            }
+          },
+          {
+            "name": "flag",
+            "in": "query",
+            "required": false,
+            "description": "Flag state, two-letter country code (e.g. sg, pa, lr, mt).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_length",
+            "in": "query",
+            "required": false,
+            "description": "Minimum length overall in metres.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_length",
+            "in": "query",
+            "required": false,
+            "description": "Maximum length in metres.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_gt",
+            "in": "query",
+            "required": false,
+            "description": "Minimum gross tonnage.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_gt",
+            "in": "query",
+            "required": false,
+            "description": "Maximum gross tonnage.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_dwt",
+            "in": "query",
+            "required": false,
+            "description": "Minimum deadweight (t).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_dwt",
+            "in": "query",
+            "required": false,
+            "description": "Maximum deadweight (t).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_year",
+            "in": "query",
+            "required": false,
+            "description": "Built in or after this year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_year",
+            "in": "query",
+            "required": false,
+            "description": "Built in or before this year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "in_service",
+            "in": "query",
+            "required": false,
+            "description": "Only ships in service (default true); false includes scrapped and lost ships.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "maersk",
+                  "applied_filters": {},
+                  "total": 478,
+                  "page": 1,
+                  "pages": 24,
+                  "count": 20,
+                  "items": [
+                    {
+                      "name": "MAERSK",
+                      "type": "Passenger ship",
+                      "imo": null,
+                      "mmsi": 574952645,
+                      "id": 574952645,
+                      "flag": "Vietnam",
+                      "flag_code": "vn",
+                      "built": null,
+                      "gross_tonnage": null,
+                      "deadweight": null,
+                      "length_m": 228,
+                      "beam_m": 55,
+                      "photo": null,
+                      "url": "https://www.vesselfinder.com/vessels/details/574952645"
+                    },
+                    {
+                      "name": "MAERSK ACADIA",
+                      "type": "Container Ship",
+                      "imo": 9928188,
+                      "mmsi": 352002065,
+                      "id": 9928188,
+                      "flag": "Panama",
+                      "flag_code": "pa",
+                      "built": 2022,
+                      "gross_tonnage": 42799,
+                      "deadweight": 49953,
+                      "length_m": 200,
+                      "beam_m": 36,
+                      "photo": "https://static.vesselfinder.net/ship-photo/9928188-352002065-b401fa1d818c7d37afa36e634b5d6c2a/3",
+                      "url": "https://www.vesselfinder.com/vessels/details/9928188"
+                    },
+                    "… 18 more"
+                  ],
+                  "next_page": 2,
+                  "attribution": "AIS data: VesselFinder (vesselfinder.com)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/vessels/v1/vessel": {
+      "get": {
+        "operationId": "vesselsVessel",
+        "summary": "Ship position and particulars",
+        "description": "One ship by IMO or MMSI from AIS: destination and its port id, ETA, course, speed, current and maximum draught, navigation status, time of the last position report, the sea area and an approximate position (whole degrees), last port and arrival time; particulars (callsign, AIS type, flag, year built, length, beam, gross and net tonnage, deadweight, TEU and other facts the site shows publicly), flag and name history, and a photo. Exact positions and port-call history are not public.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/vessels-vessel",
+        "tags": [
+          "Vessel Tracking"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "imo",
+            "in": "query",
+            "required": false,
+            "description": "IMO number (7 digits).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9321483"
+          },
+          {
+            "name": "mmsi",
+            "in": "query",
+            "required": false,
+            "description": "MMSI (9 digits), instead of imo.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "name": "EMMA MAERSK",
+                  "imo": 9321483,
+                  "mmsi": 563254800,
+                  "callsign": "9VCY3",
+                  "type": "Container Ship",
+                  "ais_type": "Cargo ship (HAZ-A)",
+                  "flag": "Singapore",
+                  "flag_code": "sg",
+                  "summary": "The current position of EMMA MAERSK is at South East Asia reported 2 days ago by AIS. The vessel is en route to the port of Yangshan Deep-Wa…",
+                  "voyage": {
+                    "destination": "Yangshan Deep-Water, China",
+                    "destination_port_id": "CNYSA002",
+                    "destination_raw": "MYTPP>CNYSA",
+                    "eta": "2026-11-05T22:30:00.000Z",
+                    "eta_text": "Nov 5, 22:30",
+                    "course_deg": 36.2,
+                    "speed_kn": 17,
+                    "draught_m": 14.1,
+                    "max_draught_m": 17,
+                    "navigation_status": "-1",
+                    "position_received": "2026-11-01T22:32:36.000Z",
+                    "position_received_text": "2 days ago",
+                    "approx_lat": 8,
+                    "approx_lon": 108,
+                    "area": "South East Asia",
+                    "last_port": "Tanjung Pelepas, Malaysia",
+                    "last_port_id": "MYTPP001",
+                    "last_port_arrival": null
+                  },
+                  "particulars": {
+                    "year_built": 2006,
+                    "length_overall_m": 397.71,
+                    "beam_m": 56.4,
+                    "length_ais_m": 399,
+                    "beam_ais_m": 56,
+                    "draught_m": null,
+                    "depth_m": null,
+                    "gross_tonnage": 171542,
+                    "net_tonnage": null,
+                    "deadweight_t": 174239,
+                    "teu": null,
+                    "builder": null,
+                    "place_of_build": null,
+                    "hull_material": null,
+                    "engine_type": null,
+                    "engine_power_kw": null,
+                    "fuel_type": null,
+                    "service_speed_kn": null,
+                    "classification_society": null
+                  },
+                  "history": [
+                    {
+                      "date": "2025 Aug",
+                      "flag": "Singapore",
+                      "name": null,
+                      "registered_owner": null,
+                      "manager": null
+                    },
+                    {
+                      "date": "2006 Aug",
+                      "flag": "Denmark",
+                      "name": "EMMA MAERSK",
+                      "registered_owner": null,
+                      "manager": null
+                    }
+                  ],
+                  "photo": "https://static.vesselfinder.net/ship-photo/9321483-220417000-2dd1f5cd03b9e37cd75f96272a6e8fdb/1",
+                  "url": "https://www.vesselfinder.com/vessels/details/9321483",
+                  "attribution": "AIS data: VesselFinder (vesselfinder.com)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

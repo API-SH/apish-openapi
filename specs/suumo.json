@@ -1,0 +1,1390 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: SUUMO",
+    "version": "1.0.0",
+    "description": "The SUUMO API from API.SH: public SUUMO data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "SUUMO",
+      "description": "4 endpoints (real estate)",
+      "x-slug": "suumo",
+      "x-domains": [
+        "suumo.jp"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/suumo/v1/for-sale": {
+      "get": {
+        "operationId": "suumoForSale",
+        "summary": "SUUMO homes for sale",
+        "description": "Homes and land for sale on SUUMO (suumo.jp): used condos, used houses, new houses and land in a prefecture and its cities, with price, floor, building and land area, layout (rooms), walk to station, building age and keyword filters and the site's sorts. Each item: `id`, link, title, property name, `price` in yen (and `price_max` for a range), price text, address, station access, layout, area, land area, balcony, built date, building coverage, tags (photos on file, open house...), the listing agency with its phone, the agent and comment, photos and every detail row the card shows (`details`). `total` is the site's match count. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/suumo-for-sale",
+        "tags": [
+          "SUUMO"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "used_condo (default), used_house, new_house or land.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "used_condo",
+                "used_house",
+                "new_house",
+                "land"
+              ]
+            },
+            "example": "used_condo"
+          },
+          {
+            "name": "prefecture",
+            "in": "query",
+            "required": true,
+            "description": "JIS prefecture code 1-47 (13 = Tokyo, 27 = Osaka, 14 = Kanagawa).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "13"
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated 5-digit municipality codes in the prefecture, e.g. 13113 (Shibuya).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "13113"
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price in yen.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price in yen.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "area_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum floor area in m² (building area for houses, land area for land).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "area_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum floor area in m².",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "land_area_min",
+            "in": "query",
+            "required": false,
+            "description": "Houses and land: minimum land area in m².",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "land_area_max",
+            "in": "query",
+            "required": false,
+            "description": "Houses and land: maximum land area in m².",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "layout",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated room counts: 1R (one room), 1, 2, 3, 4, 5+.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "walk_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum minutes on foot to the station (1, 3, 5, 7, 10, 15, 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "age_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum building age in years.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "description": "Free-text keyword.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "recommended, newest, address_asc, address_desc, price_asc, price_desc, area_desc, area_asc, rooms_desc, rooms_asc, built_newest, built_oldest.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recommended",
+                "newest",
+                "address_asc",
+                "address_desc",
+                "price_asc",
+                "price_desc",
+                "area_desc",
+                "area_asc",
+                "rooms_desc",
+                "rooms_asc",
+                "built_newest",
+                "built_oldest"
+              ]
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Listings per page: 10, 20, 30 (default) or 50.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/suumo/v1/for-sale-listing": {
+      "get": {
+        "operationId": "suumoForSaleListing",
+        "summary": "SUUMO home for sale",
+        "description": "One home or plot for sale on SUUMO, from its outline page: title, `price` in yen (and `price_max`), management fee, repair reserve, layout, floor and land area, balcony, built date, floor, facing, structure, total units, handover, renovation, land rights, zoning, parking, address, access, building coverage, the listing agency with its phone and company details (licence, address), publication and next-update dates, and every outline row the page shows (`outline`). Pass a listing link from `/suumo/v1/for-sale` (`items[].url`), or `latest=true` with its search parameters to open the first current match.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/suumo-for-sale-listing",
+        "tags": [
+          "SUUMO"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A suumo.jp for-sale listing link (`items[].url`). Required unless latest=true.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`true`: the first listing of a `/suumo/v1/for-sale` search with the other parameters.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "With latest=true: used_condo, used_house, new_house or land.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "used_condo",
+                "used_house",
+                "new_house",
+                "land"
+              ]
+            }
+          },
+          {
+            "name": "prefecture",
+            "in": "query",
+            "required": false,
+            "description": "With latest=true: JIS prefecture code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "With latest=true: municipality code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/suumo/v1/rental": {
+      "get": {
+        "operationId": "suumoRental",
+        "summary": "SUUMO rental listing",
+        "description": "One rental on SUUMO: `name`, `agency`, `rent`, `management_fee`, `deposit`, `key_money`, `layout`, `layout_detail`, `area_sqm`, `facing`, `building_type`, `age`, `built`, `structure`, `floor`, `address`, `access`, `parking`, `move_in`, `conditions`, `total_units`, `contract`, `brokerage_fee`, `guarantor`, `updated`, `features`, `nearby`, `photos` and `raw`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/suumo-rental",
+        "tags": [
+          "SUUMO"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "12-digit room id (`rooms[].id` in `/suumo/v1/rentals`) or its suumo.jp/chintai/bc_<id>/ link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "prefecture",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `id`: the first room of a `/suumo/v1/rentals` search with these params (prefecture, city and filters).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "With `prefecture`: municipality codes.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "100512201655",
+                  "url": "https://suumo.jp/chintai/bc_100512201655/",
+                  "title": "ブリリア二番町 201号室 - グランデ上野店 (株)グランデが提供する賃貸物件情報",
+                  "name": "ブリリア二番町 201号室",
+                  "agency": "グランデ上野店 (株)グランデ",
+                  "rent": 350000,
+                  "management_fee": null,
+                  "deposit": 350000,
+                  "key_money": 350000,
+                  "security_deposit": null,
+                  "deposit_deduction": null,
+                  "layout": "1LDK",
+                  "area_sqm": 54.32,
+                  "facing": "北",
+                  "building_type": "マンション",
+                  "age": "新築",
+                  "address": "東京都千代田区二番町",
+                  "access": [
+                    "東京メトロ有楽町線/麹町駅 歩1分",
+                    "東京メトロ半蔵門線/半蔵門駅 歩6分",
+                    "… 1 more"
+                  ],
+                  "layout_detail": "洋6.3 LD11.7K2.9",
+                  "structure": "鉄筋コン",
+                  "floor": "2階/地下1地上19階建",
+                  "built": "2026年5月",
+                  "parking": null,
+                  "move_in": "即",
+                  "transaction": "仲介",
+                  "conditions": null,
+                  "total_units": "104戸",
+                  "contract": "普通借家 2年",
+                  "brokerage_fee": "0.55ヶ月",
+                  "guarantor": "保証会社利用必 月額賃料等の５０％（初回保証料）月額賃料等の１％／月",
+                  "updated": "2026-11-04",
+                  "next_update": "2026-11-12",
+                  "agency_code": "71736679",
+                  "features": [
+                    "バストイレ別",
+                    "バルコニー",
+                    "… 39 more"
+                  ],
+                  "nearby": [
+                    "千代田区立麹町中学校（中学校）まで615m",
+                    "千代田区立麹町小学校（小学校）まで337m",
+                    "… 4 more"
+                  ],
+                  "photos": [
+                    {
+                      "url": "https://img01.suumo.com/front/gazo/fr/bukken/655/100512201655/100512201655_go.jpg",
+                      "caption": "建物外観"
+                    },
+                    {
+                      "url": "https://img01.suumo.com/front/gazo/fr/bukken/655/100512201655/100512201655_co.jpg",
+                      "caption": "間取り図"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/suumo/v1/rentals": {
+      "get": {
+        "operationId": "suumoRentals",
+        "summary": "SUUMO rental search",
+        "description": "Rentals on SUUMO (suumo.jp) in a prefecture or cities: `buildings` with `name`, `type`, `address`, `access` (station and walk), `age`, `floors`, `image` and `rooms` (`id`, `floor`, `rent`, `management_fee`, `deposit`, `key_money` in yen, `layout`, `area_sqm`, `tags`, `url`, `photos`). `total` is the site's count. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/suumo-rentals",
+        "tags": [
+          "SUUMO"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "prefecture",
+            "in": "query",
+            "required": true,
+            "description": "Prefecture code 1-47 (13 = Tokyo, 27 = Osaka, 14 = Kanagawa).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "13"
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "5-digit municipality codes, comma-separated (e.g. `13101` = Chiyoda).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "13101"
+          },
+          {
+            "name": "rent_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest monthly rent (yen).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "rent_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest monthly rent (yen).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "layout",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: `1R`, `1K`, `1DK`, `1LDK`, `2K`, `2DK`, `2LDK`, `3K`, `3DK`, `3LDK`, `4K`, `4DK`, `4LDK`, `5K+`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "`mansion`, `apartment`, `house` (comma-separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "area_min",
+            "in": "query",
+            "required": false,
+            "description": "Smallest floor area (m²).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "area_max",
+            "in": "query",
+            "required": false,
+            "description": "Largest floor area (m²).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "walk_max",
+            "in": "query",
+            "required": false,
+            "description": "Most minutes on foot from a station.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "age_max",
+            "in": "query",
+            "required": false,
+            "description": "Building at most this many years old (0 = new).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "`recommended` (default), `rent_asc` or `newest`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recommended",
+                "rent_asc",
+                "newest"
+              ]
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "10, 20, 30 (default) or 50 buildings.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "prefecture": "13",
+                  "cities": [
+                    "13101"
+                  ],
+                  "page": 1,
+                  "per_page": 30,
+                  "sort": "recommended",
+                  "applied_filters": {
+                    "rent_min": null,
+                    "rent_max": null,
+                    "layout": [],
+                    "type": [],
+                    "area_min": null,
+                    "area_max": null,
+                    "walk_max": null,
+                    "age_max": null
+                  },
+                  "total": 30138,
+                  "count": 30,
+                  "rooms_count": 199,
+                  "next_page": 2,
+                  "buildings": [
+                    {
+                      "name": "Brillia二番町",
+                      "type": "賃貸マンション",
+                      "address": "東京都千代田区二番町",
+                      "access": [
+                        "東京メトロ有楽町線/麹町駅 歩2分",
+                        "東京メトロ半蔵門線/半蔵門駅 歩6分",
+                        "… 1 more"
+                      ],
+                      "age": "新築",
+                      "floors": "地下1地上19階建",
+                      "image": "https://img01.suumo.com/front/gazo/fr/bukken/292/100524408292/100524408292_gw.jpg",
+                      "rooms": [
+                        {
+                          "id": "100512201655",
+                          "floor": "2階",
+                          "rent": 350000,
+                          "management_fee": null,
+                          "deposit": 350000,
+                          "key_money": 350000,
+                          "layout": "1LDK",
+                          "area_sqm": 54.32,
+                          "tags": [
+                            "動画",
+                            "パノラマ"
+                          ],
+                          "url": "https://suumo.jp/chintai/bc_100512201655/",
+                          "building_url": "https://suumo.jp/chintai/jnc_000110504871/",
+                          "photos": [
+                            "https://img01.suumo.com/front/gazo/fr/bukken/655/100512201655/100512201655_go.jpg",
+                            "https://img01.suumo.com/front/gazo/fr/bukken/655/100512201655/100512201655_co.jpg",
+                            "… 18 more"
+                          ]
+                        },
+                        {
+                          "id": "100523672004",
+                          "floor": "5階",
+                          "rent": 390000,
+                          "management_fee": 10000,
+                          "deposit": 780000,
+                          "key_money": 390000,
+                          "layout": "1LDK",
+                          "area_sqm": 54.32,
+                          "tags": [
+                            "パノラマ"
+                          ],
+                          "url": "https://suumo.jp/chintai/bc_100523672004/",
+                          "building_url": "https://suumo.jp/chintai/jnc_000110168391/",
+                          "photos": [
+                            "https://img01.suumo.com/front/gazo/fr/bukken/004/100523672004/100523672004_go.jpg",
+                            "https://img01.suumo.com/front/gazo/fr/bukken/004/100523672004/100523672004_co.jpg",
+                            "… 12 more"
+                          ]
+                        },
+                        "… 23 more"
+                      ]
+                    },
+                    {
+                      "name": "パークアクシス神保町",
+                      "type": "賃貸マンション",
+                      "address": "東京都千代田区神田神保町１",
+                      "access": [
+                        "東京メトロ半蔵門線/神保町駅 歩5分",
+                        "ＪＲ中央線/水道橋駅 歩8分",
+                        "… 1 more"
+                      ],
+                      "age": "築3年",
+                      "floors": "14階建",
+                      "image": "https://img01.suumo.com/front/gazo/fr/bukken/356/100526969356/100526969356_gw.jpg",
+                      "rooms": [
+                        {
+                          "id": "100534231378",
+                          "floor": "9階",
+                          "rent": 186000,
+                          "management_fee": 10000,
+                          "deposit": 186000,
+                          "key_money": null,
+                          "layout": "1DK",
+                          "area_sqm": 27.31,
+                          "tags": [
+                            "動画",
+                            "パノラマ"
+                          ],
+                          "url": "https://suumo.jp/chintai/bc_100534231378/",
+                          "building_url": "https://suumo.jp/chintai/jnc_000110782328/",
+                          "photos": [
+                            "https://img01.suumo.com/front/gazo/fr/bukken/378/100534231378/100534231378_go.jpg",
+                            "https://img01.suumo.com/front/gazo/fr/bukken/378/100534231378/100534231378_co.jpg",
+                            "… 17 more"
+                          ]
+                        },
+                        {
+                          "id": "100530813882",
+                          "floor": "12階",
+                          "rent": 195000,
+                          "management_fee": 10000,
+                          "deposit": 195000,
+                          "key_money": null,
+                          "layout": "1DK",
+                          "area_sqm": 25.98,
+                          "tags": [
+                            "動画",
+                            "パノラマ"
+                          ],
+                          "url": "https://suumo.jp/chintai/bc_100530813882/",
+                          "building_url": "https://suumo.jp/chintai/jnc_000110321439/",
+                          "photos": [
+                            "https://img01.suumo.com/front/gazo/fr/bukken/882/100530813882/100530813882_go.jpg",
+                            "https://img01.suumo.com/front/gazo/fr/bukken/882/100530813882/100530813882_co.jpg",
+                            "… 18 more"
+                          ]
+                        },
+                        "… 6 more"
+                      ]
+                    },
+                    "… 28 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

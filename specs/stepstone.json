@@ -1,0 +1,1614 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: StepStone",
+    "version": "1.0.0",
+    "description": "The StepStone API from API.SH: public StepStone data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "StepStone",
+      "description": "5 endpoints (jobs & b2b)",
+      "x-slug": "stepstone",
+      "x-domains": [
+        "stepstone.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stepstone/v1/company": {
+      "get": {
+        "operationId": "stepstoneCompany",
+        "summary": "StepStone employer profile",
+        "description": "An employer on stepstone.de: id, name, links, logo, hero image, address, employee count, industries, the profile's about sections (text and HTML), benefits, videos, number of open jobs, popular job locations and skills, and its latest jobs (title, link, location, remote, salary when shown, snippet, posted and expiry dates, labels).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/stepstone-company",
+        "tags": [
+          "StepStone"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Company slug with id (adesso-se-7420), the numeric company id, or a stepstone.de/cmp/de/... link (company_url in job results).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "adesso-se-7420"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 7420,
+                  "name": "adesso SE",
+                  "url": "https://www.stepstone.de/cmp/de/adesso-se-7420",
+                  "jobs_url": "https://www.stepstone.de/cmp/de/adesso-SE-7420/jobs.html",
+                  "logo": "https://www.stepstone.de/upload_DE/logo/7/logoadesso-SE-7420DE-2605220913.gif",
+                  "hero_image": "https://www.stepstone.de/upload_de/offers/htmlfiles/x0/7420/images/fe2cfe9c-5435-4b72-bed4-97bb391e395b.png",
+                  "address": "Adessoplatz 1, Dortmund",
+                  "employees": "10000+",
+                  "founded": null,
+                  "industries": [
+                    "IT & Tech",
+                    "Wirtschaftsprüfung und Recht"
+                  ],
+                  "about": [
+                    {
+                      "title": "About Us",
+                      "text": "Building Europes Digital Future With AI\nBei uns kommen AI-Kompetenz, Engineering-Exzellenz und fundiertes Branchenverständnis zusammen – get…",
+                      "html": "<p><strong>Building Europes Digital Future With AI&nbsp;</strong></p><p>Bei uns kommen AI-Kompetenz, Engineering-Exzellenz und fundiertes Br…"
+                    }
+                  ],
+                  "benefits": [
+                    "barrier free access",
+                    "car travel allowance",
+                    "… 22 more"
+                  ],
+                  "videos": [
+                    "https://www.youtube.com/watch?v=VLzmluwBvDQ",
+                    "https://www.youtube.com/watch?v=T0qf_1219pg",
+                    "… 2 more"
+                  ],
+                  "rating": null,
+                  "parent_company": false,
+                  "profile_enabled": true,
+                  "jobs_total": 217,
+                  "popular_locations": [
+                    "Berlin",
+                    "Hamburg",
+                    "… 3 more"
+                  ],
+                  "skills": [
+                    "Deutsch",
+                    "Englisch",
+                    "… 18 more"
+                  ],
+                  "latest_jobs": [
+                    {
+                      "id": "14452812",
+                      "global_id": "f8a88399-dc21-496f-aac8-5cc74aeabae6",
+                      "title": "Senior IT-Consultant Enterprise / Solution Architektur Banking (all genders)",
+                      "url": "https://www.stepstone.de/stellenangebote--Senior-IT-Consultant-Enterprise-Solution-Architektur-Banking-all-genders-Aachen-Augsburg-Berlin-Bo…",
+                      "company": "adesso SE",
+                      "company_id": 7420,
+                      "company_url": "https://www.stepstone.de/cmp/de/adesso-se-7420/jobs",
+                      "logo": "https://www.stepstone.de/upload_DE/logo/7/logoadesso-SE-7420DE-2605220913.gif",
+                      "location": "Aachen, Augsburg, Berlin, Bonn, Bremen, Dortmund, weitere Standorte in DE",
+                      "post_code": null,
+                      "remote": null,
+                      "salary": {
+                        "type": "Predicted",
+                        "predicted": true,
+                        "min": 48000,
+                        "max": 81000,
+                        "value": null,
+                        "period": "Annually",
+                        "currency": "EUR",
+                        "description": null
+                      },
+                      "snippet": "adesso insurance solutions GmbH ist ein Versicherungssoftware-Unternehmen der adesso group mit über 600 Mitarbeitern. Gesucht wird ein Senio…",
+                      "benefits": "•\nBleib gesund und fit: Wir fördern die Gesundheit unserer adessi mit sportlichen Zuschüssen wie vergünstigten Fitnessmitgliedschaften, Über…",
+                      "posted_at": "2026-11-03T00:08:20.53Z",
+                      "expires_at": "2026-12-03T00:08:20.53Z",
+                      "top_job": false,
+                      "sponsored": false,
+                      "highlighted": false,
+                      "anonymous": false,
+                      "labels": [
+                        {
+                          "label": "Anschreiben nicht erforderlich",
+                          "type": "NO_COVER_LETTER"
+                        }
+                      ],
+                      "skills": []
+                    },
+                    {
+                      "id": "14563769",
+                      "global_id": "6afd704c-bc06-4275-a86c-e57c02c636f4",
+                      "title": "Forward Deployed Engineer (all genders)",
+                      "url": "https://www.stepstone.de/stellenangebote--Forward-Deployed-Engineer-all-genders-Aachen-Augsburg-Berlin-Bonn-Bremen-Dortmund-adesso-SE--14563…",
+                      "company": "adesso SE",
+                      "company_id": 7420,
+                      "company_url": "https://www.stepstone.de/cmp/de/adesso-se-7420/jobs",
+                      "logo": "https://www.stepstone.de/upload_DE/logo/7/logoadesso-SE-7420DE-2605220913.gif",
+                      "location": "Aachen, Augsburg, Berlin, Bonn, Bremen, Dortmund",
+                      "post_code": null,
+                      "remote": null,
+                      "salary": {
+                        "type": "Predicted",
+                        "predicted": true,
+                        "min": 57000,
+                        "max": 82000,
+                        "value": null,
+                        "period": "Annually",
+                        "currency": "EUR",
+                        "description": null
+                      },
+                      "snippet": "adesso insurance solutions GmbH ist ein Versicherungssoftware-Unternehmen der adesso group mit über 600 Mitarbeitern. Gesucht wird ein Forwa…",
+                      "benefits": "•\nBleib gesund und fit: Wir fördern die Gesundheit unserer adessi mit sportlichen Zuschüssen wie vergünstigten Fitnessmitgliedschaften, Über…",
+                      "posted_at": "2026-11-01T08:02:33.38Z",
+                      "expires_at": "2026-12-01T08:02:33.38Z",
+                      "top_job": false,
+                      "sponsored": false,
+                      "highlighted": false,
+                      "anonymous": false,
+                      "labels": [
+                        {
+                          "label": "Anschreiben nicht erforderlich",
+                          "type": "NO_COVER_LETTER"
+                        }
+                      ],
+                      "skills": []
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/stepstone/v1/company/jobs": {
+      "get": {
+        "operationId": "stepstoneCompanyJobs",
+        "summary": "StepStone jobs by employer",
+        "description": "Every open job of an employer on stepstone.de, 25 a page, with the same fields as search results, the total, page count and facets (filters with counts) to narrow the list. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/stepstone-company-jobs",
+        "tags": [
+          "StepStone"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Company slug with id, numeric id or stepstone.de/cmp/de/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "adesso-se-7420"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs in this city, e.g. berlin.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order of the jobs.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "date"
+              ]
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "A facet filter value from facets[].values[].filter, e.g. fsk=673826 (repeatable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company_id": 7420,
+                  "company": "adesso SE",
+                  "url": "https://www.stepstone.de/cmp/de/adesso-se-7420/jobs",
+                  "applied_filters": {},
+                  "total": 217,
+                  "count": 25,
+                  "page": 1,
+                  "page_count": 9,
+                  "next_page": 2,
+                  "facets": [
+                    {
+                      "name": "age",
+                      "values": [
+                        {
+                          "label": "Neuer als 7 Tage",
+                          "count": null,
+                          "filter": "ag=age_7",
+                          "selected": false
+                        }
+                      ]
+                    },
+                    {
+                      "name": "unifiedSalary",
+                      "values": [
+                        {
+                          "label": "10.000",
+                          "count": null,
+                          "filter": "us=10000",
+                          "selected": false
+                        },
+                        {
+                          "label": "20.000",
+                          "count": null,
+                          "filter": "us=20000",
+                          "selected": false
+                        },
+                        "… 8 more"
+                      ]
+                    },
+                    "… 11 more"
+                  ],
+                  "jobs": [
+                    {
+                      "id": "14452812",
+                      "global_id": "f8a88399-dc21-496f-aac8-5cc74aeabae6",
+                      "title": "Senior IT-Consultant Enterprise / Solution Architektur Banking (all genders)",
+                      "url": "https://www.stepstone.de/stellenangebote--Senior-IT-Consultant-Enterprise-Solution-Architektur-Banking-all-genders-Aachen-Augsburg-Berlin-Bo…",
+                      "company": "adesso SE",
+                      "company_id": 7420,
+                      "company_url": "https://www.stepstone.de/cmp/de/adesso-se-7420/jobs",
+                      "logo": "https://www.stepstone.de/upload_DE/logo/7/logoadesso-SE-7420DE-2605220913.gif",
+                      "location": "Aachen, Augsburg, Berlin, Bonn, Bremen, Dortmund, weitere Standorte in DE",
+                      "post_code": null,
+                      "remote": null,
+                      "salary": {
+                        "type": "Predicted",
+                        "predicted": true,
+                        "min": 48000,
+                        "max": 81000,
+                        "value": null,
+                        "period": "Annually",
+                        "currency": "EUR",
+                        "description": null
+                      },
+                      "snippet": "adesso insurance solutions GmbH ist ein Versicherungssoftware-Unternehmen der adesso group mit über 600 Mitarbeitern. Gesucht wird ein Senio…",
+                      "benefits": "•\nBleib gesund und fit: Wir fördern die Gesundheit unserer adessi mit sportlichen Zuschüssen wie vergünstigten Fitnessmitgliedschaften, Über…",
+                      "posted_at": "2026-11-03T00:08:20.53Z",
+                      "expires_at": "2026-12-03T00:08:20.53Z",
+                      "top_job": false,
+                      "sponsored": false,
+                      "highlighted": false,
+                      "anonymous": false,
+                      "labels": [
+                        {
+                          "label": "Anschreiben nicht erforderlich",
+                          "type": "NO_COVER_LETTER"
+                        }
+                      ],
+                      "skills": []
+                    },
+                    {
+                      "id": "14563769",
+                      "global_id": "6afd704c-bc06-4275-a86c-e57c02c636f4",
+                      "title": "Forward Deployed Engineer (all genders)",
+                      "url": "https://www.stepstone.de/stellenangebote--Forward-Deployed-Engineer-all-genders-Aachen-Augsburg-Berlin-Bonn-Bremen-Dortmund-adesso-SE--14563…",
+                      "company": "adesso SE",
+                      "company_id": 7420,
+                      "company_url": "https://www.stepstone.de/cmp/de/adesso-se-7420/jobs",
+                      "logo": "https://www.stepstone.de/upload_DE/logo/7/logoadesso-SE-7420DE-2605220913.gif",
+                      "location": "Aachen, Augsburg, Berlin, Bonn, Bremen, Dortmund",
+                      "post_code": null,
+                      "remote": null,
+                      "salary": {
+                        "type": "Predicted",
+                        "predicted": true,
+                        "min": 57000,
+                        "max": 82000,
+                        "value": null,
+                        "period": "Annually",
+                        "currency": "EUR",
+                        "description": null
+                      },
+                      "snippet": "adesso insurance solutions GmbH ist ein Versicherungssoftware-Unternehmen der adesso group mit über 600 Mitarbeitern. Gesucht wird ein Forwa…",
+                      "benefits": "•\nBleib gesund und fit: Wir fördern die Gesundheit unserer adessi mit sportlichen Zuschüssen wie vergünstigten Fitnessmitgliedschaften, Über…",
+                      "posted_at": "2026-11-01T08:02:33.38Z",
+                      "expires_at": "2026-12-01T08:02:33.38Z",
+                      "top_job": false,
+                      "sponsored": false,
+                      "highlighted": false,
+                      "anonymous": false,
+                      "labels": [
+                        {
+                          "label": "Anschreiben nicht erforderlich",
+                          "type": "NO_COVER_LETTER"
+                        }
+                      ],
+                      "skills": []
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/stepstone/v1/job": {
+      "get": {
+        "operationId": "stepstoneJob",
+        "summary": "StepStone job details",
+        "description": "One StepStone.de or Totaljobs job ad (give a totaljobs.com job URL for Totaljobs): the ad's sections (about us, tasks, profile, benefits…) as HTML and text plus the full description, company (id, page, logo, address, jobs count), location and address, contract and work type, employment type, industry, posted and valid-through dates, salary range (StepStone's estimate when the ad has none) and whether it takes direct applications. Removed jobs answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/stepstone-job",
+        "tags": [
+          "StepStone"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Job id (the number at the end of the job URL, before `-inline.html`) or the job URL. Totaljobs jobs need their totaljobs.com URL (`url` in search results with `country=uk`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "13699556"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "13699556",
+                  "global_id": "c2a95d75-c1dd-4b8d-93fd-5fe91e6d5f71",
+                  "title": "Big Data Engineer (m/w/d)",
+                  "url": "https://www.stepstone.de/stellenangebote--Big-Data-Engineer-m-w-d-Mannheim-Solve42-GmbH--13699556-inline.html",
+                  "online": true,
+                  "company": "Solve42 GmbH",
+                  "company_id": 420599,
+                  "company_url": "https://www.stepstone.de/cmp/de/Solve42-GmbH-420599/jobs.html",
+                  "logo": "https://recruit.stepstone.com/media-library/logo/2e4ff925-10ff-40ef-9c25-36480ba38737.png",
+                  "location": "Mannheim",
+                  "address": {
+                    "street": "Julius-Hatry-Str. 1",
+                    "city": "Mannheim",
+                    "region": null,
+                    "post_code": "68163",
+                    "country": "DE"
+                  },
+                  "contract_type": "Feste Anstellung",
+                  "work_type": "Homeoffice möglich, Vollzeit",
+                  "employment_type": "FULL_TIME",
+                  "industry": "IT, IT-Infrastruktur",
+                  "posted_at": "2026-10-29T05:03:06.15Z",
+                  "valid_through": "2028-11-21T21:09:30.09Z",
+                  "salary": {
+                    "predicted": true,
+                    "min": 60000,
+                    "max": 75000,
+                    "period": "Jahr",
+                    "currency": "EUR"
+                  },
+                  "description_html": "<h4>Einleitung</h4>\n<p>Solve42 GmbH ist ein junges Startup, das sich auf die Beratung und Entwicklung von Lösungen im Bereich Betrugserkennu…",
+                  "description": "Einleitung\n\nSolve42 GmbH ist ein junges Startup, das sich auf die Beratung und Entwicklung von Lösungen im Bereich Betrugserkennung und Comp…",
+                  "sections": [
+                    {
+                      "title": "Einleitung",
+                      "html": "<p>Solve42 GmbH ist ein junges Startup, das sich auf die Beratung und Entwicklung von Lösungen im Bereich Betrugserkennung und Compliance ko…",
+                      "text": "Solve42 GmbH ist ein junges Startup, das sich auf die Beratung und Entwicklung von Lösungen im Bereich Betrugserkennung und Compliance konze…"
+                    },
+                    {
+                      "title": "Aufgaben",
+                      "html": "<ul><li>Entwicklung und Umsetzung von Lösungen und Strategien für unsere Kunden in den Bereichen Big Data, AI und Machine Learning</li><li>D…",
+                      "text": "• Entwicklung und Umsetzung von Lösungen und Strategien für unsere Kunden in den Bereichen Big Data, AI und Machine Learning\n\n• Design und I…"
+                    },
+                    "… 2 more"
+                  ],
+                  "direct_apply": true,
+                  "company_profile": {
+                    "name": "Solve42 GmbH",
+                    "address": "Julius-Hatry-Str. 1, Mannheim",
+                    "jobs_count": 1,
+                    "industries": [
+                      "IT & Tech"
+                    ],
+                    "benefits": [],
+                    "url": "https://www.stepstone.de/cmp/de/Solve42-GmbH-420599/jobs.html"
+                  },
+                  "benefits": [],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/stepstone/v1/job/similar": {
+      "get": {
+        "operationId": "stepstoneJobSimilar",
+        "summary": "StepStone similar jobs",
+        "description": "The jobs StepStone recommends on a job ad's page: title, link, company with link and logo, location, remote option, salary text when shown, posted date and labels.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/stepstone-job-similar",
+        "tags": [
+          "StepStone"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Job id or stepstone.de job link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "14570635"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "job_id": "14570635",
+                  "title": "Diese Jobs waren bei anderen Jobsuchenden beliebt",
+                  "count": 10,
+                  "jobs": [
+                    {
+                      "id": "14537468",
+                      "global_id": "0f4cf818-3e82-444c-a206-c09f11278c10",
+                      "title": "(Senior) Software Developer (m/w/d) für .NET-Anwendungen",
+                      "url": "https://www.stepstone.de/stellenangebote--Senior-Software-Developer-m-w-d-fuer-NET-Anwendungen-Stuttgart-ALH-Gruppe--14537468-inline.html",
+                      "company": "ALH Gruppe",
+                      "company_id": 259408,
+                      "company_url": "https://www.stepstone.de/cmp/de/ALH-Gruppe-259408/jobs.html",
+                      "logo": "https://www.stepstone.de/upload_DE/logo/D/logoALH-Gruppe-259408DE-2103111012.gif",
+                      "location": "Stuttgart",
+                      "post_code": null,
+                      "remote": "Teilweise Home-Office",
+                      "salary": null,
+                      "snippet": null,
+                      "benefits": null,
+                      "posted_at": "2026-10-20T11:03:10.300",
+                      "expires_at": null,
+                      "top_job": false,
+                      "sponsored": false,
+                      "highlighted": false,
+                      "anonymous": false,
+                      "labels": [],
+                      "skills": [],
+                      "salary_text": null,
+                      "normalized_title": "Senior-Operator"
+                    },
+                    {
+                      "id": "13850318",
+                      "global_id": "c582c330-a53c-449e-99ac-874cfc102a2c",
+                      "title": "Senior Python Backend Engineer* (AI Focus)",
+                      "url": "https://www.stepstone.de/stellenangebote--Senior-Python-Backend-Engineer-AI-Focus-Karlsruhe-Koeln-Muenchen-Stuttgart-Erlangen-inovex-GmbH--1…",
+                      "company": "inovex GmbH",
+                      "company_id": 24494,
+                      "company_url": "https://www.stepstone.de/cmp/de/inovex-GmbH-24494/jobs.html",
+                      "logo": "https://www.stepstone.de/upload_DE/logo/2/logoinovex-GmbH-24494DE-2305301051.gif",
+                      "location": "Karlsruhe, Köln, München, Stuttgart, Erlangen",
+                      "post_code": null,
+                      "remote": "Teilweise Home-Office",
+                      "salary": null,
+                      "snippet": null,
+                      "benefits": null,
+                      "posted_at": "2026-10-21T11:03:07.617",
+                      "expires_at": null,
+                      "top_job": false,
+                      "sponsored": false,
+                      "highlighted": false,
+                      "anonymous": false,
+                      "labels": [],
+                      "skills": [],
+                      "salary_text": null,
+                      "normalized_title": "Backend-Python-Ingenieur"
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/stepstone/v1/search": {
+      "get": {
+        "operationId": "stepstoneSearch",
+        "summary": "StepStone job search",
+        "description": "Jobs on StepStone.de for a keyword and/or location, with the site's filters: radius, sort, posting age, home office, full/part time, minimum salary, and every facet the results page offers (contract type, experience, discipline, category, sector, city, region, skills, application method, language). `country=uk` searches Totaljobs (StepStone's UK board) with the same fields; its facets (salary, work policy, discipline, contract type, skills, category, sector, city, region, application method) work the same way. `total` is StepStone's count; 25 jobs per page. Facets come back in `facets`; pass a value's `filter` (e.g. `ct=222`) back as `filter` (repeatable). Each job: `id`, `global_id`, `title`, `url`, `company`, `company_id`, `company_url`, `logo`, `location`, `remote`, `salary` (StepStone's range, `predicted` when it is the site's estimate), `snippet`, `benefits`, `posted_at`, `expires_at`, `top_job`, `sponsored`, `labels`, `skills` and `raw`. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/stepstone-search",
+        "tags": [
+          "StepStone"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords, e.g. `python`, `projektmanager`. Required unless `location` is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "`de` (default): StepStone.de. `uk`: Totaljobs (totaljobs.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "uk"
+              ]
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "City or region, e.g. `berlin`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "berlin"
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Radius around the location, in km (up to 100; larger values use 100). With `country=uk`: miles, 0, 5, 10, 20 or 30 (other values use the next larger one, at most 30).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "date"
+              ]
+            }
+          },
+          {
+            "name": "age",
+            "in": "query",
+            "required": false,
+            "description": "Posted within this many days (`country=de` only).",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                "1",
+                "7"
+              ]
+            }
+          },
+          {
+            "name": "remote",
+            "in": "query",
+            "required": false,
+            "description": "Home office: `partly` (hybrid) or `only` (remote); `onsite` only with `country=uk`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "partly",
+                "only",
+                "onsite"
+              ]
+            }
+          },
+          {
+            "name": "work_type",
+            "in": "query",
+            "required": false,
+            "description": "Full or part time (`country=de` only).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full_time",
+                "part_time"
+              ]
+            }
+          },
+          {
+            "name": "salary_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum yearly salary in EUR, or GBP with `country=uk` (the site's bands: 10000 to 100000).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "More filters as `key=value` from `facets[].values[].filter`. Repeatable.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "python",
+                  "location": "berlin",
+                  "url": "https://www.stepstone.de/jobs/python/in-berlin",
+                  "applied_filters": {},
+                  "total": 354,
+                  "count": 25,
+                  "page": 1,
+                  "page_count": 15,
+                  "next_page": 2,
+                  "facets": [
+                    {
+                      "name": "age",
+                      "values": [
+                        {
+                          "label": "Neuer als 24h",
+                          "count": null,
+                          "filter": "ag=age_1",
+                          "selected": false
+                        },
+                        {
+                          "label": "Neuer als 7 Tage",
+                          "count": null,
+                          "filter": "ag=age_7",
+                          "selected": false
+                        }
+                      ]
+                    },
+                    {
+                      "name": "unifiedSalary",
+                      "values": [
+                        {
+                          "label": "10.000",
+                          "count": null,
+                          "filter": "us=10000",
+                          "selected": false
+                        },
+                        {
+                          "label": "20.000",
+                          "count": null,
+                          "filter": "us=20000",
+                          "selected": false
+                        },
+                        "… 8 more"
+                      ]
+                    },
+                    "… 11 more"
+                  ],
+                  "related_searches": [
+                    {
+                      "name": "Software Entwickler",
+                      "url": "https://www.stepstone.de/jobs/software-entwickler/in-berlin"
+                    },
+                    {
+                      "name": "Software Engineer",
+                      "url": "https://www.stepstone.de/jobs/software-engineer/in-berlin"
+                    },
+                    "… 14 more"
+                  ],
+                  "jobs": [
+                    {
+                      "id": "13818030",
+                      "global_id": "fb0eddd4-e9fc-4db7-a845-5156b1d4ad06",
+                      "title": "Backend Entwickler Python (m/w/d) - Data Engineer Python",
+                      "url": "https://www.stepstone.de/stellenangebote--Backend-Entwickler-Python-m-w-d-Data-Engineer-Python-Berlin-Mannheim-Frankfurt-Stuttgart-Karlsruhe…",
+                      "company": "Ratbacher GmbH",
+                      "company_id": 46710,
+                      "company_url": "https://www.stepstone.de/cmp/de/ratbacher-gmbh-46710/jobs",
+                      "logo": "https://www.stepstone.de/upload_DE/logo/3/logoRatbacher-GmbH-46710DE-2604131050.gif",
+                      "location": "Berlin, Mannheim, Frankfurt, Stuttgart, Karlsruhe",
+                      "post_code": null,
+                      "remote": "partly",
+                      "salary": {
+                        "type": "Predicted",
+                        "predicted": true,
+                        "min": 53000,
+                        "max": 74000,
+                        "value": null,
+                        "period": "Annually",
+                        "currency": "EUR",
+                        "description": null
+                      },
+                      "snippet": "Das Partnerunternehmen ist ein junges FinTech-Unternehmen, das SaaS-Lösungen für Risikomanagement im Finanzbereich entwickelt. Gesucht wird …",
+                      "benefits": "• Ein attraktives Gehaltspaket von bis zu 85.000 € / Jahr je nach Berufserfahrung und Qualifikation\n\n• Dank modernster Technologien, einem d…",
+                      "posted_at": "2026-10-22T11:03:05.447Z",
+                      "expires_at": "2027-03-21T11:30:13.917Z",
+                      "top_job": false,
+                      "sponsored": false,
+                      "highlighted": false,
+                      "anonymous": false,
+                      "labels": [
+                        {
+                          "label": "Anschreiben nicht erforderlich",
+                          "type": "NO_COVER_LETTER"
+                        }
+                      ],
+                      "skills": []
+                    },
+                    {
+                      "id": "14712612",
+                      "global_id": "1cfb1180-6265-4921-8611-556ca7d14bd0",
+                      "title": "Lead Software Developer (w|m|d)",
+                      "url": "https://www.stepstone.de/stellenangebote--Lead-Software-Developer-wmd-Frankfurt-a-M-Berlin-Koeln-Mannheim-Muenchen-Stuttgart-BridgingIT-GmbH…",
+                      "company": "BridgingIT GmbH",
+                      "company_id": 61818,
+                      "company_url": "https://www.stepstone.de/cmp/de/bridgingit-gmbh-61818/jobs",
+                      "logo": "https://www.stepstone.de/upload_DE/logo/5/logoBridgingIT-GmbH-61818DE-2605130851.gif",
+                      "location": "Frankfurt a.M., Berlin, Köln, Mannheim, München, Stuttgart",
+                      "post_code": null,
+                      "remote": "partly",
+                      "salary": {
+                        "type": "Predicted",
+                        "predicted": true,
+                        "min": 61000,
+                        "max": 91000,
+                        "value": null,
+                        "period": "Annually",
+                        "currency": "EUR",
+                        "description": null
+                      },
+                      "snippet": "BridgingIT GmbH ist eine herstellerunabhängige Technologie- und Unternehmensberatung, die Digitalisierungsstrategien umsetzt. Gesucht wird e…",
+                      "benefits": "• 30 Tage Urlaub + die Option auf 10 weitere Urlaubstage im Jahr\n\n• Bis zu 183 Tage aus dem europäischen Ausland arbeiten\n\n• Mobility Packag…",
+                      "posted_at": "2026-11-03T14:35:49.023Z",
+                      "expires_at": "2027-01-02T14:35:49.023Z",
+                      "top_job": false,
+                      "sponsored": false,
+                      "highlighted": false,
+                      "anonymous": false,
+                      "labels": [
+                        {
+                          "label": "Anschreiben nicht erforderlich",
+                          "type": "NO_COVER_LETTER"
+                        },
+                        {
+                          "label": "Schnelle Bewerbung",
+                          "type": "QUICK_APPLY"
+                        }
+                      ],
+                      "skills": []
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

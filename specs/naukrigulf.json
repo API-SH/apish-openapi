@@ -1,0 +1,1085 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Naukrigulf",
+    "version": "1.0.0",
+    "description": "The Naukrigulf API from API.SH: public Naukrigulf data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Naukrigulf",
+      "description": "2 endpoints (jobs & b2b)",
+      "x-slug": "naukrigulf",
+      "x-domains": [
+        "naukrigulf.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/naukrigulf/v1/job": {
+      "get": {
+        "operationId": "naukrigulfJob",
+        "summary": "Naukrigulf job details",
+        "description": "One Naukrigulf job ad: title, company (id, profile, website, logo), location and locality, employment and location type, industry, functional area, salary (min, max, currency, or hidden), vacancies, posted date, highlights, keywords, the full description and the desired-candidate profile (HTML and text), reference number, how to apply, employer flags, and the recruiter contact the ad shows. Removed jobs answer 404. Give id/url, or q to open the first current result of a search.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/naukrigulf-job",
+        "tags": [
+          "Naukrigulf"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Job id (the number after `jid-` in the job URL) or the job URL (`url` is accepted too).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Instead of id: keywords; opens the first current result of that search (all /naukrigulf/v1/search filters apply).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "accountant"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "With q: city or country.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "dubai"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "031126000224",
+                  "title": "Junior / General Accountant (Tagalog Speaker – Immediate Joining)",
+                  "url": "https://www.naukrigulf.com/junior-general-accountant-jobs-in-dubai-uae-in-rto-chauffeur-tourism-llc-1-to-2-years-n-cd-382049-jid-03112600022…",
+                  "expired": false,
+                  "company": "RTO Chauffeur Tourism LLC",
+                  "company_id": "382049",
+                  "company_profile": null,
+                  "company_website": null,
+                  "logo": null,
+                  "confidential_company": false,
+                  "consultant_job": false,
+                  "location": "Dubai - United Arab Emirates (UAE)",
+                  "locality": {
+                    "United Arab Emirates (UAE)": [
+                      {
+                        "Dubai": []
+                      }
+                    ]
+                  },
+                  "country": "United Arab Emirates (UAE)",
+                  "employment_type": "Full-time",
+                  "location_type": "On-site",
+                  "industry": "Travel / Tourism",
+                  "functional_area": "Accounts / Taxation / Audit / Company Secretary",
+                  "salary": {
+                    "hidden": false,
+                    "min": null,
+                    "max": null,
+                    "currency": "AED 3,000",
+                    "period": null
+                  },
+                  "vacancies": 1,
+                  "posted_at": "2026-11-03T11:07:24.000Z",
+                  "highlights": [
+                    "Handle day-to-day AP/AR, petty cash, and invoicing",
+                    "Assist with monthly bank reconciliations and record-keeping",
+                    "… 2 more"
+                  ],
+                  "keywords": [
+                    "Accounts Receivable",
+                    "Financial Reporting",
+                    "… 8 more"
+                  ],
+                  "description_html": "<br><p>We are seeking a detail-oriented Junior / General Accountant to join our team in Dubai. This position is open to fresh graduates / en…",
+                  "description": "We are seeking a detail-oriented Junior / General Accountant to join our team in Dubai. This position is open to fresh graduates / entry-lev…",
+                  "desired_candidate_html": "<p>Requirements & Qualifications:</p><ul><li><p>Bachelor’s Degree in Accounting, Finance, or equivalent.</p></li><li><p>Experience: Freshers…",
+                  "desired_candidate": "Requirements & Qualifications:\n\n• Bachelor’s Degree in Accounting, Finance, or equivalent.\n\n• Experience: Freshers welcome with at least 1 y…",
+                  "reference_number": null,
+                  "contact": {
+                    "Name": "Mybelyn",
+                    "Designation": "Reservations",
+                    "Country": "United Arab Emirates (UAE)",
+                    "City": "Dubai",
+                    "StreetAddress": "Office 207, 2nd Floor, Al Nisf Building, Airport Rd, Deira",
+                    "Pincode": "",
+                    "Landline": "",
+                    "Fax": "",
+                    "Mobile": "",
+                    "Email": "name@example.com",
+                    "IsEmailHidden": "true",
+                    "Website": ""
+                  },
+                  "apply": {
+                    "external": false,
+                    "form": false,
+                    "easy_apply": false,
+                    "url": "https://www.naukrigulf.com/junior-general-accountant-jobs-in-dubai-uae-in-rto-chauffeur-tourism-llc-1-to-2-years-n-cd-382049-jid-03112600022…"
+                  },
+                  "top_employer": false,
+                  "featured_employer": false,
+                  "premium": false,
+                  "expiring_soon": false,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/naukrigulf/v1/search": {
+      "get": {
+        "operationId": "naukrigulfSearch",
+        "summary": "Naukrigulf job search",
+        "description": "Jobs on Naukrigulf (Gulf and Middle East) for a keyword and/or location, with every filter of the site's result page: years of experience, freshness, and the facets (industry, country, city, experience band, monthly salary band, gender, company or consultant, job title, nationality). Facet values come back in `facets` with counts; pass a value back in the matching parameter (comma separated for several). Each job: `id`, `title`, `url`, `company`, `company_id`, `logo`, `location`, experience range, `summary`, `highlights`, `keywords`, `vacancies`, `posted_at`, employer flags and `raw`. `total` is Naukrigulf's count (at most 45,000 reachable). Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/naukrigulf-search",
+        "tags": [
+          "Naukrigulf"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords (job title, skill or company). Required unless `location` is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "accountant"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "City or country, e.g. `dubai`, `saudi arabia`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "dubai"
+          },
+          {
+            "name": "experience",
+            "in": "query",
+            "required": false,
+            "description": "Your years of experience (0-50): jobs that fit it.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "freshness",
+            "in": "query",
+            "required": false,
+            "description": "Posted within this many days.",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                "1",
+                "3",
+                "7",
+                "15",
+                "30",
+                "60"
+              ]
+            }
+          },
+          {
+            "name": "industry",
+            "in": "query",
+            "required": false,
+            "description": "Industry ids from `facets.industry` (e.g. `25` = IT), comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country ids from `facets.country` (e.g. `17` = UAE), comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "City ids from `facets.city` (e.g. `17.4` = Dubai), comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "experience_range",
+            "in": "query",
+            "required": false,
+            "description": "Experience bands from `facets.experience_range` (0 = 0-1 years … 5 = 20+), comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "salary_range",
+            "in": "query",
+            "required": false,
+            "description": "Monthly salary bands from `facets.salary_range` (1 = under $500 … ), comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": false,
+            "description": "male, female, any or nm (not mentioned), from `facets.gender`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "company_type",
+            "in": "query",
+            "required": false,
+            "description": "1 = company, 2 = consultant (from `facets.company_type`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "job_title",
+            "in": "query",
+            "required": false,
+            "description": "Job title ids from `facets.job_title`, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nationality",
+            "in": "query",
+            "required": false,
+            "description": "Nationality group ids from `facets.nationality` (e.g. `994` = Indians), comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Jobs per page, 1-49 (default 30).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "accountant",
+                  "location": "dubai",
+                  "applied_filters": {},
+                  "total": 1789,
+                  "vacancies": 2685,
+                  "easy_apply_count": 1058,
+                  "count": 30,
+                  "page": 1,
+                  "next_page": 2,
+                  "facets": {
+                    "gender": [
+                      {
+                        "label": "Male",
+                        "value": "male",
+                        "count": 121
+                      },
+                      {
+                        "label": "Female",
+                        "value": "female",
+                        "count": 63
+                      },
+                      "… 2 more"
+                    ],
+                    "company_type": [
+                      {
+                        "label": "Company",
+                        "value": "1",
+                        "count": 1535
+                      },
+                      {
+                        "label": "Consultant",
+                        "value": "2",
+                        "count": 254
+                      }
+                    ],
+                    "job_title": [
+                      {
+                        "label": "Accountant",
+                        "value": "2006",
+                        "count": 72
+                      },
+                      {
+                        "label": "Sales Executive",
+                        "value": "2015",
+                        "count": 32
+                      },
+                      "… 23 more"
+                    ],
+                    "experience_range": [
+                      {
+                        "label": "0 – 1 year",
+                        "value": "0",
+                        "count": 446
+                      },
+                      {
+                        "label": "2 – 5 years",
+                        "value": "1",
+                        "count": 1440
+                      },
+                      "… 4 more"
+                    ],
+                    "freshness": [
+                      {
+                        "label": "1 Day Old",
+                        "value": "1",
+                        "count": 20
+                      },
+                      {
+                        "label": "3 Days Old",
+                        "value": "3",
+                        "count": 75
+                      },
+                      "… 4 more"
+                    ],
+                    "salary_range": [
+                      {
+                        "label": "Less than $500",
+                        "value": "1",
+                        "count": 57
+                      },
+                      {
+                        "label": "$501 - $1,000",
+                        "value": "2",
+                        "count": 330
+                      },
+                      "… 14 more"
+                    ],
+                    "industry": [
+                      {
+                        "label": "IT",
+                        "value": "25",
+                        "count": 199
+                      },
+                      {
+                        "label": "Banking and Finance",
+                        "value": "7",
+                        "count": 173
+                      },
+                      "… 23 more"
+                    ],
+                    "nationality": [
+                      {
+                        "label": "GCC Nationals",
+                        "value": "991",
+                        "count": 98
+                      },
+                      {
+                        "label": "Arab Nationals",
+                        "value": "992",
+                        "count": 174
+                      },
+                      "… 6 more"
+                    ]
+                  },
+                  "jobs": [
+                    {
+                      "id": "031126000224",
+                      "title": "Junior / General Accountant (Tagalog Speaker – Immediate Joining)",
+                      "url": "https://www.naukrigulf.com/junior-general-accountant-jobs-in-dubai-uae-in-rto-chauffeur-tourism-llc-1-to-2-years-n-cd-382049-jid-03112600022…",
+                      "company": "RTO Chauffeur Tourism LLC",
+                      "company_id": "382049",
+                      "logo": null,
+                      "location": "Dubai - United Arab Emirates (UAE)",
+                      "experience_min_years": 1,
+                      "experience_max_years": 2,
+                      "summary": "Detail-oriented Junior Accountant needed for accounts payable/receivable, bank reconciliation, and payroll support; requires Bachelor's degr…",
+                      "highlights": [
+                        "Handle day-to-day AP/AR, petty cash, and invoicing",
+                        "Assist with monthly bank reconciliations and record-keeping",
+                        "… 2 more"
+                      ],
+                      "keywords": [
+                        "Accounts Receivable",
+                        "Financial Reporting",
+                        "… 8 more"
+                      ],
+                      "vacancies": 1,
+                      "posted_at": "2026-11-03T11:07:24.000Z",
+                      "top_employer": false,
+                      "featured_employer": false,
+                      "premium": false,
+                      "sponsored": false,
+                      "external_apply": false,
+                      "form_apply": false,
+                      "expiring_soon": false
+                    },
+                    {
+                      "id": "031126000131",
+                      "title": "Accounts Executive",
+                      "url": "https://www.naukrigulf.com/accounts-executive-jobs-in-dubai-uae-in-arthshashtri-5-to-10-years-n-cd-382006-jid-031126000131",
+                      "company": "Arthshashtri",
+                      "company_id": "382006",
+                      "logo": null,
+                      "location": "Dubai - United Arab Emirates (UAE)",
+                      "experience_min_years": 5,
+                      "experience_max_years": 10,
+                      "summary": "Manage daily accounting transactions, maintain accurate records, prepare reconciliations, support VAT compliance, and assist in financial re…",
+                      "highlights": [
+                        "Manage daily accounting transactions and journal entries",
+                        "Maintain ledger, payables and receivables records",
+                        "… 2 more"
+                      ],
+                      "keywords": [
+                        "General Accounting & Bookkeeping  UAE VAT Compliance & Reconciliation  Accounts Payable & Accounts Receivable  Bank",
+                        "Supplier & Customer Reconciliation  Inventory Accounting & Stock Reconciliation  Financial Reporting & MIS  Costing & Expense Managem"
+                      ],
+                      "vacancies": 1,
+                      "posted_at": "2026-11-03T05:00:00.000Z",
+                      "top_employer": false,
+                      "featured_employer": false,
+                      "premium": false,
+                      "sponsored": false,
+                      "external_apply": false,
+                      "form_apply": false,
+                      "expiring_soon": false
+                    },
+                    "… 28 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

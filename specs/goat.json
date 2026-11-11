@@ -1,0 +1,1640 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: GOAT",
+    "version": "1.0.0",
+    "description": "The GOAT API from API.SH: public GOAT data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "GOAT",
+      "description": "5 endpoints (e-commerce)",
+      "x-slug": "goat",
+      "x-domains": [
+        "goat.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/goat/v1/autocomplete": {
+      "get": {
+        "operationId": "goatAutocomplete",
+        "summary": "GOAT search suggestions",
+        "description": "The suggestions GOAT's search box shows for a partial query: products (id, name, slug, category, image) and collections.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/goat-autocomplete",
+        "tags": [
+          "GOAT"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "What has been typed so far.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "jordan 1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "jordan 1",
+                  "products": [
+                    {
+                      "id": "1729521",
+                      "name": "Air Jordan 1 Retro High OG 'Royal' 2026",
+                      "slug": "air-jordan-1-retro-high-og-royal-2026-iq5495-005",
+                      "category": "shoes",
+                      "image": "https://image.goat.com/attachments/product_template_pictures/images/118/749/249/original/1729521_00.png.png",
+                      "url": "https://www.goat.com/sneakers/air-jordan-1-retro-high-og-royal-2026-iq5495-005"
+                    },
+                    {
+                      "id": "920714",
+                      "name": "Air Jordan 1 Retro High OG 'Chicago Lost & Found'",
+                      "slug": "air-jordan-1-retro-high-og-dz5485-612",
+                      "category": "shoes",
+                      "image": "https://image.goat.com/attachments/product_template_pictures/images/080/963/035/original/920714_00.png.png",
+                      "url": "https://www.goat.com/sneakers/air-jordan-1-retro-high-og-dz5485-612"
+                    },
+                    "… 23 more"
+                  ],
+                  "collections": [
+                    {
+                      "id": "02c40d89-2296-4acb-8167-8b995695d95a",
+                      "title": "Jordan 1 Chicagos",
+                      "slug": "jordan-1-chicagos",
+                      "type": "StaticCollection",
+                      "url": "https://www.goat.com/collections/jordan-1-chicagos"
+                    },
+                    {
+                      "id": "7654b79c-e971-4024-a72f-673dacd4403b",
+                      "title": "Air Jordan 1",
+                      "slug": "aj1",
+                      "type": "StaticCollection",
+                      "url": "https://www.goat.com/collections/aj1"
+                    },
+                    "… 6 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/goat/v1/product": {
+      "get": {
+        "operationId": "goatProduct",
+        "summary": "One GOAT product",
+        "description": "Every response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/goat-product",
+        "tags": [
+          "GOAT"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "undefeated-x-air-jordan-4-retro-ib1519-200"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "brandName": "Air Jordan",
+                  "color": "Green",
+                  "designer": "Tinker Hatfield",
+                  "details": "Deep Green/Clementine/Black/Sail",
+                  "gender": [
+                    "men"
+                  ],
+                  "ageGroups": [],
+                  "hazardousMaterials": [],
+                  "id": 1581606,
+                  "internalShot": "taken",
+                  "maximumOfferCents": 200000,
+                  "midsole": "Air",
+                  "minimumOfferCents": 2500,
+                  "name": "Undefeated x Air Jordan 4 Retro 2025",
+                  "nickname": "",
+                  "productCategory": "shoes",
+                  "productType": "sneakers",
+                  "releaseDate": "2025-08-02T23:59:59.999Z",
+                  "releaseDateName": "",
+                  "season": " 2025",
+                  "silhouette": "Air Jordan 4",
+                  "sizeBrand": "air_jordan",
+                  "sizeRange": [
+                    3,
+                    3.5,
+                    "… 37 more"
+                  ],
+                  "sizeType": "numeric_sizes",
+                  "sizeUnit": "us",
+                  "sku": "IB1519 200",
+                  "slug": "undefeated-x-air-jordan-4-retro-ib1519-200",
+                  "specialDisplayPriceCents": 22500,
+                  "specialType": "standard",
+                  "status": "active",
+                  "upperMaterial": "Nubuck",
+                  "taxonomyLevel1": "Footwear",
+                  "taxonomyLevel2": "Sneakers",
+                  "taxonomyLevel3": "Basketball",
+                  "taxonomyLevel4": "Lifestyle Basketball",
+                  "availableSizesNew": [],
+                  "availableSizesNewV2": [],
+                  "availableSizesNewWithDefects": [],
+                  "availableSizesUsed": [],
+                  "sizeOptions": [
+                    {
+                      "presentation": "3",
+                      "value": 3
+                    },
+                    {
+                      "presentation": "3.5",
+                      "value": 3.5
+                    },
+                    "… 37 more"
+                  ],
+                  "lowestPriceCents": 0,
+                  "…": "46 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/goat/v1/related": {
+      "get": {
+        "operationId": "goatRelated",
+        "summary": "GOAT related products",
+        "description": "Products GOAT recommends alongside a product (similar styles): name, SKU, brand, colour, category, release date, lowest and display price, image and size range. Identify the product by id, by its goat.com link, or by q (the first search result).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/goat-related",
+        "tags": [
+          "GOAT"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "GOAT's numeric product id (from search). One of id, url or q is required.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "719082"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A goat.com product link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.goat.com/sneakers/air-force-1-07-triple-white-cw2288-111"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words; the first result is used.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "dunk low panda"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "description": "How many products (1-50).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "12"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "719082",
+                  "slug": null,
+                  "count": 12,
+                  "products": [
+                    {
+                      "id": 712867,
+                      "name": "Nike Air Force 1 '07 'Triple White'",
+                      "slug": "air-force-1-07-triple-white-cw2288-111",
+                      "sku": "CW2288 111",
+                      "brand": "Nike",
+                      "color": "White",
+                      "details": "White/White/White",
+                      "category": "shoes",
+                      "product_type": "sneakers",
+                      "gender": "men",
+                      "release_date": "2020-12-09T23:59:59.999Z",
+                      "status": "active",
+                      "lowest_price_cents": null,
+                      "display_price_cents": 11500,
+                      "currency": "USD",
+                      "image": "https://image.goat.com/750/attachments/product_template_pictures/images/113/540/377/original/712867_00.png.png",
+                      "url": "https://www.goat.com/sneakers/air-force-1-07-triple-white-cw2288-111",
+                      "size_range": [
+                        3,
+                        3.5,
+                        "… 37 more"
+                      ]
+                    },
+                    {
+                      "id": 837275,
+                      "name": "Air Jordan 1 Low 'Bred Toe'",
+                      "slug": "air-jordan-1-low-bred-toe-553558-612",
+                      "sku": "553558 612",
+                      "brand": "Air Jordan",
+                      "color": "Red",
+                      "details": "Gym Red/Black/White",
+                      "category": "shoes",
+                      "product_type": "sneakers",
+                      "gender": "men",
+                      "release_date": "2021-12-08T23:59:59.999Z",
+                      "status": "active",
+                      "lowest_price_cents": null,
+                      "display_price_cents": 10000,
+                      "currency": "USD",
+                      "image": "https://image.goat.com/750/attachments/product_template_pictures/images/063/257/274/original/837275_00.png.png",
+                      "url": "https://www.goat.com/sneakers/air-jordan-1-low-bred-toe-553558-612",
+                      "size_range": [
+                        3,
+                        3.5,
+                        "… 37 more"
+                      ]
+                    },
+                    "… 10 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/goat/v1/search": {
+      "get": {
+        "operationId": "goatSearch",
+        "summary": "GOAT search",
+        "description": "Pass `next_page` from the previous response; `next_page` is null on the last page.\n\nFilter by brand, category, product type, activity, gender, colour, silhouette (model line), release year, condition, size and price range. Facet filters take the `slug` values listed in `facets` (comma-separated for several); `applied_filters` echoes the filters in effect.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/goat-search",
+        "tags": [
+          "GOAT"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words. May be left out when a brand, category or other facet filter is given, which lists that brand or category.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "jordan 4"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order (lowest ask for the price sorts). Default relevance.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "price_asc",
+                "price_desc"
+              ]
+            }
+          },
+          {
+            "name": "sort_type",
+            "in": "query",
+            "required": false,
+            "description": "GOAT's own numeric sortType, passed as-is (overrides `sort`).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "instant_ship",
+            "in": "query",
+            "required": false,
+            "description": "Only products available with Instant Ship.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "under_retail",
+            "in": "query",
+            "required": false,
+            "description": "Only products selling under retail price.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Brand slug(s) from `facets.brands`, comma-separated, e.g. nike or nike,air-jordan.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category slug(s) from `facets.categories`, e.g. footwear, apparel, bags.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product_type",
+            "in": "query",
+            "required": false,
+            "description": "Product type slug(s) (nested under `facets.categories`), e.g. sneakers, tops, boots.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activity",
+            "in": "query",
+            "required": false,
+            "description": "Activity slug(s) (nested under `facets.categories`), e.g. basketball, running, lifestyle.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": false,
+            "description": "Gender slug(s) from `facets.genders`: men, women, youth, infant.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "required": false,
+            "description": "Colour slug(s) from `facets.colors`, e.g. black or white,black.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "silhouette",
+            "in": "query",
+            "required": false,
+            "description": "Model line(s), the product's `silhouette` in slug form (lowercase, hyphens), e.g. air-jordan-1, dunk or yeezy-boost-350; comma-separated for several.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "release_year",
+            "in": "query",
+            "required": false,
+            "description": "Release year(s), e.g. 2022 or 2022,2023.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "condition",
+            "in": "query",
+            "required": false,
+            "description": "Only products offered in this condition (comma-separated for several): new_no_defects, new_with_defects, used.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "description": "Only products with an offer in this size, e.g. 10, 10.5 (US shoe sizes) or m (apparel); comma-separated for several. Uses the single `gender` given (default men) and `size_type`. A size code such as us_shoes_women_8 is passed as-is.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size_type",
+            "in": "query",
+            "required": false,
+            "description": "What `size` refers to: shoes (default for numbers), tops (default for letters), bottoms, outerwear, dresses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "shoes",
+                "tops",
+                "bottoms",
+                "outerwear",
+                "dresses"
+              ]
+            }
+          },
+          {
+            "name": "min_price_cents",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price, in cents (e.g. 10000 = $100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_price_cents",
+            "in": "query",
+            "required": false,
+            "description": "Highest price, in cents.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "jordan 1",
+                  "sort": null,
+                  "sort_type": 1,
+                  "applied_filters": {
+                    "instant_ship": false,
+                    "under_retail": false
+                  },
+                  "facets": {
+                    "release_years": [
+                      {
+                        "value": "2023",
+                        "slug": "2023",
+                        "count": 510
+                      },
+                      {
+                        "value": "2022",
+                        "slug": "2022",
+                        "count": 464
+                      },
+                      "… 25 more"
+                    ],
+                    "years": [
+                      {
+                        "value": "2023",
+                        "slug": "2023",
+                        "count": 531
+                      },
+                      {
+                        "value": "2022",
+                        "slug": "2022",
+                        "count": 475
+                      },
+                      "… 25 more"
+                    ],
+                    "colors": [
+                      {
+                        "value": "Black",
+                        "slug": "black",
+                        "count": 1303
+                      },
+                      {
+                        "value": "White",
+                        "slug": "white",
+                        "count": 1215
+                      },
+                      "… 16 more"
+                    ],
+                    "brands": [
+                      {
+                        "value": "Air Jordan",
+                        "slug": "air-jordan",
+                        "count": 5778
+                      },
+                      {
+                        "value": "Nike",
+                        "slug": "nike",
+                        "count": 19
+                      }
+                    ],
+                    "categories": [
+                      {
+                        "value": "Footwear",
+                        "slug": "footwear",
+                        "count": 5791
+                      },
+                      {
+                        "value": "Apparel",
+                        "slug": "apparel",
+                        "count": 12
+                      },
+                      "… 2 more"
+                    ],
+                    "genders": [
+                      {
+                        "value": "men",
+                        "slug": "men",
+                        "count": 2391
+                      },
+                      {
+                        "value": "youth",
+                        "slug": "youth",
+                        "count": 1945
+                      },
+                      "… 2 more"
+                    ],
+                    "sizes": [
+                      {
+                        "value": "shoes",
+                        "slug": "shoes",
+                        "count": 0
+                      },
+                      {
+                        "value": "tops",
+                        "slug": "tops",
+                        "count": 0
+                      },
+                      "… 2 more"
+                    ],
+                    "price_min": [
+                      {
+                        "value": "",
+                        "slug": "",
+                        "count": 0
+                      }
+                    ],
+                    "price_max": [
+                      {
+                        "value": "",
+                        "slug": "",
+                        "count": 0
+                      }
+                    ],
+                    "conditions": [
+                      {
+                        "value": "new_no_defects",
+                        "slug": "new_no_defects",
+                        "count": 4743
+                      },
+                      {
+                        "value": "used",
+                        "slug": "used",
+                        "count": 3184
+                      },
+                      "… 2 more"
+                    ],
+                    "instant_ship": [
+                      {
+                        "value": "2982",
+                        "slug": "2982",
+                        "count": 0
+                      }
+                    ],
+                    "under_retail": [
+                      {
+                        "value": "725",
+                        "slug": "725",
+                        "count": 0
+                      }
+                    ]
+                  },
+                  "page": 1,
+                  "total_results": 5805,
+                  "next_page": 2,
+                  "products": [
+                    {
+                      "id": "1469452",
+                      "name": "Fragment Design x Travis Scott x Air Jordan 1 Retro Low OG SP 'Sail Military Blue'",
+                      "slug": "fragment-design-x-travis-scott-x-air-jordan-1-low-og-sp-sail-military-blue-dm7866-104",
+                      "brand": "Air Jordan",
+                      "category": "shoes",
+                      "color": null,
+                      "sku": null,
+                      "release_date": {
+                        "seconds": 1763251199,
+                        "nanos": 0
+                      },
+                      "lowest_price_cents": 48100,
+                      "currency": "USD",
+                      "image": "https://image.goat.com/attachments/product_template_pictures/images/112/426/275/original/1469452_00.png.png",
+                      "url": "https://www.goat.com/sneakers/fragment-design-x-travis-scott-x-air-jordan-1-low-og-sp-sail-military-blue-dm7866-104",
+                      "gender": "men",
+                      "product_type": "sneakers",
+                      "silhouette": "Air Jordan 1",
+                      "designer": null,
+                      "nickname": null,
+                      "season": null,
+                      "status": "active",
+                      "upper_material": null,
+                      "size_range": null,
+                      "main_picture_url": null,
+                      "grid_picture_url": null,
+                      "instant_ship_lowest_price_cents": 50400,
+                      "retail_price_cents": 15000,
+                      "in_stock": true,
+                      "special_display_price_cents": null
+                    },
+                    {
+                      "id": "55279",
+                      "name": "Air Jordan 1 High 'Chicago' 1985",
+                      "slug": "air-jordan-1-high-1985-4280",
+                      "brand": "Air Jordan",
+                      "category": "shoes",
+                      "color": null,
+                      "sku": null,
+                      "release_date": {
+                        "seconds": 495590399,
+                        "nanos": 999000000
+                      },
+                      "lowest_price_cents": 2505900,
+                      "currency": "USD",
+                      "image": "https://image.goat.com/attachments/product_template_pictures/images/081/144/938/original/55279_00.png.png",
+                      "url": "https://www.goat.com/sneakers/air-jordan-1-high-1985-4280",
+                      "gender": "men",
+                      "product_type": "sneakers",
+                      "silhouette": "Air Jordan 1",
+                      "designer": null,
+                      "nickname": null,
+                      "season": null,
+                      "status": "active",
+                      "upper_material": null,
+                      "size_range": null,
+                      "main_picture_url": null,
+                      "grid_picture_url": null,
+                      "instant_ship_lowest_price_cents": null,
+                      "retail_price_cents": 6500,
+                      "in_stock": true,
+                      "special_display_price_cents": null
+                    },
+                    "… 10 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/goat/v1/sizes": {
+      "get": {
+        "operationId": "goatSizes",
+        "summary": "GOAT lowest ask per size",
+        "description": "Every size of a GOAT product with its lowest ask, the condition and box condition of that offer, stock status, the instant-ship ask and the last sold price, plus the full list of size, condition and box-condition combinations. Prices are in cents. Pass `q` to open the first current search result, or an `id` or product `url`. Pass `size` for the price of one size only. Every response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/goat-sizes",
+        "tags": [
+          "GOAT"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words; the first current result is used. Either q, id or url is required.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "dunk low"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "GOAT product id (the `id` from /goat/v1/search).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A GOAT product link (https://www.goat.com/sneakers/<slug>) or its slug.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "condition",
+            "in": "query",
+            "required": false,
+            "description": "Only offers in this condition.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "new_no_defects",
+                "new_with_defects",
+                "used"
+              ]
+            }
+          },
+          {
+            "name": "in_stock",
+            "in": "query",
+            "required": false,
+            "description": "Only sizes and conditions that have an ask right now.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "description": "One size only, e.g. 10, 10.5 or M (as in `sizes[].size`). 404 when the product does not list that size.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter market code (default US).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "product_id": "719082",
+                  "slug": "dunk-low-black-white-dd1391-100",
+                  "country": "US",
+                  "count": 27,
+                  "sizes": [
+                    {
+                      "size": "3",
+                      "size_value": 3,
+                      "price_cents": null,
+                      "currency": "USD",
+                      "condition": null,
+                      "box_condition": null,
+                      "stock": "not_in_stock",
+                      "instant_ship_ask_cents": null,
+                      "last_sold_cents": 14100,
+                      "offers": 0
+                    },
+                    {
+                      "size": "3.5",
+                      "size_value": 3.5,
+                      "price_cents": null,
+                      "currency": "USD",
+                      "condition": null,
+                      "box_condition": null,
+                      "stock": "not_in_stock",
+                      "instant_ship_ask_cents": null,
+                      "last_sold_cents": 16200,
+                      "offers": 0
+                    },
+                    "… 25 more"
+                  ],
+                  "variants": [
+                    {
+                      "size": "3",
+                      "size_value": 3,
+                      "condition": "new_no_defects",
+                      "box_condition": "good_condition",
+                      "lowest_ask_cents": null,
+                      "instant_ship_ask_cents": null,
+                      "last_sold_cents": 14100,
+                      "currency": "USD",
+                      "stock": "not_in_stock"
+                    },
+                    {
+                      "size": "3.5",
+                      "size_value": 3.5,
+                      "condition": "new_no_defects",
+                      "box_condition": "good_condition",
+                      "lowest_ask_cents": null,
+                      "instant_ship_ask_cents": null,
+                      "last_sold_cents": 16200,
+                      "currency": "USD",
+                      "stock": "not_in_stock"
+                    },
+                    "… 190 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

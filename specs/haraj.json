@@ -1,0 +1,1459 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Haraj",
+    "version": "1.0.0",
+    "description": "The Haraj API from API.SH: public Haraj data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Haraj",
+      "description": "6 endpoints (e-commerce)",
+      "x-slug": "haraj",
+      "x-domains": [
+        "haraj.com.sa"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/haraj/v1/categories": {
+      "get": {
+        "operationId": "harajCategories",
+        "summary": "Haraj category tree",
+        "description": "Haraj's categories (tags): cars by make and model, real estate, devices, furniture, jobs and the rest, each with id, parent id, the tag the search takes, Arabic and English names, type, order, link, icon and its sub-categories down to the depth asked.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/haraj-categories",
+        "tags": [
+          "Haraj"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "One category and its sub-tree, e.g. 1 = cars, 5 = Toyota (default: the whole tree).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1"
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "required": false,
+            "description": "How many levels of sub-categories (0-5, default 3).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1",
+                  "category": {
+                    "id": "1",
+                    "parent_id": "0",
+                    "tag": "حراج السيارات",
+                    "name_ar": "سيارات",
+                    "name_en": "Cars",
+                    "type": "MAIN",
+                    "order": 1,
+                    "url": "https://haraj.com.sa/tags/%D8%AD%D8%B1%D8%A7%D8%AC_%D8%A7%D9%84%D8%B3%D9%8A%D8%A7%D8%B1%D8%A7%D8%AA",
+                    "icon": "https://v8-cdn.haraj.com.sa/icons/home/cars.svg",
+                    "children_count": 93,
+                    "children": [
+                      {
+                        "id": "5",
+                        "parent_id": "1",
+                        "tag": "تويوتا",
+                        "name_ar": "تويوتا",
+                        "name_en": "Toyota",
+                        "type": "CAR",
+                        "order": 10,
+                        "url": "https://haraj.com.sa/tags/%D8%AA%D9%88%D9%8A%D9%88%D8%AA%D8%A7",
+                        "icon": null,
+                        "children_count": 34,
+                        "children": [
+                          {
+                            "…": "11 fields"
+                          },
+                          {
+                            "…": "11 fields"
+                          },
+                          "… 32 more"
+                        ]
+                      },
+                      {
+                        "id": "16",
+                        "parent_id": "1",
+                        "tag": "هونداي",
+                        "name_ar": "هيونداي",
+                        "name_en": "Hyundai",
+                        "type": "CAR",
+                        "order": 26,
+                        "url": "https://haraj.com.sa/tags/%D9%87%D9%88%D9%86%D8%AF%D8%A7%D9%8A",
+                        "icon": null,
+                        "children_count": 27,
+                        "children": [
+                          {
+                            "…": "11 fields"
+                          },
+                          {
+                            "…": "11 fields"
+                          },
+                          "… 25 more"
+                        ]
+                      },
+                      "… 91 more"
+                    ]
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/haraj/v1/cities": {
+      "get": {
+        "operationId": "harajCities",
+        "summary": "Haraj regions and cities",
+        "description": "The Saudi regions Haraj groups its ads by and their cities, with Arabic and English names, ids and the city name the search takes as `city`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/haraj-cities",
+        "tags": [
+          "Haraj"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 21,
+                  "city_count": 88,
+                  "regions": [
+                    {
+                      "region": "الرياض",
+                      "region_en": "Riyadh",
+                      "cities": [
+                        {
+                          "id": 113,
+                          "city": "الرياض",
+                          "city_en": "Riyadh",
+                          "search_url": "https://haraj.com.sa/city/%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6"
+                        },
+                        {
+                          "id": 13,
+                          "city": "الخرج",
+                          "city_en": "Al-Kharj",
+                          "search_url": "https://haraj.com.sa/city/%D8%A7%D9%84%D8%AE%D8%B1%D8%AC"
+                        },
+                        "… 16 more"
+                      ]
+                    },
+                    {
+                      "region": "الشرقيه",
+                      "region_en": "Eastern Region",
+                      "cities": [
+                        {
+                          "id": 18,
+                          "city": "الدمام",
+                          "city_en": "Dammam",
+                          "search_url": "https://haraj.com.sa/city/%D8%A7%D9%84%D8%AF%D9%85%D8%A7%D9%85"
+                        },
+                        {
+                          "id": 12,
+                          "city": "الخبر",
+                          "city_en": "Al Khobar",
+                          "search_url": "https://haraj.com.sa/city/%D8%A7%D9%84%D8%AE%D8%A8%D8%B1"
+                        },
+                        "… 15 more"
+                      ]
+                    },
+                    "… 19 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/haraj/v1/comments": {
+      "get": {
+        "operationId": "harajComments",
+        "summary": "Haraj ad comments",
+        "description": "The public comments under a Haraj ad: id, author, author id and level, new-member flag, text, date, status, deletion reason, order, and whether it replies to another comment. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/haraj-comments",
+        "tags": [
+          "Haraj"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "The ad id, or a haraj.com.sa/11<id>/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "191909227"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "An ad link instead of the id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "oldest (default) or newest first.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "oldest",
+                "newest"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "191909227",
+                  "url": "https://haraj.com.sa/11191909227/",
+                  "order": "oldest",
+                  "page": 1,
+                  "count": 1,
+                  "next_page": null,
+                  "comments": [
+                    {
+                      "id": 569656424,
+                      "author": "عضو 77 31436",
+                      "author_id": 21024928,
+                      "author_level": 1,
+                      "new_user": false,
+                      "text": "ابي اسوم ب 50",
+                      "date": "2026-11-03T14:59:25.000Z",
+                      "status": 1,
+                      "deleted_reason": "",
+                      "sequence": 1,
+                      "reply": false,
+                      "reply_to": 0,
+                      "mention": null
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/haraj/v1/listing": {
+      "get": {
+        "operationId": "harajListing",
+        "summary": "Haraj ad details",
+        "description": "One Haraj ad: title, text, price, city and neighbourhood, dates, tags, attributes, car and real-estate details, photos and comment counts. Pass `id`, `url`, or `latest=1` with search params. Private sellers' names, phone numbers and email addresses are never returned (masked in ad text).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/haraj-listing",
+        "tags": [
+          "Haraj"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Haraj ad id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Haraj ad url.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`1`: open the first current result of a search made with this route's search params (q, location and filters) instead of an id. Ads expire, so this keeps a link working.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search keywords (with latest=1).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ايفون"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "description": "Tag (with latest=1).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "191949288",
+                  "url": "https://haraj.com.sa/11191949288/ايفون_14_برو_للبيع/",
+                  "title": "ايفون 14 برو للبيع",
+                  "description": "السلام عليكم \nجوال ايفون 14. برو للبيع \nمافي اي تغير ولا وشي  \nبطريته 73\nوالقيقا 128\nالله يجزآكم خير",
+                  "price": null,
+                  "currency": "SAR",
+                  "city": "الشرقيه",
+                  "district": "الجبيل",
+                  "neighborhood": "الصفاة",
+                  "geohash": "thg39v",
+                  "posted": "2026-11-04T05:07:26.000Z",
+                  "updated": "2026-11-04T05:07:26.000Z",
+                  "type": "AD",
+                  "status": true,
+                  "promoted": false,
+                  "tags": [
+                    "حراج الأجهزة",
+                    "ابل Apple",
+                    "… 1 more"
+                  ],
+                  "attributes": {
+                    "iphone_Storage": "+1 555 010 0000",
+                    "iphone_Model": "+1 555 010 0000",
+                    "iphone_Condition": "USED"
+                  },
+                  "car": null,
+                  "real_estate": null,
+                  "job": null,
+                  "images": [],
+                  "has_video": false,
+                  "comments": 0,
+                  "comments_enabled": true,
+                  "up_rank": 0,
+                  "down_rank": 0,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/haraj/v1/search": {
+      "get": {
+        "operationId": "harajSearch",
+        "summary": "Search Haraj ads",
+        "description": "Haraj (Saudi Arabia) classified ads for an Arabic or English keyword, or a tag (category): title, text, price (SAR), city, district and neighbourhood, posting and update times, tags, attributes, car and real-estate details, photos and comment counts. The newest matching ads (about 20 a page); `has_more` tells whether the site has more, and `page` fetches the next ones. Filter by `city`, price range (`min_price` / `max_price`, keyword searches) and `sort=newest` (newest posted first); with any of these the response also echoes `page`, `city`, `min_price`, `max_price` and `sort`. Private sellers' names, phone numbers and email addresses are never returned (masked in ad text).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/haraj-search",
+        "tags": [
+          "Haraj"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords (Arabic or English).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ايفون"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "description": "A Haraj tag (category) instead of keywords, e.g. حراج السيارات.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Results page, 1-100 (about 20 ads a page). Pass page+1 while `has_more` is true.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "Only ads in this city, as Haraj names it (Arabic), e.g. الرياض, جده, الدمام.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price (SAR). Needs q.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Highest price (SAR). Needs q.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "default (the site's order) or newest (newest posted first).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "default",
+                "newest"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "ايفون",
+                  "tag": null,
+                  "count": 21,
+                  "has_more": true,
+                  "results": [
+                    {
+                      "id": "191909227",
+                      "url": "https://haraj.com.sa/11191909227/ايفون_17_برو_ماكس_ازرق_جديد/",
+                      "title": "ايفون 17 برو ماكس ( ازرق ) جديد",
+                      "description": "ايفون 17 برو ماكس\nحجم الشاشه 6.9 بوصه\nجهاز جديد\n256  جيجا بايت",
+                      "price": null,
+                      "currency": "SAR",
+                      "city": "الشرقيه",
+                      "district": "الدمام",
+                      "neighborhood": "بدر",
+                      "geohash": "thew4r",
+                      "posted": "2026-11-03T14:03:53.000Z",
+                      "updated": "2026-11-03T14:03:53.000Z",
+                      "type": "AD",
+                      "status": true,
+                      "promoted": false,
+                      "tags": [
+                        "حراج الأجهزة",
+                        "ابل Apple",
+                        "… 1 more"
+                      ],
+                      "attributes": {
+                        "iphone_Storage": "+1 555 010 0000",
+                        "iphone_Condition": "NEW",
+                        "iphone_Color": "BLUE",
+                        "iphone_Model": "+1 555 010 0000"
+                      },
+                      "car": null,
+                      "real_estate": null,
+                      "job": null,
+                      "images": [
+                        "https://mimg6cdn.haraj.com.sa/userfiles30/2026-11-3/1024x768-1_-qe5tlvkZh6QGlA.jpg",
+                        "https://mimg6cdn.haraj.com.sa/userfiles30/2026-11-3/768x1024-1_-6Xjx9TJmOWOzMy.jpg"
+                      ],
+                      "has_video": false,
+                      "comments": 1,
+                      "comments_enabled": true,
+                      "up_rank": 0,
+                      "down_rank": 0
+                    },
+                    {
+                      "id": "191909711",
+                      "url": "https://haraj.com.sa/11191909711/ايفون_17_برو_ماكس_256/",
+                      "title": "ايفون 17 برو ماكس 256",
+                      "description": "ايفون 17 برو ماكس 256 برتقالي\nم يعاني من اي شي ولا يوجد خدوش ولا كسور اخو الجديد \nبطارية 96 \n272 دورة شحن \nعلى السوم\nعن طريق الواتس او البرن…",
+                      "price": null,
+                      "currency": "SAR",
+                      "city": "الرياض",
+                      "district": "الرياض",
+                      "neighborhood": "العريجاء الوسطى",
+                      "geohash": "th35uz",
+                      "posted": "2026-11-03T14:09:36.000Z",
+                      "updated": "2026-11-03T14:09:36.000Z",
+                      "type": "AD",
+                      "status": true,
+                      "promoted": false,
+                      "tags": [
+                        "حراج الأجهزة",
+                        "ابل Apple",
+                        "… 1 more"
+                      ],
+                      "attributes": {
+                        "iphone_Storage": "+1 555 010 0000",
+                        "iphone_Model": "+1 555 010 0000",
+                        "iphone_Color": "COSMICORANGE",
+                        "iphone_Condition": "USED"
+                      },
+                      "car": null,
+                      "real_estate": null,
+                      "job": null,
+                      "images": [
+                        "https://mimg6cdn.haraj.com.sa/userfiles30/2026-11-03/1800x1800_75CE0654-1E86-4FDA-86EA-45C06AFBEEB6.jpg",
+                        "https://mimg6cdn.haraj.com.sa/userfiles30/2026-11-03/828x1800_7DAFC298-7036-4020-B130-1203D7DD0977.jpg"
+                      ],
+                      "has_video": false,
+                      "comments": 0,
+                      "comments_enabled": true,
+                      "up_rank": 0,
+                      "down_rank": 0
+                    },
+                    "… 19 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/haraj/v1/seller": {
+      "get": {
+        "operationId": "harajSeller",
+        "summary": "Haraj member profile and ads",
+        "description": "A Haraj member's public profile (id, username, handle, registration date, last seen, followers, membership, realtor and verified-identity flags, badges, up and down ratings) and their current ads with price, city, neighborhood, attributes, car and real-estate details, photos, dates and comment counts. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/haraj-seller",
+        "tags": [
+          "Haraj"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "description": "The member name or a haraj.com.sa/users/<name> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ABDULLAH"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page of ads (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 1890,
+                  "username": "ABDULLAH",
+                  "handle": "@id1890_ABDULLAH",
+                  "url": "https://haraj.com.sa/users/ABDULLAH",
+                  "registered": "2009-06-02T13:59:34.000Z",
+                  "last_seen": null,
+                  "followers": 32,
+                  "member": null,
+                  "realtor": null,
+                  "verified_identity": false,
+                  "message": "",
+                  "badges": [],
+                  "rating": {
+                    "up": 0,
+                    "down": 0,
+                    "paid_up": 0,
+                    "paid_down": 0,
+                    "average": 0
+                  },
+                  "page": 1,
+                  "count": 0,
+                  "next_page": null,
+                  "ads": [],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

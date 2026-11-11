@@ -1,0 +1,2248 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: ClickBus",
+    "version": "1.0.0",
+    "description": "The ClickBus API from API.SH: public ClickBus data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "ClickBus",
+      "description": "9 endpoints (travel & events)",
+      "x-slug": "clickbus",
+      "x-domains": [
+        "clickbus.com.br"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clickbus/v1/company": {
+      "get": {
+        "operationId": "clickbusCompany",
+        "summary": "ClickBus bus company",
+        "description": "A bus company page on ClickBus: name, description, passenger review tags, the page sections (history, fleet, routes, seat classes with recline and width) and the FAQ.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clickbus-company",
+        "tags": [
+          "ClickBus"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "Company slug, e.g. `cometa`, `1001`, `aguia-branca`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "cometa"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "cometa",
+                  "url": "https://www.clickbus.com.br/viacao/cometa",
+                  "name": "Cometa",
+                  "title": "Viação Cometa: passagens de ônibus | ClickBus",
+                  "description": "Compre passagem de ônibus Viação Cometa na ClickBus. Garanta os melhores horários e preços a partir de R$ 19,90. Reserve sua passagem online…",
+                  "review_tags": [
+                    "Tradição que você sente na estrada",
+                    "Frota moderna e bem conservada",
+                    "… 9 more"
+                  ],
+                  "sections": [
+                    {
+                      "heading": "Olá, viajante",
+                      "text": "Entre com sua conta para começarEntrar na contaAinda não tem uma conta? Criar conta\nClube ClickBusNovo!OfertasPedidosAjudaExplorar"
+                    },
+                    {
+                      "heading": "Cometa e ClickBus: parceria que transforma sua viagem",
+                      "text": "Integrante do Grupo JCA, uma das maiores holding de transportes do Brasil, a Cometa opera rotas entre os principais centros urbanos do Sul e…"
+                    },
+                    "… 18 more"
+                  ],
+                  "faq": [
+                    {
+                      "question": "Como compro passagem da Cometa pela ClickBus?",
+                      "answer": "É simples: acesse o site ou o app da ClickBus, insira sua origem, destino e data, filtre pela viação Cometa e escolha o horário e a classe q…"
+                    },
+                    {
+                      "question": "Quais são os principais destinos atendidos pela Cometa?",
+                      "answer": "A viação Cometa conecta São Paulo a destinos como Curitiba, Santos, cidades do litoral paulista e municípios do interior de SP e do Sul do B…"
+                    },
+                    "… 6 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clickbus/v1/destination": {
+      "get": {
+        "operationId": "clickbusDestination",
+        "summary": "ClickBus destination page",
+        "description": "The ClickBus page of a destination city: description, terminals (address, phone), companies serving it and the promotional fares into it (origin, date, price, discount, sale type), cheapest first.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clickbus-destination",
+        "tags": [
+          "ClickBus"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "city",
+            "in": "query",
+            "required": true,
+            "description": "City slug, e.g. `paranagua-pr`, `florianopolis-sc` (from `/clickbus/v1/places` or `/clickbus/v1/stations`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "florianopolis-sc"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "florianopolis-sc",
+                  "url": "https://www.clickbus.com.br/onibus/florianopolis-sc",
+                  "name": "Sua Viagem para Florianópolis, SC Começa Aqui",
+                  "place": {
+                    "id": 2953,
+                    "name": "Florianopolis, SC",
+                    "slug": "florianopolis-sc"
+                  },
+                  "about": "Conhecida como a 'Ilha da Magia', Florianópolis faz jus à fama com uma diversidade que encanta a todos. A capital catarinense é um mosaico d…",
+                  "image": "https://static.clickbus.com/live/ClickBus/destinos/conheca/conheca-destino-praia.webp",
+                  "terminals": [
+                    {
+                      "name": "Florianopolis - Rodoviária",
+                      "address": "Av. Paulo Fontes, 1101 - Centro, Florianópolis, SC - 88085-000",
+                      "phone": " ",
+                      "slug": "florianopolis-sc",
+                      "has_station_page": true
+                    },
+                    {
+                      "name": "Aeroporto Internacional de Florianópolis",
+                      "address": "Rod. Ac. ao Aeroporto, 6200 - Base Aérea, Florianópolis - SC, 88047-902",
+                      "phone": "+1 555 010 0000",
+                      "slug": "florianopolis-aeroporto-sc",
+                      "has_station_page": false
+                    }
+                  ],
+                  "companies": [
+                    {
+                      "name": "Catarinense",
+                      "slug": "catarinense"
+                    },
+                    {
+                      "name": "Eucatur",
+                      "slug": "eucatur"
+                    },
+                    "… 7 more"
+                  ],
+                  "nearby_cities": {},
+                  "offer_count": 0,
+                  "offers": [],
+                  "faq": [
+                    {
+                      "question": "Quais as principais cidades com rota de ônibus para Florianópolis?",
+                      "answer": "Florianópolis é um destino muito procurado na região Sul, com rotas populares partindo de Curitiba, Porto Alegre, São Paulo e diversas cidad…"
+                    },
+                    {
+                      "question": "Quais viações de ônibus viajam para Florianópolis?",
+                      "answer": "Grandes empresas de ônibus com forte atuação no Sul do país operam rotas para Florianópolis, como a Viação Catarinense, Reunidas e Santo Anj…"
+                    },
+                    "… 6 more"
+                  ],
+                  "title": "Passagem de Ônibus para Florianopolis, SC - Garanta já! | Clickbus",
+                  "description": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clickbus/v1/itinerary": {
+      "get": {
+        "operationId": "clickbusItinerary",
+        "summary": "ClickBus trip itinerary",
+        "description": "Itinerary of one trip from `/clickbus/v1/trips`: each leg with departure and arrival terminal, address, date and time, duration, waiting time, seat class, company, bus features and intermediate stops when the company publishes them. Trip ids stop working after departure. Without `trip_id`, give `origin` and `destination` (and `days_ahead`) for the first trip on that route and day.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clickbus-itinerary",
+        "tags": [
+          "ClickBus"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "trip_id",
+            "in": "query",
+            "required": false,
+            "description": "Trip id from `/clickbus/v1/trips` (`trip_ids`); up to four, comma-separated, for a connection.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "description": "Origin place slug, when no `trip_id` is given.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": false,
+            "description": "Destination place slug, when no `trip_id` is given.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days_ahead",
+            "in": "query",
+            "required": false,
+            "description": "Day of that trip, days from today (default 30).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "trip_ids": [
+                    "194e7239-8ff5-3d8f-8da8-d6289e51bfbe"
+                  ],
+                  "total_duration": "06:30:00",
+                  "steps": [
+                    {
+                      "trip_id": "194e7239-8ff5-3d8f-8da8-d6289e51bfbe",
+                      "leg": 1,
+                      "duration": "06:30:00",
+                      "waiting_time": null,
+                      "departure": {
+                        "place": "Sao Paulo, SP - Tiete",
+                        "city": "São Paulo",
+                        "state": "SP",
+                        "address": "Av Cruzeiro do Sul - 1800 - Santana - Tiete - SP - 02031-000",
+                        "slug": "sao-paulo-tiete-sp",
+                        "date": "2026-12-04",
+                        "time": "00:05"
+                      },
+                      "arrival": {
+                        "place": "Rio de Janeiro, RJ - Rodoviaria do Rio",
+                        "city": "Rio de Janeiro",
+                        "state": "RJ",
+                        "address": "Av Francisco Bicalho - 1 - Santo Cristo - Rio de Janeiro - RJ",
+                        "slug": "rio-de-janeiro-rj",
+                        "date": "2026-12-04",
+                        "time": "06:35"
+                      },
+                      "service_class": "Cama",
+                      "company": {
+                        "id": 11,
+                        "name": "Expresso Do Sul",
+                        "slug": "expresso-do-sul",
+                        "logo": "https://cms.clickbus.com/api/media-logos/logo/expresso-do-sul.svg"
+                      },
+                      "bus_features": {
+                        "airConditioning": true,
+                        "seatRecline": 170,
+                        "bathroom": true,
+                        "legSupport": true
+                      },
+                      "stops": []
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clickbus/v1/low-fare-date": {
+      "get": {
+        "operationId": "clickbusLowFareDate",
+        "summary": "ClickBus nearest low-fare date",
+        "description": "The date nearest to a given day on which ClickBus has a low fare between two places (the place ids `/clickbus/v1/trips` returns as `place_id`). Search after, before or both ways.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clickbus-low-fare-date",
+        "tags": [
+          "ClickBus"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "origin_id",
+            "in": "query",
+            "required": true,
+            "description": "Origin place id (`departure.place_id` in `/clickbus/v1/trips`).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "4017"
+          },
+          {
+            "name": "destination_id",
+            "in": "query",
+            "required": true,
+            "description": "Destination place id (`arrival.place_id`).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "3827"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Reference date, YYYY-MM-DD. Default: `days_ahead`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days_ahead",
+            "in": "query",
+            "required": false,
+            "description": "Reference date this many days from today (default 30).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "description": "Search direction (default both).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "both",
+                "after",
+                "before"
+              ]
+            }
+          },
+          {
+            "name": "interval_days",
+            "in": "query",
+            "required": false,
+            "description": "Search window in days, 1-90.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "origin_id": 4017,
+                  "destination_id": 3827,
+                  "date": "2026-12-04",
+                  "direction": "both",
+                  "interval_days": null,
+                  "nearest_low_fare_date": "2026-12-03",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clickbus/v1/places": {
+      "get": {
+        "operationId": "clickbusPlaces",
+        "summary": "ClickBus place autocomplete",
+        "description": "Bus places (cities and terminals) matching a name, as the ClickBus search box suggests them: id, name, slug (the value `/clickbus/v1/trips` takes), whether the slug covers every terminal in the city, city name and id. Or the places near a point with `lat`, `lon` and `radius_km`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clickbus-places",
+        "tags": [
+          "ClickBus"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "City or terminal name, 2+ characters, e.g. `campinas`, `rio de janeiro`. Give `q` or `lat` and `lon`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "campinas"
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Latitude for places near a point.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": false,
+            "description": "Longitude for places near a point.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "description": "Search radius for `lat`/`lon`, 1-300 km (default 30).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results, 1-50 (default 10).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "campinas",
+                  "count": 10,
+                  "places": [
+                    {
+                      "id": 78764,
+                      "name": "Campinas, SP - TODOS",
+                      "slug": "campinas-sp-todos",
+                      "all_terminals_in_city": true,
+                      "city": "Campinas",
+                      "city_id": 721,
+                      "distance_km": null,
+                      "latitude": null,
+                      "longitude": null
+                    },
+                    {
+                      "id": 2505,
+                      "name": "Campinas, SP",
+                      "slug": "campinas-sp",
+                      "all_terminals_in_city": false,
+                      "city": "Campinas",
+                      "city_id": 721,
+                      "distance_km": null,
+                      "latitude": null,
+                      "longitude": null
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clickbus/v1/route": {
+      "get": {
+        "operationId": "clickbusRoute",
+        "summary": "ClickBus route page",
+        "description": "The ClickBus page of a route: lowest and highest fare and number of offers, the terminals at both ends (address, phone), every company on the route with its passenger rating (average, number of reviews and scores for driver courtesy, safety, cleanliness, punctuality, bus condition, seat comfort and baggage care) and the seat classes sold.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clickbus-route",
+        "tags": [
+          "ClickBus"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "origin",
+            "in": "query",
+            "required": true,
+            "description": "Origin place slug, e.g. `sao-paulo-tiete-sp`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "sao-paulo-tiete-sp"
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": true,
+            "description": "Destination place slug, e.g. `rio-de-janeiro-rj`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "rio-de-janeiro-rj"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "origin": "sao-paulo-tiete-sp",
+                  "destination": "rio-de-janeiro-rj",
+                  "url": "https://www.clickbus.com.br/onibus/sao-paulo-tiete-sp/rio-de-janeiro-rj",
+                  "title": "Passagens de São Paulo, SP para Rio de Janeiro, RJ: Compare preços | ClickBus",
+                  "lowest_price": 100.26,
+                  "highest_price": 399.9,
+                  "offer_count": 193,
+                  "currency": "BRL",
+                  "terminals": [
+                    {
+                      "slug": "sao-paulo-tiete-sp",
+                      "name": "São Paulo - Rodoviária do Tietê",
+                      "address": "Av Cruzeiro do Sul - 1800 - Santana - Tiete - SP - 02031-000",
+                      "phone": null,
+                      "has_station_page": true
+                    },
+                    {
+                      "slug": "rio-de-janeiro-rj",
+                      "name": "Rio De Janeiro - Rodoviária Novo Rio",
+                      "address": "Av Francisco Bicalho - 1 - Santo Cristo - Rio de Janeiro - RJ",
+                      "phone": "+1 555 010 0000",
+                      "has_station_page": true
+                    }
+                  ],
+                  "companies": [
+                    {
+                      "id": 11,
+                      "name": "Expresso Do Sul",
+                      "slug": "expresso-do-sul",
+                      "logo": "https://cms.clickbus.com/api/media-logos/logo/expresso-do-sul.svg",
+                      "rating": {
+                        "average": 4.01,
+                        "reviews": 706,
+                        "aspects": [
+                          {
+                            "…": "3 fields"
+                          },
+                          {
+                            "…": "3 fields"
+                          },
+                          "… 5 more"
+                        ]
+                      }
+                    },
+                    {
+                      "id": 37,
+                      "name": "Águia Branca",
+                      "slug": "aguia-branca",
+                      "logo": "https://cms.clickbus.com/api/media-logos/logo/aguia-branca.svg",
+                      "rating": {
+                        "average": 4.09,
+                        "reviews": 2695,
+                        "aspects": [
+                          {
+                            "…": "3 fields"
+                          },
+                          {
+                            "…": "3 fields"
+                          },
+                          "… 5 more"
+                        ]
+                      }
+                    },
+                    "… 8 more"
+                  ],
+                  "service_classes": [
+                    {
+                      "id": 3,
+                      "name": "Semi-leito"
+                    },
+                    {
+                      "id": 4,
+                      "name": "Leito"
+                    },
+                    "… 3 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clickbus/v1/station": {
+      "get": {
+        "operationId": "clickbusStation",
+        "summary": "ClickBus bus station",
+        "description": "A bus station page on ClickBus: name, address, phone, coordinates, description, services (accessibility, ATMs, food, parking…), companies operating there, sample fares from the station and related stations.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clickbus-station",
+        "tags": [
+          "ClickBus"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "Station slug, e.g. `ribeirao-preto-sp`, `curitiba-pr`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ribeirao-preto-sp"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "ribeirao-preto-sp",
+                  "name": "Rodoviária de Ribeirão Preto",
+                  "url": "https://www.clickbus.com.br/rodoviaria/ribeirao-preto-sp",
+                  "address": "Avenida Jerônimo Gonçalves, 640 | Ribeirão Preto, SP - 14010-040",
+                  "phone": "+1 555 010 0000",
+                  "latitude": -21.173882,
+                  "longitude": -47.814436,
+                  "about": "A Rodoviária de Ribeirão Preto recebe mais de um milhão de passageiros em suas 17 plataformas ao ano e hoje está baseado dentro do prédio do…",
+                  "services": [
+                    {
+                      "title": "Acessibilidade",
+                      "description": "O terminal Rodoviário de Ribeirão Preto adaptou toda a sua estrutura para o acesso dos usuários deficientes físicos, com rampas, sanitários …",
+                      "icon": "https://static.clickbus.com/live/ClickBus/icones/acessibilidade.png"
+                    },
+                    {
+                      "title": "Caixas Eletrônicos",
+                      "description": "A rodoviária disponibiliza aos usuários: Caixa 24 Horas, Bradesco, Itaú, Banco do Brasil e Caixa Econômica Federal.",
+                      "icon": "https://static.clickbus.com/live/ClickBus/icones/caixas-eletronicos.png"
+                    },
+                    "… 3 more"
+                  ],
+                  "companies": [
+                    {
+                      "name": "Cometa",
+                      "slug": "cometa",
+                      "url": "https://www.clickbus.com.br/viacao/cometa",
+                      "logo": "https://static.clickbus.com/live/ClickBus/logos/cometa.svg"
+                    },
+                    {
+                      "name": "Rapido Ribeirao",
+                      "slug": "rapido-ribeirao",
+                      "url": "https://www.clickbus.com.br/viacao/rapido-ribeirao",
+                      "logo": "https://static.clickbus.com/live/ClickBus/logos/rapido-ribeirao.svg"
+                    },
+                    "… 12 more"
+                  ],
+                  "sample_fares": [
+                    {
+                      "origin": "Ribeirão Preto, SP",
+                      "origin_slug": "ribeirao-preto-sp",
+                      "destination": "São Paulo, SP",
+                      "destination_slug": "sao-paulo-tiete-sp",
+                      "from_price": 86.21,
+                      "currency": "BRL",
+                      "date": null,
+                      "image": "https://static.clickbus.com/live/destinos/landing-pages/onibus-sao-paulo.jpg"
+                    },
+                    {
+                      "origin": "Ribeirão Preto, SP",
+                      "origin_slug": "ribeirao-preto-sp",
+                      "destination": "Rio de Janeiro, DE",
+                      "destination_slug": "rio-de-janeiro-rj",
+                      "from_price": 80.62,
+                      "currency": "BRL",
+                      "date": null,
+                      "image": "https://static.clickbus.com/live/destinos/landing-pages/onibus-rio-de-janeiro.jpg"
+                    },
+                    "… 2 more"
+                  ],
+                  "related_stations": [
+                    {
+                      "name": "Rodoviária de Baneário Camburiú",
+                      "slug": "balneario-camboriu-sc",
+                      "url": "https://www.clickbus.com.br/rodoviaria/balneario-camboriu-sc"
+                    },
+                    {
+                      "name": "Rodoviária de Blumenau",
+                      "slug": "blumenau-sc",
+                      "url": "https://www.clickbus.com.br/rodoviaria/blumenau-sc"
+                    },
+                    "… 2 more"
+                  ],
+                  "faq": [],
+                  "title": "Rodoviária de Ribeirão Preto: Preços e opções de passagens | ClickBus",
+                  "description": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clickbus/v1/stations": {
+      "get": {
+        "operationId": "clickbusStations",
+        "summary": "ClickBus station list",
+        "description": "Every bus terminal ClickBus lists (about 1,900): name, slug, state. Filter by state (UF) or name. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clickbus-stations",
+        "tags": [
+          "ClickBus"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter state (UF), e.g. `SP`, or `INT` for international.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "SP"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Part of the name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, 1-500 (default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "state": "SP",
+                  "query": null,
+                  "total": 292,
+                  "page": 1,
+                  "limit": 100,
+                  "next_page": 2,
+                  "count": 100,
+                  "stations": [
+                    {
+                      "name": "Adamantina",
+                      "slug": "adamantina-sp",
+                      "state": "SP",
+                      "state_name": "São Paulo",
+                      "url": "https://www.clickbus.com.br/onibus/adamantina-sp"
+                    },
+                    {
+                      "name": "Aeroporto de Congonhas",
+                      "slug": "aeroporto-congonhas-sp",
+                      "state": "SP",
+                      "state_name": "São Paulo",
+                      "url": "https://www.clickbus.com.br/onibus/aeroporto-congonhas-sp"
+                    },
+                    "… 98 more"
+                  ],
+                  "regions": {
+                    "Centro-Oeste": [
+                      "DF",
+                      "GO",
+                      "… 1 more"
+                    ],
+                    "Nordeste": [
+                      "BA",
+                      "CE",
+                      "… 3 more"
+                    ],
+                    "Norte": [
+                      "AC",
+                      "AM",
+                      "… 5 more"
+                    ],
+                    "Sudeste": [
+                      "ES",
+                      "MG",
+                      "… 2 more"
+                    ],
+                    "Sul": [
+                      "PR",
+                      "RS",
+                      "… 1 more"
+                    ]
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clickbus/v1/trips": {
+      "get": {
+        "operationId": "clickbusTrips",
+        "summary": "ClickBus bus trips",
+        "description": "Every bus trip ClickBus sells between two places on a date: price and original price (BRL), installments, departure and arrival (date, time, terminal, city, state), duration, bus company, seat class, seats left, low-fare flag and low-fare seats, connections, bus features (air conditioning, bathroom, seat recline, leg rest), electronic boarding pass, and the trip ids for `/clickbus/v1/itinerary`; plus the terminals and companies on the route. Filter by company, departure time window, seat class, direct trips, low fares, max price or gratuity (seniors, ID Jovem, Passe Livre) tickets; sort by departure, price, duration or arrival. With `return_date` the return trips come in `return`. The site lists all trips of a day in one answer (no paging).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clickbus-trips",
+        "tags": [
+          "ClickBus"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "origin",
+            "in": "query",
+            "required": true,
+            "description": "Origin place slug from `/clickbus/v1/places`, e.g. `sao-paulo-tiete-sp` or a whole city `sao-paulo-sp-todos`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "sao-paulo-tiete-sp"
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": true,
+            "description": "Destination place slug, e.g. `rio-de-janeiro-rj`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "rio-de-janeiro-rj"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Departure date, YYYY-MM-DD. Give `date` or `days_ahead`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days_ahead",
+            "in": "query",
+            "required": false,
+            "description": "Departure this many days from today (0-330), instead of `date`.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "30"
+          },
+          {
+            "name": "return_date",
+            "in": "query",
+            "required": false,
+            "description": "Return date, YYYY-MM-DD (optional).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "description": "Bus company slug, e.g. `1001`, `cometa`, `aguia-branca`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_departure_time",
+            "in": "query",
+            "required": false,
+            "description": "Earliest departure, HH:MM.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "max_departure_time",
+            "in": "query",
+            "required": false,
+            "description": "Latest departure, HH:MM.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "service_class",
+            "in": "query",
+            "required": false,
+            "description": "Seat classes, comma-separated names or ids, e.g. `leito,semi-leito` or `4`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "direct_only",
+            "in": "query",
+            "required": false,
+            "description": "`true`: only trips without a connection.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "low_fare_only",
+            "in": "query",
+            "required": false,
+            "description": "`true`: only low-fare trips.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Highest price in BRL.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "gratuity",
+            "in": "query",
+            "required": false,
+            "description": "`true`: trips with gratuity seats (seniors, ID Jovem, Passe Livre).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order (default departure).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "departure",
+                "price",
+                "duration",
+                "arrival"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "asc (default) or desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "applied_filters": {
+                    "origin": "sao-paulo-tiete-sp",
+                    "destination": "rio-de-janeiro-rj",
+                    "date": "2026-12-04",
+                    "return_date": null,
+                    "company": null,
+                    "min_departure_time": null,
+                    "max_departure_time": null,
+                    "service_class": null,
+                    "gratuity": false,
+                    "direct_only": false,
+                    "low_fare_only": false,
+                    "max_price": null,
+                    "sort": "departure",
+                    "order": "asc"
+                  },
+                  "origin": {
+                    "name": "Sao Paulo, SP - Tiete",
+                    "slug": "sao-paulo-tiete-sp",
+                    "city": "São Paulo",
+                    "state": "SP"
+                  },
+                  "destination": {
+                    "name": "Rio de Janeiro, RJ - Rodoviaria do Rio",
+                    "slug": "rio-de-janeiro-rj",
+                    "city": "Rio de Janeiro",
+                    "state": "RJ"
+                  },
+                  "date": "2026-12-04",
+                  "count": 213,
+                  "trips": [
+                    {
+                      "type": "direct",
+                      "trip_ids": [
+                        "194e7239-8ff5-3d8f-8da8-d6289e51bfbe"
+                      ],
+                      "price": 203.99,
+                      "original_price": 239.99,
+                      "currency": "BRL",
+                      "max_installments": 4,
+                      "installment_free": false,
+                      "duration": "6h 30m",
+                      "duration_days": 0,
+                      "departure": {
+                        "date": "2026-12-04",
+                        "time": "00:05",
+                        "datetime": "2026-12-04T00:05:00",
+                        "place": "São Paulo - Rodoviária do Tietê",
+                        "city": "São Paulo",
+                        "state": "SP",
+                        "slug": "sao-paulo-tiete-sp",
+                        "place_id": 4017
+                      },
+                      "arrival": {
+                        "date": "2026-12-04",
+                        "time": "06:35",
+                        "datetime": "2026-12-04T06:35:00",
+                        "place": "Rio De Janeiro - Rodoviária Novo Rio",
+                        "city": "Rio de Janeiro",
+                        "state": "RJ",
+                        "slug": "rio-de-janeiro-rj",
+                        "place_id": 3827
+                      },
+                      "company": {
+                        "name": "Expresso Do Sul",
+                        "slug": "expresso-do-sul",
+                        "logo": "https://cms.clickbus.com/api/media-logos/logo/expresso-do-sul.svg"
+                      },
+                      "service_class": "Cama",
+                      "available_seats": 8,
+                      "low_fare": true,
+                      "connections": 0,
+                      "discount_available": false,
+                      "gratuity_trip": false,
+                      "reservable": true,
+                      "url": "https://www.clickbus.com.br/onibus/sao-paulo-tiete-sp/rio-de-janeiro-rj?departureDate=2026-12-04",
+                      "parts": [
+                        {
+                          "trip_id": "194e7239-8ff5-3d8f-8da8-d6289e51bfbe",
+                          "price": 203.99,
+                          "original_price": 239.99,
+                          "duration": "6h 30m",
+                          "waiting_time": null,
+                          "departure": {
+                            "…": "8 fields"
+                          },
+                          "arrival": {
+                            "…": "8 fields"
+                          },
+                          "service_class": "Cama",
+                          "service_class_id": 5,
+                          "company": {
+                            "…": "3 fields"
+                          },
+                          "available_seats": 8,
+                          "total_seats": 8,
+                          "low_fare": true,
+                          "low_fare_seats": 2,
+                          "electronic_boarding_pass": true,
+                          "air_conditioning": true,
+                          "bathroom": true,
+                          "seat_recline_degrees": 170,
+                          "leg_support": true,
+                          "woman_space": false,
+                          "has_itinerary": false
+                        }
+                      ]
+                    },
+                    {
+                      "type": "direct",
+                      "trip_ids": [
+                        "0e2a0ea7-ce94-33fa-b62e-a7d999fe650f"
+                      ],
+                      "price": 110.99,
+                      "original_price": 129.99,
+                      "currency": "BRL",
+                      "max_installments": 4,
+                      "installment_free": false,
+                      "duration": "6h 30m",
+                      "duration_days": 0,
+                      "departure": {
+                        "date": "2026-12-04",
+                        "time": "00:05",
+                        "datetime": "2026-12-04T00:05:00",
+                        "place": "São Paulo - Rodoviária do Tietê",
+                        "city": "São Paulo",
+                        "state": "SP",
+                        "slug": "sao-paulo-tiete-sp",
+                        "place_id": 4017
+                      },
+                      "arrival": {
+                        "date": "2026-12-04",
+                        "time": "06:35",
+                        "datetime": "2026-12-04T06:35:00",
+                        "place": "Rio De Janeiro - Rodoviária Novo Rio",
+                        "city": "Rio de Janeiro",
+                        "state": "RJ",
+                        "slug": "rio-de-janeiro-rj",
+                        "place_id": 3827
+                      },
+                      "company": {
+                        "name": "Expresso Do Sul",
+                        "slug": "expresso-do-sul",
+                        "logo": "https://cms.clickbus.com/api/media-logos/logo/expresso-do-sul.svg"
+                      },
+                      "service_class": "Semi-leito",
+                      "available_seats": 40,
+                      "low_fare": true,
+                      "connections": 0,
+                      "discount_available": false,
+                      "gratuity_trip": false,
+                      "reservable": true,
+                      "url": "https://www.clickbus.com.br/onibus/sao-paulo-tiete-sp/rio-de-janeiro-rj?departureDate=2026-12-04",
+                      "parts": [
+                        {
+                          "trip_id": "0e2a0ea7-ce94-33fa-b62e-a7d999fe650f",
+                          "price": 110.99,
+                          "original_price": 129.99,
+                          "duration": "6h 30m",
+                          "waiting_time": null,
+                          "departure": {
+                            "…": "8 fields"
+                          },
+                          "arrival": {
+                            "…": "8 fields"
+                          },
+                          "service_class": "Semi-leito",
+                          "service_class_id": 3,
+                          "company": {
+                            "…": "3 fields"
+                          },
+                          "available_seats": 40,
+                          "total_seats": 46,
+                          "low_fare": true,
+                          "low_fare_seats": 4,
+                          "electronic_boarding_pass": true,
+                          "air_conditioning": true,
+                          "bathroom": true,
+                          "seat_recline_degrees": 135,
+                          "leg_support": true,
+                          "woman_space": false,
+                          "has_itinerary": false
+                        }
+                      ]
+                    },
+                    "… 211 more"
+                  ],
+                  "terminals": [
+                    {
+                      "slug": "sao-paulo-tiete-sp",
+                      "name": "São Paulo - Rodoviária do Tietê",
+                      "address": "Av Cruzeiro do Sul - 1800 - Santana - Tiete - SP - 02031-000",
+                      "phone": null
+                    },
+                    {
+                      "slug": "rio-de-janeiro-rj",
+                      "name": "Rio De Janeiro - Rodoviária Novo Rio",
+                      "address": "Av Francisco Bicalho - 1 - Santo Cristo - Rio de Janeiro - RJ",
+                      "phone": "+1 555 010 0000"
+                    }
+                  ],
+                  "companies": [
+                    {
+                      "id": 11,
+                      "name": "Expresso Do Sul",
+                      "slug": "expresso-do-sul",
+                      "logo": "https://cms.clickbus.com/api/media-logos/logo/expresso-do-sul.svg"
+                    },
+                    {
+                      "id": 37,
+                      "name": "Águia Branca",
+                      "slug": "aguia-branca",
+                      "logo": "https://cms.clickbus.com/api/media-logos/logo/aguia-branca.svg"
+                    },
+                    "… 8 more"
+                  ],
+                  "filters": {
+                    "terminalsOrigin": [
+                      {
+                        "id": "sao-paulo-tiete-sp",
+                        "name": "Sao Paulo, SP - Tiete"
+                      }
+                    ],
+                    "terminalsDestination": [
+                      {
+                        "id": "rio-de-janeiro-rj",
+                        "name": "Rio de Janeiro, RJ - Rodoviaria do Rio"
+                      }
+                    ],
+                    "terminalsConnection": [],
+                    "travelCompanies": [
+                      {
+                        "id": "expresso-do-sul",
+                        "name": "Expresso Do Sul"
+                      },
+                      {
+                        "id": "aguia-branca",
+                        "name": "Águia Branca"
+                      },
+                      "… 8 more"
+                    ],
+                    "serviceClasses": [
+                      {
+                        "id": 3,
+                        "name": "Semi-leito"
+                      },
+                      {
+                        "id": 5,
+                        "name": "Cama"
+                      },
+                      "… 3 more"
+                    ]
+                  },
+                  "alternative_date": null,
+                  "available_days_of_week": [],
+                  "redirected_from": null,
+                  "return": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

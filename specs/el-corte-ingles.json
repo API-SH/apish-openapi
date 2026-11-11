@@ -1,0 +1,956 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: El Corte Inglés",
+    "version": "1.0.0",
+    "description": "The El Corte Inglés API from API.SH: public El Corte Inglés data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "El Corte Inglés",
+      "description": "2 endpoints (e-commerce)",
+      "x-slug": "el-corte-ingles",
+      "x-domains": [
+        "elcorteingles.es"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/elcorteingles/v1/product": {
+      "get": {
+        "operationId": "elcorteinglesProduct",
+        "summary": "El Corte Inglés product details",
+        "description": "One El Corte Inglés product: title, brand, EAN, price, original price and discount, availability, seller (for marketplace items: company, city, country), category path, description, specifications, every colour with its images and every variant (size or model) with price, sale price, discount, status and promotions, current promotions, financing offers, return terms and the manufacturer's details.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/elcorteingles-product",
+        "tags": [
+          "El Corte Inglés"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A product code from a product link (e.g. A43102934 or MP_0470146_8004399334601), or the elcorteingles.es product link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "A43102934"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "A43102934",
+                  "title": "Cafetera espresso manual De'Longhi La Specialista Mini Arte EC9155.MB con molinillo integrado - Gris / Negro",
+                  "name": "Cafetera espresso manual De'Longhi La Specialista Mini Arte EC9155.MB con molinillo integrado",
+                  "brand": "De'Longhi",
+                  "url": "https://www.elcorteingles.es/electrodomesticos/A43102934-8004399036826-pr-cafetera-espresso-manual-delonghi-la-specialista-mini-arte-ec9155m…",
+                  "gtin": "8004399036826",
+                  "price": 379,
+                  "original_price": 599,
+                  "discount_percent": 36,
+                  "currency": "EUR",
+                  "status": "ADD",
+                  "seller": {
+                    "name": "El Corte Inglés",
+                    "id": null,
+                    "city": null,
+                    "country": "ESP",
+                    "tax_id": null
+                  },
+                  "marketplace": false,
+                  "categories": [
+                    {
+                      "id": "999.54499013",
+                      "name": "Electrodomésticos",
+                      "slug": "electrodomesticos"
+                    },
+                    {
+                      "id": "999.54529013",
+                      "name": "Cafeteras",
+                      "slug": "cafeteras"
+                    },
+                    "… 1 more"
+                  ],
+                  "breadcrumb": [
+                    "Electrodomésticos",
+                    "Cafeteras",
+                    "… 1 more"
+                  ],
+                  "description": [
+                    {
+                      "heading": null,
+                      "paragraphs": [
+                        "Disfruta de la experiencia barista en casa con la cafetera espresso manual De'Longhi Specialista Arte. Una máquina diseñada para extraer tod…",
+                        "Molinillo integrado con 8 ajustes: la tecnología de molienda integrada garantiza una dosis y un grosor de molienda uniformes en cada uso, ad…",
+                        "… 4 more"
+                      ]
+                    }
+                  ],
+                  "specs": [
+                    {
+                      "group": null,
+                      "name": "Tipo de cafetera",
+                      "value": "Espresso manual"
+                    },
+                    {
+                      "group": null,
+                      "name": "Capacidad del depósito de agua",
+                      "value": "1,5 litros"
+                    },
+                    "… 8 more"
+                  ],
+                  "colors": [
+                    {
+                      "color": "Gris / Negro",
+                      "swatch": "https://cdn.grupoelcorteingles.es/SGFM/dctm/NO_RENDER02/201205/23/___94410O1.png",
+                      "available": true,
+                      "images": [
+                        "https://dam.elcorteingles.es/producto/www-001007741565977-00.jpg",
+                        "https://dam.elcorteingles.es/producto/www-001007741565977-01.jpg",
+                        "… 7 more"
+                      ],
+                      "videos": [
+                        {
+                          "type": "videos",
+                          "url": "https://dam.elcorteingles.es/producto/www-001007741565977-01.mp4",
+                          "sources": [
+                            {
+                              "…": "3 fields"
+                            },
+                            {
+                              "…": "3 fields"
+                            },
+                            "… 1 more"
+                          ],
+                          "mp4": {
+                            "…": "3 fields"
+                          },
+                          "thumbnail": {
+                            "…": "4 fields"
+                          }
+                        }
+                      ],
+                      "variants": [
+                        {
+                          "id": "001007741565977   ",
+                          "gtin": "8004399036826",
+                          "eci_reference": "001007741565977",
+                          "variant": "Variante única",
+                          "variant_type": "Variante",
+                          "title": "Cafetera espresso manual De'Longhi La Specialista Mini Arte EC9155.MB con molinillo integrado - Gris / Negro",
+                          "price": 379,
+                          "original_price": 599,
+                          "discount_percent": 36,
+                          "currency": "EUR",
+                          "status": "ADD",
+                          "marketplace": false,
+                          "seller": null,
+                          "seller_id": "001",
+                          "flags": {
+                            "…": "6 fields"
+                          },
+                          "promos": [
+                            "Línea de crédito ofrecida por Financiera El Corte Inglés E.F.C., S.A. y sujeta a su aprobación.",
+                            "Ahora, puedes contratar \"El Corte Inglés PLUS\", nuestra tarifa plana de envío ¡Pruébalo GRATIS!",
+                            "… 1 more"
+                          ],
+                          "images": [
+                            "https://dam.elcorteingles.es/producto/www-001007741565977-00.jpg",
+                            "https://dam.elcorteingles.es/producto/www-001007741565977-01.jpg",
+                            "… 7 more"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "promotions": [
+                    {
+                      "id": "237489000001",
+                      "text": "Línea de crédito ofrecida por Financiera El Corte Inglés E.F.C., S.A. y sujeta a su aprobación."
+                    },
+                    {
+                      "id": "236708600001",
+                      "text": "Ahora, puedes contratar \"El Corte Inglés PLUS\", nuestra tarifa plana de envío ¡Pruébalo GRATIS!"
+                    },
+                    "… 1 more"
+                  ],
+                  "financing": [
+                    {
+                      "type": "Financia sin intereses (TAE 4,36% - 12,06%)",
+                      "min_apr": "4,36%",
+                      "max_apr": "12,06%"
+                    },
+                    {
+                      "type": "Financia hasta 36 meses",
+                      "min_apr": null,
+                      "max_apr": null
+                    }
+                  ],
+                  "returns": [],
+                  "manufacturer": {
+                    "name": "SIEPER, S.A.",
+                    "address": "CL AV EL PASO(PG I.LOS MAJUELOS),3-38108 LA LAGUNA - Sta.Cruz Tenerife(España)"
+                  },
+                  "keywords": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/elcorteingles/v1/search": {
+      "get": {
+        "operationId": "elcorteinglesSearch",
+        "summary": "Search El Corte Inglés products",
+        "description": "El Corte Inglés (Spain) product search: product id, title, brand, link, image, price, original price and discount, availability, EAN, seller and marketplace flag, promotions, colours, variant count, categories and badges, with the total result count. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/elcorteingles-search",
+        "tags": [
+          "El Corte Inglés"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search words.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "cafetera espresso"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order: relevance (default), price_asc, price_desc, bestseller, newest, rating, discount, availability, name_asc, name_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc",
+                "bestseller",
+                "newest",
+                "rating",
+                "discount",
+                "availability",
+                "name_asc",
+                "name_desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1 for the first. Pass back `next_page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "cafetera espresso",
+                  "applied_filters": {
+                    "sort": "relevance",
+                    "page": 1
+                  },
+                  "total": 238,
+                  "page": 1,
+                  "total_pages": 21,
+                  "next_page": 2,
+                  "count": 8,
+                  "products": [
+                    {
+                      "id": "MP_0470146_8004399334601",
+                      "title": "Cafetera espresso manual De'Longhi Stilosa EC260.BK con sistema Cappuccino Plata",
+                      "name": "Cafetera espresso manual De'Longhi Stilosa EC260.BK con sistema Cappuccino",
+                      "brand": "De'Longhi",
+                      "url": "https://www.elcorteingles.es/electrodomesticos/MP_0470146_8004399334601-8004399334601-pr-cafetera-espresso-manual-delonghi-stilosa-ec260bk-c…",
+                      "image": "https://dam.elcorteingles.es/producto/www-8004399334601-00.jpg",
+                      "price": 99,
+                      "original_price": 153,
+                      "discount_percent": 35,
+                      "currency": "EUR",
+                      "status": "ADD",
+                      "gtin": "8004399334601",
+                      "seller": "DELONGHI",
+                      "marketplace": true,
+                      "promos": [
+                        "Adelántate al Black Friday en electrónica y electrodomésticos",
+                        "Envío GRATIS a España a partir de 99€",
+                        "… 1 more"
+                      ],
+                      "colors": [
+                        "Plata"
+                      ],
+                      "variants": 1,
+                      "categories": [
+                        "Electrodomésticos"
+                      ],
+                      "refurbished": false,
+                      "badges": {
+                        "express": false,
+                        "new": false,
+                        "exclusive": false,
+                        "eci_exclusive": false,
+                        "coming_soon": false,
+                        "express_delivery": false
+                      }
+                    },
+                    {
+                      "id": "MP_0470146_8004399331211",
+                      "title": "Cafetera espresso manual de bomba De´Longhi Dedica Style EC685.W Sistema Cappuccino Blanco",
+                      "name": "Cafetera espresso manual de bomba De´Longhi Dedica Style EC685.W Sistema Cappuccino",
+                      "brand": "De'Longhi",
+                      "url": "https://www.elcorteingles.es/electrodomesticos/MP_0470146_8004399331211-8004399331211-pr-cafetera-espresso-manual-de-bomba-delonghi-dedica-s…",
+                      "image": "https://dam.elcorteingles.es/producto/www-8004399331211-00.jpg",
+                      "price": 139,
+                      "original_price": 244.9,
+                      "discount_percent": 43,
+                      "currency": "EUR",
+                      "status": "ADD",
+                      "gtin": "8004399331211",
+                      "seller": "DELONGHI",
+                      "marketplace": true,
+                      "promos": [
+                        "Adelántate al Black Friday en electrónica y electrodomésticos",
+                        "Envío GRATIS a España a partir de 99€",
+                        "… 1 more"
+                      ],
+                      "colors": [
+                        "Blanco"
+                      ],
+                      "variants": 1,
+                      "categories": [
+                        "Electrodomésticos"
+                      ],
+                      "refurbished": false,
+                      "badges": {
+                        "express": false,
+                        "new": false,
+                        "exclusive": false,
+                        "eci_exclusive": false,
+                        "coming_soon": false,
+                        "express_delivery": false
+                      }
+                    },
+                    "… 6 more"
+                  ],
+                  "sorts": [
+                    "relevance",
+                    "price_asc",
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

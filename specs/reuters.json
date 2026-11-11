@@ -1,0 +1,1396 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Reuters",
+    "version": "1.0.0",
+    "description": "The Reuters API from API.SH: public Reuters data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Reuters",
+      "description": "5 endpoints (news)",
+      "x-slug": "reuters",
+      "x-domains": [
+        "reuters.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reuters/v1/article": {
+      "get": {
+        "operationId": "reutersArticle",
+        "summary": "Reuters article metadata",
+        "description": "One article's metadata by its link: the fields of `/reuters/v1/search` plus `keywords`, `tags`, `sections`, `companies` and `related` coverage. The article text is not included.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 5 credits per successful call. Docs: https://api.sh/docs/reuters-article",
+        "tags": [
+          "Reuters"
+        ],
+        "x-credits": 5,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "Article link (`https://www.reuters.com/world/...-2026-11-04/`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.reuters.com/legal/government/democrats-seize-congress-sweeping-midterm-repudiation-trump-2026-11-04/"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "7LGP7ZJZNRNH3CM4VL23SK2CGM",
+                  "url": "https://www.reuters.com/legal/government/democrats-seize-congress-sweeping-midterm-repudiation-trump-2026-11-04/",
+                  "title": "Democrats flex congressional majorities as Trump accepts electoral losses",
+                  "headline": "Democrats flex congressional majorities as Trump accepts electoral losses",
+                  "kicker": null,
+                  "description": "Democrats vowed on Wednesday to use their resounding midterm victory to rein in President Donald Trump, setting up two years of possible dea…",
+                  "published": "2026-11-04T06:59:06.507Z",
+                  "updated": "2026-11-05T02:10:04.208Z",
+                  "display_time": "2026-11-04T06:59:06.507Z",
+                  "authors": [
+                    {
+                      "name": "Gram Slattery",
+                      "byline": "Gram Slattery",
+                      "url": "https://www.reuters.com/authors/gram-slattery/",
+                      "role": "Gram Slattery is a White House correspondent in Washington, focusing on national security, intelligence and foreign affairs. His work covers…",
+                      "id": "name@example.com"
+                    },
+                    {
+                      "name": "David Morgan",
+                      "byline": "David Morgan",
+                      "url": "https://www.reuters.com/authors/david-morgan/",
+                      "role": null,
+                      "id": "name@example.com"
+                    },
+                    "… 1 more"
+                  ],
+                  "section": "NRLPA:OPUB",
+                  "primary_tag": "NRLPA:OPUB",
+                  "word_count": 1057,
+                  "read_minutes": 6,
+                  "article_type": "Standard",
+                  "source": "Reuters",
+                  "distributor": "Reuters",
+                  "primary_media_type": "video",
+                  "image": {
+                    "url": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/EABPTXZHGNJJPLE2L7C6IIPHGQ.jpg",
+                    "caption": "US President Donald Trump looks at the final steel beam as it is lifted on the day it goes into the ballroom, at the White House in Washingt…",
+                    "credit": null,
+                    "width": 6000,
+                    "height": 4000
+                  },
+                  "keywords": [
+                    "USA",
+                    "ELECTION/ (WRAPUP 8, PIX, TV, GRAPHIC)"
+                  ],
+                  "tags": [
+                    {
+                      "name": "NRLPA:OPUB",
+                      "slug": "nrlpa-opub"
+                    },
+                    {
+                      "name": "RULES:USA-ELECTION",
+                      "slug": "rules-usa-election"
+                    },
+                    "… 93 more"
+                  ],
+                  "sections": [],
+                  "companies": [],
+                  "related": [],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/reuters/v1/latest": {
+      "get": {
+        "operationId": "reutersLatest",
+        "summary": "Reuters latest news",
+        "description": "The newest Reuters articles across sections (all main sections by default, or the ones you name). Each article: `id`, `url`, `title`, `headline`, `kicker`, `description`, `published`, `updated`, `authors`, `section`, `primary_tag`, `word_count`, `read_minutes`, `article_type`, `image` (url, caption, credit) and `raw`. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 5 credits per successful call. Docs: https://api.sh/docs/reuters-latest",
+        "tags": [
+          "Reuters"
+        ],
+        "x-credits": 5,
+        "parameters": [
+          {
+            "name": "sections",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated section paths, e.g. `world,business`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Articles to skip (from `next_offset`).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Articles per page (1-50, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "sections": [
+                    "/world/",
+                    "/business/",
+                    "… 8 more"
+                  ],
+                  "offset": 0,
+                  "total": 10000,
+                  "count": 20,
+                  "next_offset": 20,
+                  "items": [
+                    {
+                      "id": "MPBZONBQ4ZGO3JXG2N33BRFUSM",
+                      "url": "https://www.reuters.com/world/asia-pacific/tracking-seasonal-fires-smog-across-northern-india-pakistan-2026-11-05/",
+                      "title": "Tracking the seasonal fires and smog across northern India and Pakistan",
+                      "headline": "Tracking the seasonal fires and smog across northern India and Pakistan",
+                      "kicker": "Asia Pacific",
+                      "description": "Satellite data on fires, burnt area and air quality across northern India and Pakistan, compared with the past 14 years and updated through …",
+                      "published": "2026-11-05T04:03:31.337Z",
+                      "updated": "2026-11-05T04:03:44.954Z",
+                      "display_time": "2026-11-05T04:03:31.337Z",
+                      "authors": [
+                        {
+                          "name": "Sudev Kiyada",
+                          "byline": "Sudev Kiyada",
+                          "url": "https://www.reuters.com/authors/sudev-kiyada/",
+                          "role": null,
+                          "id": "name@example.com"
+                        }
+                      ],
+                      "section": "/world/asia-pacific/",
+                      "primary_tag": null,
+                      "word_count": 49,
+                      "read_minutes": 1,
+                      "article_type": null,
+                      "source": "composer",
+                      "distributor": "reuters",
+                      "primary_media_type": null,
+                      "image": {
+                        "url": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/M4BK73YT2ZDKRFGBAG7KVVL46Q.jpg",
+                        "caption": null,
+                        "credit": null,
+                        "width": 2400,
+                        "height": 1340
+                      }
+                    },
+                    {
+                      "id": "D6QVFYIAAZNLBNPNVWD5WTLPBA",
+                      "url": "https://www.reuters.com/sports/basketball/shai-gilgeous-alexanders-big-second-half-steers-thunder-past-cavs--flm-2026-11-05/",
+                      "title": "Shai Gilgeous-Alexander's big second half steers Thunder past Cavs",
+                      "headline": "Shai Gilgeous-Alexander's big second half steers Thunder past Cavs",
+                      "kicker": "Basketball",
+                      "description": "Shai Gilgeous-Alexander scored 16 of his 42 points in each of the final two quarters as the Oklahoma City Thunder beat the visiting Clevelan…",
+                      "published": "2026-11-05T03:55:52.321Z",
+                      "updated": "2026-11-05T03:58:29.26Z",
+                      "display_time": "2026-11-05T03:55:52.321Z",
+                      "authors": [
+                        {
+                          "name": "Field Level Media",
+                          "byline": "Field Level Media",
+                          "url": "https://www.reuters.com/authors/undefined/",
+                          "role": null,
+                          "id": null
+                        }
+                      ],
+                      "section": "/sports/basketball/",
+                      "primary_tag": "BASK",
+                      "word_count": 410,
+                      "read_minutes": 3,
+                      "article_type": "Standard",
+                      "source": "Field Level Media",
+                      "distributor": "FieldLevelMedia",
+                      "primary_media_type": "gallery",
+                      "image": {
+                        "url": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/4PKDSOAN7RN33NKKUOBOW33KYE.jpg",
+                        "caption": "Nov 4, 2026; Oklahoma City, Oklahoma, USA; Former Oklahoma City Thunder player Serge Ibaka watches a game between the Cleveland Cavaliers an…",
+                        "credit": null,
+                        "width": 2251,
+                        "height": 1501
+                      }
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/reuters/v1/search": {
+      "get": {
+        "operationId": "reutersSearch",
+        "summary": "Reuters article search",
+        "description": "Reuters articles matching a keyword, by relevance or date, optionally within a date range or a section. Each article: `id`, `url`, `title`, `headline`, `kicker`, `description`, `published`, `updated`, `authors`, `section`, `primary_tag`, `word_count`, `read_minutes`, `article_type`, `image` (url, caption, credit) and `raw`. Article text is not included. Pass `next_offset` back as `offset`; null on the last page (the site serves the first 10,000 results).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 5 credits per successful call. Docs: https://api.sh/docs/reuters-search",
+        "tags": [
+          "Reuters"
+        ],
+        "x-credits": 5,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search keyword(s).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "tesla"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "`relevance` (default), `newest` or `oldest`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "oldest"
+              ]
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "description": "Published on or after (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "description": "Published on or before (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "required": false,
+            "description": "Section path, e.g. `business`, `world/europe`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Results to skip (from `next_offset`).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (1-50, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "tesla",
+                  "sort": "newest",
+                  "applied_filters": {
+                    "start_date": null,
+                    "end_date": null,
+                    "section": null
+                  },
+                  "offset": 0,
+                  "total": 9870,
+                  "count": 20,
+                  "next_offset": 20,
+                  "items": [
+                    {
+                      "id": "NEDPOVBGQVAKJLZ7CH3RLRYPEA",
+                      "url": "https://www.reuters.com/podcasts/trumps-first-post-midterm-speech-musk-scrutiny-alaska-mississippi-keep-counting-2026-11-05/",
+                      "title": "Trump's first post-midterm speech, Musk scrutiny, Alaska and Mississippi keep counting",
+                      "headline": "Trump's first post-midterm speech, Musk scrutiny, Alaska and Mississippi keep counting",
+                      "kicker": "Podcasts",
+                      "description": "Democrats vow to use their big wins to rein in Donald Trump.",
+                      "published": "2026-11-05T03:51:43.403Z",
+                      "updated": "2026-11-05T03:53:54.625Z",
+                      "display_time": "2026-11-05T03:51:43.403Z",
+                      "authors": [
+                        {
+                          "name": "Reuters",
+                          "byline": "Reuters",
+                          "url": null,
+                          "role": null,
+                          "id": null
+                        }
+                      ],
+                      "section": "/podcasts/",
+                      "primary_tag": "PODCAST",
+                      "word_count": 523,
+                      "read_minutes": 3,
+                      "article_type": "Standard|Newsletter|Podcast|Premium",
+                      "source": "composer",
+                      "distributor": "Reuters",
+                      "primary_media_type": "podcast",
+                      "image": {
+                        "url": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/NA5BZRHU6VHX7BRWSXNIHOMR7Y.jpg",
+                        "caption": null,
+                        "credit": null,
+                        "width": 3000,
+                        "height": 3000
+                      }
+                    },
+                    {
+                      "id": "U76TKZCMCZOX3BLEHWZZXR2KPU",
+                      "url": "https://www.reuters.com/world/china/teslas-new-registrations-germany-nearly-quadruple-october-kba-says-2026-11-04/",
+                      "title": "Tesla's new registrations in Germany nearly quadruple in October, KBA says",
+                      "headline": "Tesla's new registrations in Germany nearly quadruple in October, KBA says",
+                      "kicker": null,
+                      "description": "Tesla's new car registrations ‌in Germany almost quadrupled in October, German road traffic agency KBA said on Wednesday.",
+                      "published": "2026-11-04T12:24:47.371Z",
+                      "updated": "2026-11-04T12:24:54.342Z",
+                      "display_time": "2026-11-04T12:24:47.371Z",
+                      "authors": [
+                        {
+                          "name": "Reuters",
+                          "byline": "Reuters",
+                          "url": null,
+                          "role": null,
+                          "id": null
+                        }
+                      ],
+                      "section": "/world/",
+                      "primary_tag": "RATI:SUSTAINABLE-EV-SUPPLY-CHAIN",
+                      "word_count": 258,
+                      "read_minutes": 2,
+                      "article_type": "Standard",
+                      "source": "Reuters",
+                      "distributor": "Reuters",
+                      "primary_media_type": "image",
+                      "image": {
+                        "url": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/MXEEJX5JCNPJBLQHQK4ATZVS6M.jpg",
+                        "caption": "A Tesla electric vehicle is parked at a Tesla dealership, after Tesla, Inc. released its financial results for the first quarter of 2025, in…",
+                        "credit": null,
+                        "width": 6000,
+                        "height": 4000
+                      }
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/reuters/v1/section": {
+      "get": {
+        "operationId": "reutersSection",
+        "summary": "Reuters section articles",
+        "description": "A section's latest articles, newest first. Each article: `id`, `url`, `title`, `headline`, `kicker`, `description`, `published`, `updated`, `authors`, `section`, `primary_tag`, `word_count`, `read_minutes`, `article_type`, `image` (url, caption, credit) and `raw`. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 5 credits per successful call. Docs: https://api.sh/docs/reuters-section",
+        "tags": [
+          "Reuters"
+        ],
+        "x-credits": 5,
+        "parameters": [
+          {
+            "name": "section",
+            "in": "query",
+            "required": true,
+            "description": "Section path or link, e.g. `world`, `business/autos-transportation`, `technology`, `markets`; all paths in `/reuters/v1/sections`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "world"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Articles to skip (from `next_offset`).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Articles per page (1-50, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "section": "/world/",
+                  "name": "World",
+                  "offset": 0,
+                  "count": 20,
+                  "next_offset": 20,
+                  "items": [
+                    {
+                      "id": "7LGP7ZJZNRNH3CM4VL23SK2CGM",
+                      "url": "https://www.reuters.com/legal/government/democrats-seize-congress-sweeping-midterm-repudiation-trump-2026-11-04/",
+                      "title": "Democrats flex congressional majorities as Trump accepts electoral losses",
+                      "headline": "Democrats flex congressional majorities as Trump accepts electoral losses",
+                      "kicker": "Legal",
+                      "description": "Democrats vowed on Wednesday to use their resounding midterm victory to rein in President Donald Trump, setting up two years of possible dea…",
+                      "published": "2026-11-04T06:59:06.507Z",
+                      "updated": "2026-11-05T02:10:04.208Z",
+                      "display_time": "2026-11-04T06:59:06.507Z",
+                      "authors": [
+                        {
+                          "name": "Gram Slattery",
+                          "byline": "Gram Slattery",
+                          "url": "https://www.reuters.com/authors/gram-slattery/",
+                          "role": "Gram Slattery is a White House correspondent in Washington, focusing on national security, intelligence and foreign affairs. His work covers…",
+                          "id": "name@example.com"
+                        },
+                        {
+                          "name": "David Morgan",
+                          "byline": "David Morgan",
+                          "url": "https://www.reuters.com/authors/david-morgan/",
+                          "role": null,
+                          "id": "name@example.com"
+                        },
+                        "… 1 more"
+                      ],
+                      "section": "/legal/",
+                      "primary_tag": "NRLPA:OPUB",
+                      "word_count": 1351,
+                      "read_minutes": 7,
+                      "article_type": "Standard",
+                      "source": "Reuters",
+                      "distributor": "Reuters",
+                      "primary_media_type": "video",
+                      "image": {
+                        "url": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/EABPTXZHGNJJPLE2L7C6IIPHGQ.jpg",
+                        "caption": "US President Donald Trump looks at the final steel beam as it is lifted on the day it goes into the ballroom, at the White House in Washingt…",
+                        "credit": null,
+                        "width": 6000,
+                        "height": 4000
+                      }
+                    },
+                    {
+                      "id": "MOLU643NOJK3JEQ6V24DXOS5B4",
+                      "url": "https://www.reuters.com/world/middle-east/beaten-home-trump-faces-stark-choice-iran-deal-or-escalation-2026-11-04/",
+                      "title": "Beaten at home, Trump faces stark choice on Iran: deal or escalation",
+                      "headline": "Beaten at home, Trump faces stark choice on Iran: deal or escalation",
+                      "kicker": "ANALYSIS",
+                      "description": "US President Donald Trump went to war seeking regime change in Iran. Instead, it was his own grip on Washington that gave way, as voters wea…",
+                      "published": "2026-11-04T18:02:39.312Z",
+                      "updated": "2026-11-05T02:10:35.199Z",
+                      "display_time": "2026-11-04T18:02:39.312Z",
+                      "authors": [
+                        {
+                          "name": "Samia Nakhoul",
+                          "byline": "Samia Nakhoul",
+                          "url": "https://www.reuters.com/authors/samia-nakhoul/",
+                          "role": null,
+                          "id": "name@example.com"
+                        }
+                      ],
+                      "section": "RULES:USA-ELECTION",
+                      "primary_tag": "RULES:USA-ELECTION",
+                      "word_count": 1194,
+                      "read_minutes": 6,
+                      "article_type": "Standard",
+                      "source": "Reuters",
+                      "distributor": "Reuters",
+                      "primary_media_type": "video",
+                      "image": {
+                        "url": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/4KG6KGFLOVI7VIECRZSQOLVUWM.jpg",
+                        "caption": "US President Donald Trump speaks on the day the final steel beam goes into the ballroom, at the White House in Washington, DC, US, November …",
+                        "credit": null,
+                        "width": 6000,
+                        "height": 4000
+                      }
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/reuters/v1/sections": {
+      "get": {
+        "operationId": "reutersSections",
+        "summary": "Reuters sections",
+        "description": "The site's section tree: each section's `name`, `path` (for `/reuters/v1/section`) and `children`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 5 credits per successful call. Docs: https://api.sh/docs/reuters-sections",
+        "tags": [
+          "Reuters"
+        ],
+        "x-credits": 5,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 35,
+                  "items": [
+                    {
+                      "name": "World",
+                      "path": "/world/",
+                      "children": [
+                        {
+                          "name": "Africa",
+                          "path": "/world/africa/",
+                          "children": []
+                        },
+                        {
+                          "name": "Americas",
+                          "path": "/world/americas/",
+                          "children": []
+                        },
+                        "… 23 more"
+                      ]
+                    },
+                    {
+                      "name": "Business",
+                      "path": "/business/",
+                      "children": [
+                        {
+                          "name": "Aerospace & Defense",
+                          "path": "/business/aerospace-defense/",
+                          "children": []
+                        },
+                        {
+                          "name": "Autos & Transportation",
+                          "path": "/business/autos-transportation/",
+                          "children": []
+                        },
+                        "… 12 more"
+                      ]
+                    },
+                    "… 33 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

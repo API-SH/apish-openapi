@@ -1,0 +1,2086 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Proff",
+    "version": "1.0.0",
+    "description": "The Proff API from API.SH: public Proff data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Proff",
+      "description": "7 endpoints (jobs & b2b)",
+      "x-slug": "proff",
+      "x-domains": [
+        "proff.no"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proff/v1/bankruptcies": {
+      "get": {
+        "operationId": "proffBankruptcies",
+        "summary": "Latest Norwegian bankruptcies and liquidations",
+        "description": "Companies with a bankruptcy or liquidation registered in the last two weeks, newest first, with the event, company details and roles, plus monthly counts. 10 a page. Pass `next_page` back as `page`; null on the last page. Norway only.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/proff-bankruptcies",
+        "tags": [
+          "Proff"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "no (Norway).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no"
+              ]
+            },
+            "example": "no"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, starting at 1. Pass `next_page` back as `page`; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "no",
+                  "from": "2026-10-23",
+                  "to": "2026-11-06",
+                  "page": 1,
+                  "pages": 26,
+                  "total": 255,
+                  "count": 10,
+                  "companies": [
+                    {
+                      "company_id": "931744143",
+                      "org_number": "931744143",
+                      "name": "WKT AS",
+                      "legal_name": null,
+                      "company_type": "Aksjeselskap",
+                      "business_unit_type": null,
+                      "phone": null,
+                      "mobile": null,
+                      "email": null,
+                      "homepage": null,
+                      "visitor_address": {
+                        "address": "Østerdalsgata 1K",
+                        "box": null,
+                        "zip": "0658",
+                        "city": "Oslo"
+                      },
+                      "postal_address": {
+                        "address": "Østerdalsgata 1K",
+                        "box": null,
+                        "zip": "0658",
+                        "city": "Oslo"
+                      },
+                      "region": "Østlandet",
+                      "county": "Oslo",
+                      "municipality": "Oslo",
+                      "coordinates": {
+                        "lat": 59.91042334,
+                        "lng": 10.79018515
+                      },
+                      "industry": null,
+                      "industries": [],
+                      "nace_industries": [
+                        "62.200 Konsulentvirksomhet tilknyttet informasjonsteknologi og forvaltning og drift av IT-systemer"
+                      ],
+                      "revenue_thousands": 7827,
+                      "profit_thousands": 2991,
+                      "currency": "NOK",
+                      "revenue_original": 7827,
+                      "profit_original": 2991,
+                      "employees": null,
+                      "accounts_year": "2025",
+                      "status": "ACTIVE",
+                      "status_description": "Enheten er meldt oppløst etter konkursloven",
+                      "status_remarks": [],
+                      "contact_person": null,
+                      "url": "https://www.proff.no/company/931744143",
+                      "event": null,
+                      "registration_date": "2023-07-20",
+                      "roles": [
+                        {
+                          "name": "Rolf Harald Natixz Wichkman",
+                          "role": "Daglig leder"
+                        },
+                        {
+                          "name": "Rolf Harald Natixz Wichkman",
+                          "role": "Styrets leder"
+                        }
+                      ]
+                    },
+                    {
+                      "company_id": "933094286",
+                      "org_number": "933094286",
+                      "name": "VIKEN GULLSMED VERKSTED AS",
+                      "legal_name": null,
+                      "company_type": "Aksjeselskap",
+                      "business_unit_type": null,
+                      "phone": null,
+                      "mobile": null,
+                      "email": null,
+                      "homepage": null,
+                      "visitor_address": {
+                        "address": "Christian IV. des gate 12",
+                        "box": null,
+                        "zip": "3616",
+                        "city": "Kongsberg"
+                      },
+                      "postal_address": {
+                        "address": "Prokurator Torps gate 2A",
+                        "box": null,
+                        "zip": "3613",
+                        "city": "Kongsberg"
+                      },
+                      "region": "Østlandet",
+                      "county": "Buskerud",
+                      "municipality": "Kongsberg",
+                      "coordinates": {
+                        "lat": 59.66407118,
+                        "lng": 9.64669762
+                      },
+                      "industry": null,
+                      "industries": [],
+                      "nace_industries": [
+                        "95.250 Reparasjon og vedlikehold av ur, klokker og smykker"
+                      ],
+                      "revenue_thousands": 3130,
+                      "profit_thousands": -187,
+                      "currency": "NOK",
+                      "revenue_original": 3130,
+                      "profit_original": -187,
+                      "employees": null,
+                      "accounts_year": "2024",
+                      "status": "ACTIVE",
+                      "status_description": "Enheten er meldt konkurs",
+                      "status_remarks": [],
+                      "contact_person": null,
+                      "url": "https://www.proff.no/company/933094286",
+                      "event": null,
+                      "registration_date": "2024-02-28",
+                      "roles": [
+                        {
+                          "name": "Viken Hajji Narinian",
+                          "role": "Daglig leder"
+                        },
+                        {
+                          "name": "Viken Hajji Narinian",
+                          "role": "Styrets leder"
+                        }
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "next_page": 2,
+                  "monthly_counts": [
+                    {
+                      "month": "2024-01",
+                      "count": 67
+                    },
+                    {
+                      "month": "2024-02",
+                      "count": 59
+                    },
+                    "… 33 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/proff/v1/company": {
+      "get": {
+        "operationId": "proffCompany",
+        "summary": "Norwegian or Danish company profile, board, owners and accounts",
+        "description": "One company by organisation number (Norway 9 digits, Denmark 8-digit CVR) or Proff id: registration and foundation dates, status, company type, purpose, contact details and addresses, industries and NACE codes, share capital, register memberships (VAT, enterprise register), officers and board grouped by role (name and role), signatory rules and procuration, shareholders with share and number of shares, annual accounts and cash-flow figures by year for the company and its group (every figure under its account code, amounts in thousands), group structure and parent, register announcements, business units, trademarks, public grants and related companies, with the site's record in `raw`. Birth dates and ages of people are left out.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/proff-company",
+        "tags": [
+          "Proff"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "org_number",
+            "in": "query",
+            "required": false,
+            "description": "Organisation number (Norway 9 digits, Denmark 8-digit CVR). Give this or company_id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "923609016"
+          },
+          {
+            "name": "company_id",
+            "in": "query",
+            "required": false,
+            "description": "Proff id from a search result, e.g. IF9W5A00VFQ.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "no (proff.no, Norway, default) or dk (proff.dk, Denmark).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no",
+                "dk"
+              ]
+            },
+            "example": "no"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company_id": "IF9W5A00VFQ",
+                  "org_number": "923609016",
+                  "name": "Equinor Asa",
+                  "legal_name": "EQUINOR ASA",
+                  "company_type": "Allmennaksjeselskap",
+                  "business_unit_type": null,
+                  "phone": "+1 555 010 0000",
+                  "mobile": null,
+                  "email": null,
+                  "homepage": null,
+                  "visitor_address": {
+                    "address": "Forusbeen 50",
+                    "box": null,
+                    "zip": "4035",
+                    "city": "Stavanger"
+                  },
+                  "postal_address": {
+                    "address": "Forusbeen 50",
+                    "box": null,
+                    "zip": "4035",
+                    "city": "Stavanger"
+                  },
+                  "region": "Vestlandet",
+                  "county": "Rogaland",
+                  "municipality": "Stavanger",
+                  "coordinates": {
+                    "lat": 58.89281569475314,
+                    "lng": 5.719110296289504
+                  },
+                  "industry": "Olje og gass",
+                  "industries": [
+                    "Olje og gass",
+                    "Utvinning av råolje og naturgass",
+                    "… 2 more"
+                  ],
+                  "nace_industries": [
+                    "06.100 Utvinning av råolje",
+                    "06.200 Utvinning av naturgass",
+                    "… 1 more"
+                  ],
+                  "revenue_thousands": 706144387,
+                  "profit_thousands": 57806246,
+                  "currency": "USD",
+                  "revenue_original": 67956000,
+                  "profit_original": 5563000,
+                  "employees": 21231,
+                  "accounts_year": "2025",
+                  "status": "ACTIVE",
+                  "status_description": null,
+                  "status_remarks": [],
+                  "contact_person": {
+                    "name": "Anders Opedal",
+                    "role": "Daglig leder",
+                    "type": "Person",
+                    "id": "1259048"
+                  },
+                  "url": "https://www.proff.no/company/IF9W5A00VFQ",
+                  "purpose": "Å utvikle, produsere og markedsføre ulike former for energi, avledede produkter og tjenester, samt annen virksomhet. Virksomheten kan også d…",
+                  "description": null,
+                  "legal_phone": "+1 555 010 0000",
+                  "legal_visitor_address": {
+                    "address": "Forusbeen 50",
+                    "box": null,
+                    "zip": "4035",
+                    "city": "Stavanger"
+                  },
+                  "legal_postal_address": {
+                    "address": "Postboks 8500",
+                    "box": null,
+                    "zip": "4035",
+                    "city": "Stavanger"
+                  },
+                  "registration_date": "1995-03-12",
+                  "foundation_date": "1972-09-18",
+                  "foundation_year": 1972,
+                  "share_capital": 5976873,
+                  "…": "30 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/proff/v1/industries": {
+      "get": {
+        "operationId": "proffIndustries",
+        "summary": "Proff industry list",
+        "description": "Every industry Proff groups companies by, with its code and name. Pass a name as `q` to /proff/v1/search to list that industry's companies.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/proff-industries",
+        "tags": [
+          "Proff"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "no (proff.no, Norway, default) or dk (proff.dk, Denmark).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no",
+                "dk"
+              ]
+            },
+            "example": "no"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "no",
+                  "count": 730,
+                  "industries": [
+                    {
+                      "code": "10158",
+                      "name": "Advokater og juridiske tjenester"
+                    },
+                    {
+                      "code": "47431",
+                      "name": "Agenturer"
+                    },
+                    "… 728 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/proff/v1/new-companies": {
+      "get": {
+        "operationId": "proffNewCompanies",
+        "summary": "Newly registered Norwegian and Danish companies",
+        "description": "Companies registered in the last two weeks, newest first, with registration date, address, industry and roles, plus monthly counts. 10 a page. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/proff-new-companies",
+        "tags": [
+          "Proff"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "no (proff.no, Norway, default) or dk (proff.dk, Denmark).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no",
+                "dk"
+              ]
+            },
+            "example": "no"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, starting at 1. Pass `next_page` back as `page`; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "no",
+                  "from": "2026-10-23",
+                  "to": "2026-11-06",
+                  "page": 1,
+                  "pages": 372,
+                  "total": 3716,
+                  "count": 10,
+                  "companies": [
+                    {
+                      "company_id": "938639183",
+                      "org_number": "938639183",
+                      "name": "ÅLVUNDFJORD MISJONSFORENING",
+                      "legal_name": null,
+                      "company_type": "Forening/lag/innretning",
+                      "business_unit_type": null,
+                      "phone": null,
+                      "mobile": null,
+                      "email": null,
+                      "homepage": null,
+                      "visitor_address": {
+                        "address": "Drøppingvegen 390",
+                        "box": null,
+                        "zip": "6622",
+                        "city": "Ålvundfjord"
+                      },
+                      "postal_address": {
+                        "address": "Drøppingvegen 390",
+                        "box": null,
+                        "zip": "6622",
+                        "city": "Ålvundfjord"
+                      },
+                      "region": "Vestlandet",
+                      "county": "Møre og Romsdal",
+                      "municipality": "Sunndal",
+                      "coordinates": {
+                        "lat": 62.86392696,
+                        "lng": 8.58681789
+                      },
+                      "industry": null,
+                      "industries": [],
+                      "nace_industries": [],
+                      "revenue_thousands": null,
+                      "profit_thousands": null,
+                      "currency": null,
+                      "revenue_original": null,
+                      "profit_original": null,
+                      "employees": null,
+                      "accounts_year": null,
+                      "status": "ACTIVE",
+                      "status_description": null,
+                      "status_remarks": [],
+                      "contact_person": null,
+                      "url": "https://www.proff.no/company/938639183",
+                      "event": null,
+                      "registration_date": "2026-11-05",
+                      "roles": [
+                        {
+                          "name": "Arne Christen Drøpping",
+                          "role": "Styrets leder"
+                        },
+                        {
+                          "name": "Cecilie Catharina Rø Drøpping",
+                          "role": "Styremedlem"
+                        }
+                      ]
+                    },
+                    {
+                      "company_id": "938744750",
+                      "org_number": "938744750",
+                      "name": "ZENKAI AS",
+                      "legal_name": null,
+                      "company_type": "Aksjeselskap",
+                      "business_unit_type": null,
+                      "phone": null,
+                      "mobile": null,
+                      "email": null,
+                      "homepage": null,
+                      "visitor_address": {
+                        "address": "Bjørnveien 42D",
+                        "box": null,
+                        "zip": "0774",
+                        "city": "Oslo"
+                      },
+                      "postal_address": {
+                        "address": "Bjørnveien 42D",
+                        "box": null,
+                        "zip": "0774",
+                        "city": "Oslo"
+                      },
+                      "region": "Østlandet",
+                      "county": "Oslo",
+                      "municipality": "Oslo",
+                      "coordinates": {
+                        "lat": 59.952667,
+                        "lng": 10.685589
+                      },
+                      "industry": null,
+                      "industries": [],
+                      "nace_industries": [
+                        "00.000 Uoppgitt"
+                      ],
+                      "revenue_thousands": null,
+                      "profit_thousands": null,
+                      "currency": null,
+                      "revenue_original": null,
+                      "profit_original": null,
+                      "employees": null,
+                      "accounts_year": null,
+                      "status": "ACTIVE",
+                      "status_description": null,
+                      "status_remarks": [],
+                      "contact_person": null,
+                      "url": "https://www.proff.no/company/938744750",
+                      "event": null,
+                      "registration_date": "2026-11-05",
+                      "roles": [
+                        {
+                          "name": "Christopher François Frédéric Jammes",
+                          "role": "Styrets leder"
+                        }
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "next_page": 2,
+                  "monthly_counts": [
+                    {
+                      "month": "2024-01",
+                      "count": 7346
+                    },
+                    {
+                      "month": "2024-02",
+                      "count": 6267
+                    },
+                    "… 33 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/proff/v1/search": {
+      "get": {
+        "operationId": "proffSearch",
+        "summary": "Search Norwegian and Danish companies (Proff)",
+        "description": "Norwegian or Danish companies by name, organisation number or industry (a query that names an industry, e.g. Olje og gass, lists that industry and returns `industry_match`), with county, municipality and post-town filters and revenue or employee sorts. Each company has Proff id, organisation number, name, legal name, phone, email, homepage, visiting and postal address, region, county, municipality, coordinates, industries, revenue and profit (thousands, with the currency), employees, accounts year, status and the listed contact role. `facets` lists filter values with counts; page 1 also has `inactive_companies` and matching shareholders (companies and persons; a person shareholder has name, country and holdings, and its `id` opens /proff/v1/shareholder?person_id=). 25 a page. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/proff-search",
+        "tags": [
+          "Proff"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Company name, organisation number or industry name.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "equinor"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "no (proff.no, Norway, default) or dk (proff.dk, Denmark).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no",
+                "dk"
+              ]
+            },
+            "example": "no"
+          },
+          {
+            "name": "county",
+            "in": "query",
+            "required": false,
+            "description": "County (fylke / region), e.g. Rogaland.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "municipality",
+            "in": "query",
+            "required": false,
+            "description": "Municipality (kommune), e.g. Bergen.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postplace",
+            "in": "query",
+            "required": false,
+            "description": "Post town, e.g. Stavanger.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), revenueDesc, revenueAsc, numEmployeesDesc or numEmployeesAsc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "revenueDesc",
+                "revenueAsc",
+                "numEmployeesDesc",
+                "numEmployeesAsc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, starting at 1. Pass `next_page` back as `page`; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "filters": {
+                    "country": "no",
+                    "q": "equinor",
+                    "sort": "relevance"
+                  },
+                  "industry_match": null,
+                  "page": 1,
+                  "pages": 38,
+                  "total": 937,
+                  "count": 25,
+                  "companies": [
+                    {
+                      "company_id": "IF9W5A00VFQ",
+                      "org_number": "923609016",
+                      "name": "Equinor Asa",
+                      "legal_name": "Equinor Asa",
+                      "company_type": null,
+                      "business_unit_type": null,
+                      "phone": "+1 555 010 0000",
+                      "mobile": null,
+                      "email": null,
+                      "homepage": null,
+                      "visitor_address": {
+                        "address": "Forusbeen 50",
+                        "box": null,
+                        "zip": "4035",
+                        "city": "Stavanger"
+                      },
+                      "postal_address": {
+                        "address": "Forusbeen 50",
+                        "box": null,
+                        "zip": "4035",
+                        "city": "Stavanger"
+                      },
+                      "region": "Vestlandet",
+                      "county": "Rogaland",
+                      "municipality": "Stavanger",
+                      "coordinates": {
+                        "lat": 58.89281569475314,
+                        "lng": 5.719110296289504
+                      },
+                      "industry": "Olje og gass",
+                      "industries": [
+                        "Olje og gass",
+                        "Utvinning av råolje og naturgass",
+                        "… 2 more"
+                      ],
+                      "nace_industries": [],
+                      "revenue_thousands": 706144387,
+                      "profit_thousands": 57806246,
+                      "currency": "USD",
+                      "revenue_original": 67956000,
+                      "profit_original": 5563000,
+                      "employees": 21231,
+                      "accounts_year": "2025",
+                      "status": null,
+                      "status_description": null,
+                      "status_remarks": [],
+                      "contact_person": {
+                        "name": "Anders Opedal",
+                        "role": "Daglig leder",
+                        "type": "Person",
+                        "id": "1259048"
+                      },
+                      "url": "https://www.proff.no/company/IF9W5A00VFQ"
+                    },
+                    {
+                      "company_id": "IGDY68L0VFQ",
+                      "org_number": "990888213",
+                      "name": "EQUINOR ENERGY AS",
+                      "legal_name": "Equinor Energy AS",
+                      "company_type": null,
+                      "business_unit_type": null,
+                      "phone": "+1 555 010 0000",
+                      "mobile": null,
+                      "email": null,
+                      "homepage": null,
+                      "visitor_address": {
+                        "address": "Forusbeen 50",
+                        "box": null,
+                        "zip": "4035",
+                        "city": "Stavanger"
+                      },
+                      "postal_address": {
+                        "address": "Forusbeen 50",
+                        "box": null,
+                        "zip": "4035",
+                        "city": "Stavanger"
+                      },
+                      "region": "Vestlandet",
+                      "county": "Rogaland",
+                      "municipality": "Stavanger",
+                      "coordinates": {
+                        "lat": 58.89281569475314,
+                        "lng": 5.719110296289504
+                      },
+                      "industry": "Olje og gass",
+                      "industries": [
+                        "Olje og gass",
+                        "Utvinning av råolje og naturgass",
+                        "… 2 more"
+                      ],
+                      "nace_industries": [],
+                      "revenue_thousands": 386770855,
+                      "profit_thousands": 260871076,
+                      "currency": "USD",
+                      "revenue_original": 37221000,
+                      "profit_original": 25105000,
+                      "employees": null,
+                      "accounts_year": "2025",
+                      "status": null,
+                      "status_description": null,
+                      "status_remarks": [],
+                      "contact_person": {
+                        "name": "Asleiv Jon Brandsøy",
+                        "role": "Daglig leder",
+                        "type": "Person",
+                        "id": "568367"
+                      },
+                      "url": "https://www.proff.no/company/IGDY68L0VFQ"
+                    },
+                    "… 23 more"
+                  ],
+                  "next_page": 2,
+                  "facets": [
+                    {
+                      "name": "countrypart",
+                      "label": "Landsdel",
+                      "options": [
+                        {
+                          "value": "Vestlandet",
+                          "hits": 212
+                        },
+                        {
+                          "value": "Østlandet",
+                          "hits": 110
+                        },
+                        "… 3 more"
+                      ]
+                    },
+                    {
+                      "name": "navindustrynames",
+                      "label": "Bransjer",
+                      "options": [
+                        {
+                          "value": "Olje og gass",
+                          "hits": 589
+                        },
+                        {
+                          "value": "Utvinning av råolje og naturgass",
+                          "hits": 587
+                        },
+                        "… 97 more"
+                      ]
+                    },
+                    "… 3 more"
+                  ],
+                  "inactive_companies": [
+                    {
+                      "company_id": "928714047",
+                      "org_number": "928714047",
+                      "name": "EQUINOR SOLAR POWER AS",
+                      "legal_name": null,
+                      "company_type": "Aksjeselskap",
+                      "business_unit_type": null,
+                      "phone": null,
+                      "mobile": null,
+                      "email": null,
+                      "homepage": null,
+                      "visitor_address": {
+                        "address": null,
+                        "box": null,
+                        "zip": "4035",
+                        "city": "Stavanger"
+                      },
+                      "postal_address": {
+                        "address": null,
+                        "box": null,
+                        "zip": "4035",
+                        "city": "Stavanger"
+                      },
+                      "region": "Vestlandet",
+                      "county": "Rogaland",
+                      "municipality": "Stavanger",
+                      "coordinates": {
+                        "lat": 58.89281569,
+                        "lng": 5.7191103
+                      },
+                      "industry": null,
+                      "industries": [],
+                      "nace_industries": [
+                        "71.129 Annen teknisk konsulentvirksomhet"
+                      ],
+                      "revenue_thousands": null,
+                      "profit_thousands": -232,
+                      "currency": "NOK",
+                      "revenue_original": null,
+                      "profit_original": -232,
+                      "employees": null,
+                      "accounts_year": "2024",
+                      "status": "INACTIVE",
+                      "status_description": "Enheten er slettet",
+                      "status_remarks": [],
+                      "contact_person": null,
+                      "url": "https://www.proff.no/company/928714047"
+                    },
+                    {
+                      "company_id": "988861871",
+                      "org_number": "988861871",
+                      "name": "EQUINOR MURZUQ AREA 146 AS",
+                      "legal_name": null,
+                      "company_type": "Aksjeselskap",
+                      "business_unit_type": null,
+                      "phone": "+1 555 010 0000",
+                      "mobile": null,
+                      "email": null,
+                      "homepage": null,
+                      "visitor_address": {
+                        "address": null,
+                        "box": null,
+                        "zip": "4035",
+                        "city": "Stavanger"
+                      },
+                      "postal_address": {
+                        "address": null,
+                        "box": null,
+                        "zip": "4035",
+                        "city": "Stavanger"
+                      },
+                      "region": "Vestlandet",
+                      "county": "Rogaland",
+                      "municipality": "Stavanger",
+                      "coordinates": {
+                        "lat": 58.89281569,
+                        "lng": 5.7191103
+                      },
+                      "industry": null,
+                      "industries": [],
+                      "nace_industries": [
+                        "06.100 Utvinning av råolje"
+                      ],
+                      "revenue_thousands": null,
+                      "profit_thousands": -53,
+                      "currency": "NOK",
+                      "revenue_original": null,
+                      "profit_original": -53,
+                      "employees": null,
+                      "accounts_year": "2024",
+                      "status": "INACTIVE",
+                      "status_description": "Enheten er slettet",
+                      "status_remarks": [],
+                      "contact_person": null,
+                      "url": "https://www.proff.no/company/988861871"
+                    },
+                    "… 3 more"
+                  ],
+                  "shareholder_matches": [
+                    {
+                      "id": "923609016",
+                      "name": "Equinor ASA",
+                      "org_number": "923609016",
+                      "type": "Company",
+                      "city": "STAVANGER",
+                      "country": "NO",
+                      "direct_ownerships": 37,
+                      "indirect_ownerships": 410
+                    },
+                    {
+                      "id": "959733600",
+                      "name": "Equinor Pensjon",
+                      "org_number": "959733600",
+                      "type": "Company",
+                      "city": "STAVANGER",
+                      "country": "NO",
+                      "direct_ownerships": 4,
+                      "indirect_ownerships": 20
+                    },
+                    "… 23 more"
+                  ],
+                  "shareholder_matches_total": 484,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/proff/v1/shareholder": {
+      "get": {
+        "operationId": "proffShareholder",
+        "summary": "Norwegian shareholder (company or person): owners and holdings",
+        "description": "A company or a person as a shareholder in Norway's shareholder register (give `org_number` for a company or `person_id` for a person shareholder from /proff/v1/search `shareholder_matches`; a person comes back with name, country and holdings, without birth year or home location): who owns it (direct and indirect owners) and what it owns (direct and indirect holdings), each with name, organisation number, entity type, country, share type, number of shares, total shares, share percentage and the source date. Up to 250 entries per list. Norway only.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/proff-shareholder",
+        "tags": [
+          "Proff"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "org_number",
+            "in": "query",
+            "required": false,
+            "description": "The shareholder company's organisation number (9 digits). Give `org_number` or `person_id`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "912660680"
+          },
+          {
+            "name": "person_id",
+            "in": "query",
+            "required": false,
+            "description": "A person shareholder's id (digits) from /proff/v1/search `shareholder_matches` (type Person).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "no (Norway; the only country with shareholder data).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no"
+              ]
+            },
+            "example": "no"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "912660680",
+                  "name": "Nærings- og Fiskeridepartementet",
+                  "org_number": "912660680",
+                  "type": "Company",
+                  "city": "OSLO",
+                  "country": "NO",
+                  "owners_count": 0,
+                  "indirect_owners_count": 0,
+                  "ownerships_count": 18,
+                  "indirect_ownerships_count": 3725,
+                  "status": "ACTIVE",
+                  "owners": {
+                    "total": 0,
+                    "items": []
+                  },
+                  "indirect_owners": {
+                    "total": 0,
+                    "items": []
+                  },
+                  "ownerships": {
+                    "total": 18,
+                    "items": [
+                      {
+                        "id": "984661185",
+                        "name": "Posten Bring AS",
+                        "org_number": "984661185",
+                        "type": "Company",
+                        "country": "NO",
+                        "share_type": "Ordinære aksjer",
+                        "shares": 3120000,
+                        "total_shares": 3120000,
+                        "share_pct": 100,
+                        "direct": true,
+                        "source": "Skatteetaten",
+                        "source_date": "2025-12-31",
+                        "multiple_owners": false
+                      },
+                      {
+                        "id": "986392912",
+                        "name": "Baneservice AS",
+                        "org_number": "986392912",
+                        "type": "Company",
+                        "country": "NO",
+                        "share_type": "Ordinære aksjer",
+                        "shares": 80000,
+                        "total_shares": 80000,
+                        "share_pct": 100,
+                        "direct": true,
+                        "source": "Skatteetaten",
+                        "source_date": "2025-12-31",
+                        "multiple_owners": false
+                      },
+                      "… 16 more"
+                    ]
+                  },
+                  "indirect_ownerships": {
+                    "total": 3725,
+                    "items": [
+                      {
+                        "id": "830845712",
+                        "name": "Fabrikkveien 100 Tomt 3 AS",
+                        "org_number": "830845712",
+                        "type": "Company",
+                        "country": "NO",
+                        "share_type": null,
+                        "shares": 100,
+                        "total_shares": 100,
+                        "share_pct": 100,
+                        "direct": false,
+                        "source": null,
+                        "source_date": null,
+                        "multiple_owners": false
+                      },
+                      {
+                        "id": "912998851",
+                        "name": "Posten Eiendom Trondheim AS",
+                        "org_number": "912998851",
+                        "type": "Company",
+                        "country": "NO",
+                        "share_type": null,
+                        "shares": 543133,
+                        "total_shares": 543133,
+                        "share_pct": 100,
+                        "direct": false,
+                        "source": null,
+                        "source_date": null,
+                        "multiple_owners": false
+                      },
+                      "… 248 more"
+                    ]
+                  },
+                  "note": "Each list holds up to 250 entries, as the source shows them.",
+                  "url": "https://www.proff.no/shareholder/912660680?type=Company",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/proff/v1/top-lists": {
+      "get": {
+        "operationId": "proffTopLists",
+        "summary": "Top companies in Norway or Denmark",
+        "description": "The country's companies with the most employees, the highest turnover (thousands) and the oldest foundation dates, with organisation numbers and ranks.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/proff-top-lists",
+        "tags": [
+          "Proff"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "no (proff.no, Norway, default) or dk (proff.dk, Denmark).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no",
+                "dk"
+              ]
+            },
+            "example": "no"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "no",
+                  "most_employees": [
+                    {
+                      "rank": 1,
+                      "org_number": "964338531",
+                      "name": "BERGEN KOMMUNE",
+                      "value": "32820"
+                    },
+                    {
+                      "rank": 2,
+                      "org_number": "993467049",
+                      "name": "OSLO UNIVERSITETSSYKEHUS HF",
+                      "value": "26413"
+                    },
+                    "… 8 more"
+                  ],
+                  "highest_turnover_thousands": [
+                    {
+                      "rank": 1,
+                      "org_number": "923609016",
+                      "name": "EQUINOR ASA",
+                      "value": "706144387"
+                    },
+                    {
+                      "rank": 2,
+                      "org_number": "990888213",
+                      "name": "EQUINOR ENERGY AS",
+                      "value": "386770855"
+                    },
+                    "… 8 more"
+                  ],
+                  "highest_profit_thousands": [],
+                  "oldest": [
+                    {
+                      "rank": 1,
+                      "org_number": "938658374",
+                      "name": "STIFTELSEN TRONDHJEMS HOSPITAL",
+                      "value": "1277-09-13"
+                    },
+                    {
+                      "rank": 2,
+                      "org_number": "977125871",
+                      "name": "STIFTELSEN OSLO HOSPITAL",
+                      "value": "1538-12-31"
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

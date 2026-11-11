@@ -1,0 +1,1057 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: APEC",
+    "version": "1.0.0",
+    "description": "The APEC API from API.SH: public APEC data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "APEC",
+      "description": "2 endpoints (jobs & b2b)",
+      "x-slug": "apec",
+      "x-domains": [
+        "apec.fr"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/apec/v1/job": {
+      "get": {
+        "operationId": "apecJob",
+        "summary": "APEC job ad",
+        "description": "One job ad on APEC: description, candidate profile, company presentation and recruitment process (text and HTML), company, contact, locations and address with coordinates, salary, contract type, part time, number of positions, skills with their type and level, apply link, published and modified dates. `latest=true` with search parameters returns the first matching ad. Removed ads answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/apec-job",
+        "tags": [
+          "APEC"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Offer number (`id` in search results, e.g. `179687855W`) or its apec.fr .../detail-offre/... link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`true`: the first ad of a search with the other parameters instead of an id (an example that never expires).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "With `latest=true`: keywords.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "179687855W",
+                  "title": "Collaborateur comptable F/H",
+                  "url": "https://www.apec.fr/candidat/recherche-emploi.html/emploi/detail-offre/179687855W",
+                  "reference": "13771312",
+                  "company": "BDL VALENCIENNES",
+                  "brand": "BDL EXPERTISE COMPTABLE",
+                  "confidential_company": false,
+                  "company_logo": "https://www.apec.fr/media_entreprise/731381/logo_BDL_VALENCIENNES_731381_1389228.png",
+                  "company_id": 731381,
+                  "contact": "Laura TISON",
+                  "locations": [
+                    {
+                      "id": 583487,
+                      "name": "Saint-Amand-les-Eaux - 59"
+                    }
+                  ],
+                  "address": {
+                    "street": "31 AVENUE GEORGES CLEMENCEAU",
+                    "postal_code": "59300",
+                    "city": "VALENCIENNES"
+                  },
+                  "lat": 50.440387,
+                  "lng": 3.4439855,
+                  "salary": "32 - 42 k€ brut annuel",
+                  "contract_type": "cdi",
+                  "contract_type_id": 101888,
+                  "part_time": false,
+                  "positions": 1,
+                  "experience_id": 597152,
+                  "remote_id": 20765,
+                  "status_id": 101872,
+                  "function_id": 101802,
+                  "job_id": 599992,
+                  "sector_id": 101603,
+                  "travel_zone_id": 596723,
+                  "skills": [
+                    {
+                      "name": "Autonomie",
+                      "type": "SAVOIR_ETRE",
+                      "level_id": null
+                    },
+                    {
+                      "name": "Capacité d'analyse",
+                      "type": "SAVOIR_ETRE",
+                      "level_id": null
+                    },
+                    "… 11 more"
+                  ],
+                  "apply_url": "https://careers.flatchr.io/vacancy/olm5nddxwwmdagbz-collaborateur-comptable-h-f?partner=55",
+                  "apply_type": "URL_ONLY",
+                  "few_applicants": false,
+                  "description": "Les missions proposées :\n\n• Gérer la relation client en tant qu'interlocuteur privilégié pour les questions comptables,\n\n• Créer et mainteni…",
+                  "profile": "Le profil recherché :\n\n• Bac +2 en comptabilité ou équivalent,\n\n• Expérience professionnelle en tant que Collaborateur comptable en cabinet …",
+                  "company_about": "Intégrer le 1er cabinet indépendant des Hauts-de-France est un challenge qui vous tente ?\n✅ Vous avez ouvert la bonne annonce !\n\nNotre cabin…",
+                  "process": null,
+                  "description_html": "<p><strong>  Les missions proposées :</strong></p><ul><li><p>Gérer la relation client en tant qu'interlocuteur privilégié pour les questions…",
+                  "profile_html": "<p><strong>  Le profil recherché :</strong></p><ul><li><p>Bac +2 en comptabilité ou équivalent,</p></li><li><p>Expérience professionnelle en…",
+                  "company_about_html": "<p>  Intégrer le <strong>1er cabinet indépendant des Hauts-de-France</strong> est un challenge qui vous tente ?</p><p>✅ Vous avez ouvert la …",
+                  "published_at": "2026-10-30T14:45:18.000+0000",
+                  "first_published_at": "2026-10-30T14:45:18.000+0000",
+                  "modified_at": "2026-10-30T15:05:22.000+0000",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/apec/v1/search": {
+      "get": {
+        "operationId": "apecSearch",
+        "summary": "APEC job search (France)",
+        "description": "Jobs on APEC (apec.fr, France's job board for managers and professionals) for keywords, with the site's filters: contract type, location, function, experience, sector, remote work, position status and company type; sort by relevance or date. `facets` lists each filter's ids with counts. Each job: `id` (offer number), `title`, `url`, `company`, `company_logo`, `location`, `lat`, `lng`, `salary`, `contract_type`, `snippet`, `published_at` and `raw`. 20 jobs a page; `total` is the site's count. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/apec-search",
+        "tags": [
+          "APEC"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords, e.g. `comptable`, `chef de projet`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "comptable"
+          },
+          {
+            "name": "contract_type",
+            "in": "query",
+            "required": false,
+            "description": "`cdi`, `cdd`, `interim`, `mission_interim`, `alternance`, `stage`, `cdi_interimaire` (comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Location ids from `facets.location` (e.g. `799` France), comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "function",
+            "in": "query",
+            "required": false,
+            "description": "Function ids from `facets.function`, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "experience",
+            "in": "query",
+            "required": false,
+            "description": "Experience ids from `facets.experience`, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "description": "Sector ids from `facets.sector`, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "remote",
+            "in": "query",
+            "required": false,
+            "description": "Remote-work ids from `facets.remote`, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "position_status",
+            "in": "query",
+            "required": false,
+            "description": "Position status ids from `facets.position_status`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "company_type",
+            "in": "query",
+            "required": false,
+            "description": "Company type ids from `facets.company_type`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "date"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "comptable",
+                  "applied_filters": {},
+                  "total": 11090,
+                  "page": 1,
+                  "count": 20,
+                  "next_page": 2,
+                  "facets": {
+                    "contract_type": [
+                      {
+                        "id": 101888,
+                        "count": 10454,
+                        "name": "cdi"
+                      },
+                      {
+                        "id": 20053,
+                        "count": 83,
+                        "name": "alternance"
+                      },
+                      "… 2 more"
+                    ],
+                    "contract_duration": [
+                      {
+                        "id": 21237,
+                        "count": 141
+                      },
+                      {
+                        "id": 21238,
+                        "count": 296
+                      },
+                      "… 2 more"
+                    ],
+                    "company_type": [
+                      {
+                        "id": 143684,
+                        "count": 1906
+                      },
+                      {
+                        "id": 143685,
+                        "count": 5602
+                      },
+                      "… 3 more"
+                    ],
+                    "position_status": [
+                      {
+                        "id": 143688,
+                        "count": 7765
+                      },
+                      {
+                        "id": 143689,
+                        "count": 121
+                      },
+                      "… 1 more"
+                    ],
+                    "experience": [
+                      {
+                        "id": 101881,
+                        "count": 6189
+                      },
+                      {
+                        "id": 20043,
+                        "count": 4777
+                      },
+                      "… 2 more"
+                    ],
+                    "geolocated": [
+                      {
+                        "id": 0,
+                        "count": 378
+                      },
+                      {
+                        "id": 1,
+                        "count": 10712
+                      }
+                    ],
+                    "function": [
+                      {
+                        "id": 101829,
+                        "count": 4
+                      },
+                      {
+                        "id": 101828,
+                        "count": 428
+                      },
+                      "… 8 more"
+                    ],
+                    "location": [
+                      {
+                        "id": 102099,
+                        "count": 36
+                      },
+                      {
+                        "id": 99700,
+                        "count": 9
+                      },
+                      "… 1 more"
+                    ],
+                    "sector": [
+                      {
+                        "id": 101761,
+                        "count": 40
+                      },
+                      {
+                        "id": 101760,
+                        "count": 108
+                      },
+                      "… 26 more"
+                    ],
+                    "education": [
+                      {
+                        "id": 20017,
+                        "count": 16
+                      },
+                      {
+                        "id": 20018,
+                        "count": 6
+                      },
+                      "… 2 more"
+                    ],
+                    "remote": [
+                      {
+                        "id": 20765,
+                        "count": 2355
+                      },
+                      {
+                        "id": 20766,
+                        "count": 789
+                      },
+                      "… 1 more"
+                    ],
+                    "published": [
+                      {
+                        "id": 101850,
+                        "count": 710
+                      },
+                      {
+                        "id": 21239,
+                        "count": 1679
+                      },
+                      "… 3 more"
+                    ],
+                    "salary": [
+                      {
+                        "id": 597179,
+                        "count": 256
+                      },
+                      {
+                        "id": 599738,
+                        "count": 4469
+                      },
+                      "… 4 more"
+                    ]
+                  },
+                  "jobs": [
+                    {
+                      "id": "179687855W",
+                      "title": "Collaborateur comptable F/H",
+                      "url": "https://www.apec.fr/candidat/recherche-emploi.html/emploi/detail-offre/179687855W",
+                      "company": "BDL EXPERTISE COMPTABLE",
+                      "confidential_company": false,
+                      "company_logo": "https://www.apec.fr/media_entreprise/731381/logo_BDL_VALENCIENNES_731381_1389228.png",
+                      "location": "Saint-Amand-les-Eaux - 59",
+                      "lat": 50.440387,
+                      "lng": 3.4439855,
+                      "salary": "32 - 42 k€ brut annuel",
+                      "contract_type": "cdi",
+                      "contract_type_id": 101888,
+                      "contract_duration_months": null,
+                      "experience_id": 597152,
+                      "remote_id": 20765,
+                      "sector_id": 101603,
+                      "sector_parent_id": 101754,
+                      "snippet": "Les missions proposées :   Gérer la relation client en tant qu'interlocuteur privilégié pour les questions comptables, .   Créer et mainteni…",
+                      "published_at": "2026-10-30T14:45:18.000+0000",
+                      "validated_at": "2026-10-30T14:45:18.000+0000",
+                      "few_applicants": false
+                    },
+                    {
+                      "id": "179580578W",
+                      "title": "Comptable Expertise Comptable F/H",
+                      "url": "https://www.apec.fr/candidat/recherche-emploi.html/emploi/detail-offre/179580578W",
+                      "company": "LEA Recrutement",
+                      "confidential_company": false,
+                      "company_logo": "https://www.apec.fr/media_entreprise/760360/logo_LINKING_EXECUTIVE_ASSOCIATES_LEA_760360_1117677.jpg",
+                      "location": "Pézenas - 34",
+                      "lat": 43.4633603,
+                      "lng": 3.4159313,
+                      "salary": "30 - 40 k€ brut annuel",
+                      "contract_type": "cdi",
+                      "contract_type_id": 101888,
+                      "contract_duration_months": null,
+                      "experience_id": 597152,
+                      "remote_id": null,
+                      "sector_id": 101637,
+                      "sector_parent_id": 101773,
+                      "snippet": "- Vos missions principales : - Gestion en autonomie d'un portefeuille clients varié (BIC/BNC/IS) - Révision comptable et établissement des b…",
+                      "published_at": "2026-10-12T23:39:57.000+0000",
+                      "validated_at": "2026-10-12T23:39:57.000+0000",
+                      "few_applicants": false
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

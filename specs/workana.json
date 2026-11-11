@@ -1,0 +1,1813 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Workana",
+    "version": "1.0.0",
+    "description": "The Workana API from API.SH: public Workana data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Workana",
+      "description": "6 endpoints (jobs & b2b)",
+      "x-slug": "workana",
+      "x-domains": [
+        "workana.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workana/v1/categories": {
+      "get": {
+        "operationId": "workanaCategories",
+        "summary": "Workana categories and filter values",
+        "description": "The values /workana/v1/search accepts: categories with their subcategories (slug and name), client regions with their countries, client countries, project languages, publication periods, contract types, bid counts and client payment history.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/workana-categories",
+        "tags": [
+          "Workana"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language of the site's labels and links: `en` (default), `es` or `pt`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "es",
+                "pt"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "lang": "en",
+                  "categories": [
+                    {
+                      "slug": "it-programming",
+                      "name": "IT & Programming",
+                      "subcategories": [
+                        {
+                          "slug": "web-development",
+                          "name": "Web development"
+                        },
+                        {
+                          "slug": "web-design",
+                          "name": "Web design"
+                        },
+                        "… 7 more"
+                      ]
+                    },
+                    {
+                      "slug": "design-multimedia",
+                      "name": "Design & Multimedia",
+                      "subcategories": [
+                        {
+                          "slug": "logo-design",
+                          "name": "Logo design"
+                        },
+                        {
+                          "slug": "web-design-1",
+                          "name": "Web design"
+                        },
+                        "… 12 more"
+                      ]
+                    },
+                    "… 6 more"
+                  ],
+                  "regions": [
+                    {
+                      "value": "south-central-america",
+                      "name": "South & Central America",
+                      "countries": [
+                        "AI",
+                        "AG",
+                        "… 41 more"
+                      ]
+                    },
+                    {
+                      "value": "north-america",
+                      "name": "North America",
+                      "countries": [
+                        "BM",
+                        "CA",
+                        "… 4 more"
+                      ]
+                    },
+                    "… 4 more"
+                  ],
+                  "countries": [
+                    {
+                      "code": "AR",
+                      "name": "Argentina"
+                    },
+                    {
+                      "code": "BR",
+                      "name": "Brazil"
+                    },
+                    "… 242 more"
+                  ],
+                  "languages": [
+                    {
+                      "value": "all",
+                      "name": "All"
+                    },
+                    {
+                      "value": "en",
+                      "name": "English"
+                    },
+                    "… 2 more"
+                  ],
+                  "publication": [
+                    {
+                      "value": "1d",
+                      "name": "Past 24 hours"
+                    },
+                    {
+                      "value": "3d",
+                      "name": "Past 3 days"
+                    },
+                    "… 2 more"
+                  ],
+                  "agreement": [
+                    {
+                      "value": "fixed",
+                      "name": "Fixed price"
+                    },
+                    {
+                      "value": "hourly",
+                      "name": "Hourly"
+                    }
+                  ],
+                  "bids": [
+                    {
+                      "value": "few",
+                      "name": "0 - 4 bids"
+                    },
+                    {
+                      "value": "many",
+                      "name": "5+ bids"
+                    }
+                  ],
+                  "client_history": [
+                    {
+                      "value": "0",
+                      "name": "No payments to freelancers yet"
+                    },
+                    {
+                      "value": "1",
+                      "name": "1+ payments to freelancers"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/workana/v1/client": {
+      "get": {
+        "operationId": "workanaClient",
+        "summary": "Workana client",
+        "description": "A client's public page on Workana: initials as the site shows them, country, rating, verified payment, published and paid projects (and share paid), last login, registration date, badges, about text, open projects (each like a search result) and the first ratings freelancers gave this client (score, criteria, feedback, project, freelancer initials and country). Use /workana/v1/client/ratings for more ratings. The client id comes from /workana/v1/job (`client.id`).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/workana-client",
+        "tags": [
+          "Workana"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Client id (32 characters) or a workana.com/e/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "3458a66c54ee357e61bcbfdb1125ad1b"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language of the site's labels and links: `en` (default), `es` or `pt`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "es",
+                "pt"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "3458a66c54ee357e61bcbfdb1125ad1b",
+                  "url": "https://www.workana.com/e/3458a66c54ee357e61bcbfdb1125ad1b",
+                  "initials": "Stefan B.",
+                  "tagline": null,
+                  "country": {
+                    "code": "DE",
+                    "name": "Germany"
+                  },
+                  "rating": 4.93,
+                  "verified_payment": true,
+                  "published_projects": 17,
+                  "paid_projects": 15,
+                  "paid_share": "89%",
+                  "last_login": "November 05, 2026 14:03",
+                  "registered": "January 15, 2021 14:49",
+                  "badges": [],
+                  "about": null,
+                  "company": null,
+                  "open_projects": [
+                    {
+                      "slug": "ejecutiva-de-ventas-y-logistica",
+                      "url": "https://www.workana.com/job/ejecutiva-de-ventas-y-logistica",
+                      "title": "Ejecutiva de ventas y logistica",
+                      "description": "SBR International, busca una persona en ventas y Account Management, que trabaje en el equipo para desarollar negocios en latino america y e…",
+                      "description_html": "SBR International, busca una persona en ventas y Account Management, que trabaje en el equipo para desarollar negocios en latino america y e…",
+                      "budget": {
+                        "text": "Less than USD 15 / hour",
+                        "currency": "USD",
+                        "min": null,
+                        "max": 15,
+                        "per": "hour"
+                      },
+                      "is_hourly": true,
+                      "posted": "2 years ago",
+                      "published": "2 years ago",
+                      "bids": 1,
+                      "deadline": "More than 6 months",
+                      "featured": false,
+                      "urgent": false,
+                      "skills": [
+                        {
+                          "name": "Sales",
+                          "slug": "sales",
+                          "certified": false
+                        },
+                        {
+                          "name": "Logistic & Shipping",
+                          "slug": "logistic-shipping",
+                          "certified": false
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    {
+                      "slug": "administrativo-a-de-operaciones-comercio-internacional-part-time",
+                      "url": "https://www.workana.com/job/administrativo-a-de-operaciones-comercio-internacional-part-time",
+                      "title": "Administrativo/a de Operaciones/Comercio internacional (Part time)",
+                      "description": "Nos encontramos en la búsqueda de un/a Administrativo/a para nuestro departamento de operaciones.\n\nPrincipales responsabilidades\n\nSeguimient…",
+                      "description_html": "Nos encontramos en la búsqueda de un/a Administrativo/a para nuestro departamento de operaciones.<br/>\n <br/>\nPrincipales responsabilidades<…",
+                      "budget": {
+                        "text": "Less than USD 15 / hour",
+                        "currency": "USD",
+                        "min": null,
+                        "max": 15,
+                        "per": "hour"
+                      },
+                      "is_hourly": true,
+                      "posted": "8 months ago",
+                      "published": "8 months ago",
+                      "bids": 21,
+                      "deadline": "More than 6 months",
+                      "featured": false,
+                      "urgent": false,
+                      "skills": [
+                        {
+                          "name": "CRM",
+                          "slug": "crm",
+                          "certified": false
+                        },
+                        {
+                          "name": "Customer Service",
+                          "slug": "customer-service",
+                          "certified": false
+                        },
+                        "… 5 more"
+                      ]
+                    },
+                    "… 1 more"
+                  ],
+                  "ratings_total": 14,
+                  "ratings": [
+                    {
+                      "id": 952303,
+                      "score": 5,
+                      "criteria": {
+                        "Communication": 5,
+                        "Specifications": 5
+                      },
+                      "feedback": "Hourly project in progress",
+                      "created": "6 months ago",
+                      "project": {
+                        "title": null,
+                        "slug": null,
+                        "private": true,
+                        "skills": [
+                          "Project Management",
+                          "Operations Management",
+                          "… 3 more"
+                        ]
+                      },
+                      "freelancer": {
+                        "initials": "Luis F. V. P.",
+                        "country": "CO",
+                        "hero": false
+                      }
+                    },
+                    {
+                      "id": 952236,
+                      "score": 5,
+                      "criteria": {
+                        "Communication": 5,
+                        "Specifications": 5
+                      },
+                      "feedback": "Hourly project in progress",
+                      "created": "6 months ago",
+                      "project": {
+                        "title": null,
+                        "slug": null,
+                        "private": true,
+                        "skills": [
+                          "Admin Assistant",
+                          "Customer Service",
+                          "… 4 more"
+                        ]
+                      },
+                      "freelancer": {
+                        "initials": "Angie A.",
+                        "country": "VE",
+                        "hero": false
+                      }
+                    },
+                    "… 1 more"
+                  ],
+                  "ratings_next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/workana/v1/client/ratings": {
+      "get": {
+        "operationId": "workanaClientRatings",
+        "summary": "Workana client ratings",
+        "description": "Ratings freelancers gave a client: score, per-criterion stars, feedback, date, project (title and slug when public, skills) and the freelancer's initials and country. `total` is the client's number of ratings. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/workana-client-ratings",
+        "tags": [
+          "Workana"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Client id (32 characters) or a workana.com/e/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "3458a66c54ee357e61bcbfdb1125ad1b"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language of the site's labels and links: `en` (default), `es` or `pt`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "es",
+                "pt"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "3458a66c54ee357e61bcbfdb1125ad1b",
+                  "page": 1,
+                  "total": 14,
+                  "count": 3,
+                  "next_page": 2,
+                  "ratings": [
+                    {
+                      "id": 952303,
+                      "score": 5,
+                      "criteria": {
+                        "Communication": 5,
+                        "Specifications": 5
+                      },
+                      "feedback": "Hourly project in progress",
+                      "created": "6 months ago",
+                      "project": {
+                        "title": null,
+                        "slug": null,
+                        "private": true,
+                        "skills": [
+                          "Project Management",
+                          "Operations Management",
+                          "… 3 more"
+                        ]
+                      },
+                      "freelancer": {
+                        "initials": "Luis F. V. P.",
+                        "country": "CO",
+                        "hero": false
+                      }
+                    },
+                    {
+                      "id": 952236,
+                      "score": 5,
+                      "criteria": {
+                        "Communication": 5,
+                        "Specifications": 5
+                      },
+                      "feedback": "Hourly project in progress",
+                      "created": "6 months ago",
+                      "project": {
+                        "title": null,
+                        "slug": null,
+                        "private": true,
+                        "skills": [
+                          "Admin Assistant",
+                          "Customer Service",
+                          "… 4 more"
+                        ]
+                      },
+                      "freelancer": {
+                        "initials": "Angie A.",
+                        "country": "VE",
+                        "hero": false
+                      }
+                    },
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/workana/v1/job": {
+      "get": {
+        "operationId": "workanaJob",
+        "summary": "Workana project",
+        "description": "One Workana project: `title`, `labels`, `status`, publication date, category and subcategory (names and slugs), `description` (text and HTML), the client's answers (`details`, e.g. project size), `delivery_term`, `skills`, `bids`, `interested_freelancers`, and the client (id for /workana/v1/client, initials, country, rating, published and paid projects, verified payment, member since), plus the previous and next project slugs. The budget is shown on /workana/v1/search; logged out the project page shows only its label. `latest=true` returns the newest project.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/workana-job",
+        "tags": [
+          "Workana"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Project slug or a workana.com/job/... link. Required unless `latest=true`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "sales-and-client-account-coordinator-for-chemical-trading-company"
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`true`: the newest project on the board.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language of the site's labels and links: `en` (default), `es` or `pt`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "es",
+                "pt"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "sales-and-client-account-coordinator-for-chemical-trading-company",
+                  "url": "https://www.workana.com/job/sales-and-client-account-coordinator-for-chemical-trading-company",
+                  "title": "Sales and Client Account Coordinator for Chemical Trading Company",
+                  "labels": [
+                    "Max project"
+                  ],
+                  "status": "In progress",
+                  "published": "October 21, 2025",
+                  "published_date": "2025-10-21",
+                  "category": "Sales & Marketing",
+                  "category_slug": "sales-marketing",
+                  "subcategory": "Sales Executive",
+                  "subcategory_slug": "sales-executive",
+                  "budget": null,
+                  "budget_label": "Open",
+                  "description": "We are seeking a dedicated and proactive Sales and Client Account Coordinator to join SBR International, a dynamic chemical trading company.…",
+                  "description_html": "We are seeking a dedicated and proactive Sales and Client Account Coordinator to join SBR International, a dynamic chemical trading company.…",
+                  "details": {
+                    "Project size": "Large"
+                  },
+                  "delivery_term": null,
+                  "skills": [
+                    {
+                      "name": "Sales",
+                      "slug": "sales"
+                    },
+                    {
+                      "name": "Customer Experience",
+                      "slug": "customer-experience"
+                    },
+                    "… 2 more"
+                  ],
+                  "bids": 3,
+                  "interested_freelancers": 3,
+                  "client": {
+                    "id": "3458a66c54ee357e61bcbfdb1125ad1b",
+                    "url": "https://www.workana.com/e/3458a66c54ee357e61bcbfdb1125ad1b",
+                    "initials": "Stefan B.",
+                    "country_code": "DE",
+                    "rating": 4.93,
+                    "published_projects": 17,
+                    "paid_projects": 15,
+                    "verified_payment": true,
+                    "member_since": "January 2021"
+                  },
+                  "previous_project": "android-app-publishing-specialist-for-google-play-store",
+                  "next_project": "detail-oriented-data-entry-specialist-for-pdf-to-excel-conversion-and-record-organization",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/workana/v1/search": {
+      "get": {
+        "operationId": "workanaSearch",
+        "summary": "Workana project search",
+        "description": "Open freelance projects on Workana with every filter of the site's job board: keywords, category, subcategories, skills, client country or region, project language, publication date, fixed price or hourly, number of bids, client payment history, fixed budget range and hourly rate range. Each project: `slug`, `url`, `title`, `description` (text and HTML), `budget` (text, currency, min, max, per project or hour), `is_hourly`, `posted`, `bids`, `deadline`, `featured`, `urgent`, `client` (initials as the site shows them, country, rating, verified payment), `skills`, plus `raw`. `total` is the site's match count (it stops counting at 10,000; `total_capped`). Some keyword searches return fewer than 20 projects per page, as the site does. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/workana-search",
+        "tags": [
+          "Workana"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category slug from /workana/v1/categories (e.g. `it-programming`, `design-multimedia`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subcategory",
+            "in": "query",
+            "required": false,
+            "description": "Subcategory slugs, comma separated (e.g. `web-development,mobile-development`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skills",
+            "in": "query",
+            "required": false,
+            "description": "Skill slugs from /workana/v1/skills, comma separated (up to 5).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Client countries as ISO codes, comma separated (e.g. `US,AR`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "description": "Client region.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "south-central-america",
+                "north-america",
+                "europe",
+                "africa",
+                "asia",
+                "oceania"
+              ]
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Project languages, comma separated: `en`, `es`, `pt` or `all` (default all).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "en"
+          },
+          {
+            "name": "publication",
+            "in": "query",
+            "required": false,
+            "description": "Published in the last 24 hours, 3 days, week, or over a week ago.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1d",
+                "3d",
+                "1w",
+                "gt1w"
+              ]
+            }
+          },
+          {
+            "name": "agreement",
+            "in": "query",
+            "required": false,
+            "description": "Fixed price or hourly projects.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fixed",
+                "hourly"
+              ]
+            }
+          },
+          {
+            "name": "bids",
+            "in": "query",
+            "required": false,
+            "description": "`few` = 0-4 bids, `many` = 5 or more.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "few",
+                "many"
+              ]
+            }
+          },
+          {
+            "name": "client_history",
+            "in": "query",
+            "required": false,
+            "description": "`0` = clients with no payments to freelancers yet, `1` = clients with 1 or more.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1"
+              ]
+            }
+          },
+          {
+            "name": "budget_min",
+            "in": "query",
+            "required": false,
+            "description": "Fixed budget from (USD).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "budget_max",
+            "in": "query",
+            "required": false,
+            "description": "Fixed budget up to (USD).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "hourly_rate_min",
+            "in": "query",
+            "required": false,
+            "description": "Hourly rate from (USD).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "hourly_rate_max",
+            "in": "query",
+            "required": false,
+            "description": "Hourly rate up to (USD).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (20 per page, up to 500).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language of the site's labels and links: `en` (default), `es` or `pt`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "es",
+                "pt"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "lang": "en",
+                  "applied_filters": {
+                    "language": [
+                      "en"
+                    ],
+                    "q": "python"
+                  },
+                  "total": 168,
+                  "total_capped": false,
+                  "page": 1,
+                  "pages": 9,
+                  "per_page": 20,
+                  "count": 7,
+                  "next_page": 2,
+                  "items": [
+                    {
+                      "slug": "experienced-crypto-trading-bot-developer-for-automated-strategies",
+                      "url": "https://www.workana.com/job/experienced-crypto-trading-bot-developer-for-automated-strategies",
+                      "title": "Experienced Crypto Trading Bot Developer for Automated Strategies",
+                      "description": "We are seeking an experienced developer to create a robust cryptocurrency trading bot. The ideal candidate will have a proven track record i…",
+                      "description_html": "We are seeking an experienced developer to create a robust cryptocurrency trading bot. The ideal candidate will have a proven track record i…",
+                      "budget": {
+                        "text": "Mais de USD 3.000",
+                        "currency": "USD",
+                        "min": 3000,
+                        "max": null,
+                        "per": "project"
+                      },
+                      "is_hourly": false,
+                      "posted": "há 6 horas",
+                      "published": "há 6 horas",
+                      "bids": 32,
+                      "deadline": null,
+                      "featured": false,
+                      "urgent": false,
+                      "client": {
+                        "initials": "A. C.",
+                        "country": {
+                          "code": "PH",
+                          "name": "Filipinas"
+                        },
+                        "rating": 0,
+                        "verified_payment": false,
+                        "plan": null
+                      },
+                      "skills": [
+                        {
+                          "name": "Python",
+                          "slug": "python",
+                          "certified": false
+                        },
+                        {
+                          "name": "API",
+                          "slug": "api",
+                          "certified": false
+                        },
+                        "… 3 more"
+                      ]
+                    },
+                    {
+                      "slug": "development-of-an-innovative-ai-powered-digital-platform",
+                      "url": "https://www.workana.com/job/development-of-an-innovative-ai-powered-digital-platform",
+                      "title": "Development of an Innovative Ai-Powered Digital Platform",
+                      "description": "We are seeking an experienced team or individual to develop a modern digital platform. The core objective of this platform is to connect peo…",
+                      "description_html": "We are seeking an experienced team or individual to develop a modern digital platform. The core objective of this platform is to connect peo…",
+                      "budget": {
+                        "text": "USD 100 - 250",
+                        "currency": "USD",
+                        "min": 100,
+                        "max": 250,
+                        "per": "project"
+                      },
+                      "is_hourly": false,
+                      "posted": "há 14 horas",
+                      "published": "há 14 horas",
+                      "bids": 22,
+                      "deadline": null,
+                      "featured": false,
+                      "urgent": false,
+                      "client": {
+                        "initials": "J.",
+                        "country": {
+                          "code": "BD",
+                          "name": "Bangladesh"
+                        },
+                        "rating": 0,
+                        "verified_payment": false,
+                        "plan": null
+                      },
+                      "skills": [
+                        {
+                          "name": "Machine Learning",
+                          "slug": "machine-learning",
+                          "certified": false
+                        },
+                        {
+                          "name": "API",
+                          "slug": "api",
+                          "certified": false
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    "… 5 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/workana/v1/skills": {
+      "get": {
+        "operationId": "workanaSkills",
+        "summary": "Workana skills",
+        "description": "Skills from Workana's skills list matching a text (slug for the search's `skills` filter, name, group), best matches first; without `q` the whole list in the site's order.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/workana-skills",
+        "tags": [
+          "Workana"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Text to match (part of the name or slug).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Number of skills (default 50, max 500).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language of the site's labels and links: `en` (default), `es` or `pt`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "es",
+                "pt"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "lang": "en",
+                  "q": "python",
+                  "total": 5,
+                  "count": 5,
+                  "skills": [
+                    {
+                      "id": 287,
+                      "slug": "python",
+                      "name": "Python",
+                      "group": "Experts",
+                      "priority": 1
+                    },
+                    {
+                      "id": 1028,
+                      "slug": "data-analyst-python",
+                      "name": "Data Analyst (Python)",
+                      "group": "Experts",
+                      "priority": 1
+                    },
+                    "… 3 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

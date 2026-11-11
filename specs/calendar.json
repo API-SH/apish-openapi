@@ -1,0 +1,2349 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Calendar",
+    "version": "1.0.0",
+    "description": "The Calendar API from API.SH: public Calendar data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Calendar",
+      "description": "10 endpoints (public data)",
+      "x-slug": "calendar",
+      "x-domains": []
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calendar/v1/business-days": {
+      "get": {
+        "operationId": "calendarBusinessDays",
+        "summary": "Business days",
+        "description": "Business days between two dates in a country (and region), skipping its weekend days and holidays: calendar days, business days, weekend days, holidays falling on business days and the list of holidays. Or pass `days` to add (or subtract) business days to a date and get the resulting date.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/calendar-business-days",
+        "tags": [
+          "Calendar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "description": "Country: ISO code or English name. See /calendar/v1/holiday-countries.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "description": "Start date (YYYY-MM-DD; default the first day of this month, or today with `days`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-12-01"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "description": "End date (YYYY-MM-DD; default the last day of start_date's month).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-12-31"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Instead of end_date: business days to add (negative to subtract), up to 1000.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "subdivision",
+            "in": "query",
+            "required": false,
+            "description": "State, province or region code (e.g. `TX`, `BY`, `ENG`) to add its own holidays to the national ones.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Holiday category: `public` (default) or the country's others, e.g. `bank`, `government`, `optional`, `school`, `unofficial`; comma-separated or `all`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country_code": "US",
+                  "subdivision": null,
+                  "start_date": "2026-11-01",
+                  "end_date": "2026-11-30",
+                  "calendar_days": 30,
+                  "business_days": 19,
+                  "weekend_days": 9,
+                  "holidays_on_business_days": 2,
+                  "weekend": [
+                    "Saturday",
+                    "Sunday"
+                  ],
+                  "holidays": [
+                    {
+                      "date": "2026-11-11",
+                      "day_of_week": "Wednesday",
+                      "holidays": [
+                        "Veterans Day"
+                      ],
+                      "on_weekend": false
+                    },
+                    {
+                      "date": "2026-11-26",
+                      "day_of_week": "Thursday",
+                      "holidays": [
+                        "Thanksgiving Day"
+                      ],
+                      "on_weekend": false
+                    }
+                  ],
+                  "attribution": "Holidays: the open-source holidays project (github.com/vacanza/holidays, MIT)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/calendar/v1/convert": {
+      "get": {
+        "operationId": "calendarConvert",
+        "summary": "Calendar conversion",
+        "description": "Convert a date between the Gregorian calendar and the Hebrew, Persian (Solar Hijri), Islamic (Umm al-Qura and civil), Chinese, Korean (Dangi), Indian national, Ethiopic, Coptic, Buddhist, Japanese and Minguo calendars: year, month number and name, day, era, leap month, cyclic year and the date written in full and in the native script.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/calendar-convert",
+        "tags": [
+          "Calendar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Gregorian date (YYYY-MM-DD); default today.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-11-03"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated target calendars: hebrew, persian, islamic, islamic-civil, chinese, dangi, indian, ethiopic, coptic, buddhist, japanese, roc, gregorian (default: the main ones).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "calendar",
+            "in": "query",
+            "required": false,
+            "description": "Convert from this calendar instead (with year, month, day).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Year in that calendar.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "description": "Month number in that calendar (Hebrew: civil order from Tishri).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "day",
+            "in": "query",
+            "required": false,
+            "description": "Day of the month.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "leap_month",
+            "in": "query",
+            "required": false,
+            "description": "1 for a Chinese or Korean leap month.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "gregorian": "2026-11-03",
+                  "day_of_week": "Tuesday",
+                  "julian_day": 2461349,
+                  "from": "gregorian",
+                  "conversions": {
+                    "hebrew": {
+                      "calendar": "hebrew",
+                      "year": 5787,
+                      "month": 2,
+                      "month_name": "Heshvan",
+                      "day": 23,
+                      "era": "AM",
+                      "formatted": "Tuesday, 23 Heshvan 5787",
+                      "formatted_native": "57870223 12:00 PM"
+                    },
+                    "persian": {
+                      "calendar": "persian",
+                      "year": 1405,
+                      "month": 8,
+                      "month_name": "Aban",
+                      "day": 12,
+                      "era": "AP",
+                      "formatted": "Tuesday, Aban 12, 1405 AP",
+                      "formatted_native": "۱۲ آبان ۱۴۰۵"
+                    },
+                    "islamic": {
+                      "calendar": "islamic-umalqura",
+                      "year": 1448,
+                      "month": 5,
+                      "month_name": "Jumada I",
+                      "day": 23,
+                      "era": "AH",
+                      "formatted": "Tuesday, Jumada I 23, 1448 AH",
+                      "formatted_native": "23 جمادى الأولى 1448 هـ"
+                    },
+                    "chinese": {
+                      "calendar": "chinese",
+                      "year": 2026,
+                      "related_gregorian_year": 2026,
+                      "month": 9,
+                      "month_name": "Ninth Month",
+                      "day": 25,
+                      "era": null,
+                      "formatted": "Tuesday, Ninth Month 25, 2026(bing-wu)",
+                      "formatted_native": "2026丙午年九月廿五"
+                    },
+                    "indian": {
+                      "calendar": "indian",
+                      "year": 1948,
+                      "month": 8,
+                      "month_name": "Kartika",
+                      "day": 12,
+                      "era": "Śaka",
+                      "formatted": "Tuesday, Kartika 12, 1948 Śaka",
+                      "formatted_native": "12 कार्तिक 1948 शक"
+                    },
+                    "ethiopic": {
+                      "calendar": "ethiopic",
+                      "year": 2019,
+                      "month": 2,
+                      "month_name": "Tekemt",
+                      "day": 24,
+                      "era": "AM",
+                      "formatted": "Tuesday, Tekemt 24, 2019 AM",
+                      "formatted_native": "24 ጥቅምት 2019 AM"
+                    },
+                    "coptic": {
+                      "calendar": "coptic",
+                      "year": 1743,
+                      "month": 2,
+                      "month_name": "Baba",
+                      "day": 24,
+                      "era": "AM",
+                      "formatted": "Tuesday, Baba 24, 1743 AM",
+                      "formatted_native": "Baba 24, 1743 AM"
+                    },
+                    "buddhist": {
+                      "calendar": "buddhist",
+                      "year": 2569,
+                      "month": 11,
+                      "month_name": "November",
+                      "day": 3,
+                      "era": "BE",
+                      "formatted": "Tuesday, November 3, 2569 BE",
+                      "formatted_native": "3 พฤศจิกายน 2569"
+                    },
+                    "japanese": {
+                      "calendar": "japanese",
+                      "year": 8,
+                      "month": 11,
+                      "month_name": "November",
+                      "day": 3,
+                      "era": "Reiwa",
+                      "formatted": "Tuesday, November 3, 8 Reiwa",
+                      "formatted_native": "令和8年11月3日"
+                    }
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/calendar/v1/hijri": {
+      "get": {
+        "operationId": "calendarHijri",
+        "summary": "Hijri date converter",
+        "description": "Converts a Gregorian date to the Hijri (Umm al-Qura) calendar, or a Hijri date to Gregorian: year, month number and name, day, and weekday.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/calendar-hijri",
+        "tags": [
+          "Calendar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Gregorian date (YYYY-MM-DD, default today).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-03-20"
+          },
+          {
+            "name": "hijri_date",
+            "in": "query",
+            "required": false,
+            "description": "Hijri date (YYYY-MM-DD) to convert to Gregorian instead, e.g. `1447-09-01`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "gregorian": "2026-03-20",
+                  "day_of_week": "Friday",
+                  "hijri": {
+                    "date": "1447-10-01",
+                    "year": 1447,
+                    "month": 10,
+                    "month_name": "Shawwal",
+                    "day": 1
+                  },
+                  "calendar": "Umm al-Qura",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/calendar/v1/holiday-countries": {
+      "get": {
+        "operationId": "calendarHolidayCountries",
+        "summary": "Holiday countries and regions",
+        "description": "Countries with holiday data: code, name, subdivisions (code and name), holiday categories, languages, weekend days and the years covered.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/calendar-holiday-countries",
+        "tags": [
+          "Calendar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 250,
+                  "items": [
+                    {
+                      "code": "AD",
+                      "name": "Andorra",
+                      "subdivisions": [
+                        {
+                          "code": "02",
+                          "name": "Canillo"
+                        },
+                        {
+                          "code": "03",
+                          "name": "Encamp"
+                        },
+                        "… 5 more"
+                      ],
+                      "categories": [
+                        "government",
+                        "public"
+                      ],
+                      "languages": [
+                        "ca",
+                        "en_US",
+                        "… 1 more"
+                      ],
+                      "weekend": [
+                        "Saturday",
+                        "Sunday"
+                      ],
+                      "years": [
+                        2000,
+                        2035
+                      ]
+                    },
+                    {
+                      "code": "AE",
+                      "name": "United Arab Emirates",
+                      "subdivisions": [],
+                      "categories": [
+                        "government",
+                        "optional",
+                        "… 1 more"
+                      ],
+                      "languages": [
+                        "ar",
+                        "en_US",
+                        "… 1 more"
+                      ],
+                      "weekend": [
+                        "Saturday",
+                        "Sunday"
+                      ],
+                      "years": [
+                        2000,
+                        2035
+                      ]
+                    },
+                    "… 248 more"
+                  ],
+                  "attribution": "Holidays: the open-source holidays project (github.com/vacanza/holidays, MIT)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/calendar/v1/holidays": {
+      "get": {
+        "operationId": "calendarHolidays",
+        "summary": "Public holidays",
+        "description": "Public holidays of a country for a year (2000-2035), with the holidays of a state or region when given: date, weekday, English and local name, categories, and whether it is national or which subdivisions observe it. About 250 countries; filter by month and category (public, bank, government, optional...). `subdivision=all` lists every regional holiday. Several years at once with `years` (e.g. `2025,2026` or `2025-2027`) or a date range with `from`/`to`; the answer then also has `years`, `from` and `to`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/calendar-holidays",
+        "tags": [
+          "Calendar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "description": "Country: ISO code or English name. See /calendar/v1/holiday-countries.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Year (default this year). For several years use `years`, or `from`/`to` for a date range.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "2026"
+          },
+          {
+            "name": "subdivision",
+            "in": "query",
+            "required": false,
+            "description": "State, province or region code (e.g. `TX`, `BY`, `ENG`) to add its own holidays to the national ones.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Holiday category: `public` (default) or the country's others, e.g. `bank`, `government`, `optional`, `school`, `unofficial`; comma-separated or `all`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "description": "Only this month (1-12).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "years",
+            "in": "query",
+            "required": false,
+            "description": "Several years instead of `year`: comma-separated and/or ranges, e.g. `2025,2026` or `2025-2027` (up to 11 years).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start of a date range (YYYY-MM-DD), instead of `year`; without `to`, up to the end of that year.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "End of a date range (YYYY-MM-DD), inclusive; without `from`, from the start of that year.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country_code": "US",
+                  "country": "United States",
+                  "year": 2026,
+                  "month": null,
+                  "subdivision": null,
+                  "categories": [
+                    "public"
+                  ],
+                  "count": 12,
+                  "holidays": [
+                    {
+                      "date": "2026-01-01",
+                      "day_of_week": "Thursday",
+                      "name": "New Year's Day",
+                      "local_name": "New Year's Day",
+                      "categories": [
+                        "government",
+                        "public"
+                      ],
+                      "national": true,
+                      "subdivisions": null,
+                      "country_code": "US"
+                    },
+                    {
+                      "date": "2026-01-19",
+                      "day_of_week": "Monday",
+                      "name": "Martin Luther King Jr. Day",
+                      "local_name": "Martin Luther King Jr. Day",
+                      "categories": [
+                        "public"
+                      ],
+                      "national": true,
+                      "subdivisions": null,
+                      "country_code": "US"
+                    },
+                    "… 10 more"
+                  ],
+                  "attribution": "Holidays: the open-source holidays project (github.com/vacanza/holidays, MIT)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/calendar/v1/is-holiday": {
+      "get": {
+        "operationId": "calendarIsHoliday",
+        "summary": "Is a date a holiday",
+        "description": "Whether a date is a public holiday, a weekend day or a business day in a country (and region), with the holidays on that date.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/calendar-is-holiday",
+        "tags": [
+          "Calendar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "description": "Country: ISO code or English name. See /calendar/v1/holiday-countries.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "GB"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Date (YYYY-MM-DD, default today).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-12-25"
+          },
+          {
+            "name": "subdivision",
+            "in": "query",
+            "required": false,
+            "description": "State, province or region code (e.g. `TX`, `BY`, `ENG`) to add its own holidays to the national ones.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Holiday category: `public` (default) or the country's others, e.g. `bank`, `government`, `optional`, `school`, `unofficial`; comma-separated or `all`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country_code": "GB",
+                  "subdivision": null,
+                  "date": "2026-12-25",
+                  "day_of_week": "Friday",
+                  "is_holiday": true,
+                  "is_weekend": false,
+                  "is_business_day": false,
+                  "holidays": [
+                    {
+                      "date": "2026-12-25",
+                      "day_of_week": "Friday",
+                      "name": "Christmas Day",
+                      "local_name": "Christmas Day",
+                      "categories": [
+                        "public"
+                      ],
+                      "national": true,
+                      "subdivisions": null,
+                      "country_code": "GB"
+                    }
+                  ],
+                  "attribution": "Holidays: the open-source holidays project (github.com/vacanza/holidays, MIT)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/calendar/v1/long-weekends": {
+      "get": {
+        "operationId": "calendarLongWeekends",
+        "summary": "Long weekends",
+        "description": "Every stretch of three or more days off in a country's year (weekends joined with public holidays), with the holidays in it, and the longer breaks a single bridge day would create.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/calendar-long-weekends",
+        "tags": [
+          "Calendar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "description": "Country ISO code or English name.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "DE"
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "Year (default this year).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "subdivision",
+            "in": "query",
+            "required": false,
+            "description": "State or region code, to include its holidays.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Holiday categories (default public).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_days",
+            "in": "query",
+            "required": false,
+            "description": "Shortest break to list (default 3).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "bridge",
+            "in": "query",
+            "required": false,
+            "description": "0 = leave out breaks that need a bridge day (default 1).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country_code": "DE",
+                  "subdivision": null,
+                  "year": 2026,
+                  "weekend": [
+                    "Saturday",
+                    "Sunday"
+                  ],
+                  "min_days": 3,
+                  "include_bridges": true,
+                  "count": 6,
+                  "long_weekends": [
+                    {
+                      "start_date": "2026-01-01",
+                      "end_date": "2026-01-04",
+                      "day_count": 4,
+                      "start_day_of_week": "Thursday",
+                      "end_day_of_week": "Sunday",
+                      "bridge_days": [
+                        "2026-01-02"
+                      ],
+                      "needs_bridge_day": true,
+                      "holidays": [
+                        {
+                          "date": "2026-01-01",
+                          "name": "New Year's Day"
+                        }
+                      ]
+                    },
+                    {
+                      "start_date": "2026-04-03",
+                      "end_date": "2026-04-06",
+                      "day_count": 4,
+                      "start_day_of_week": "Friday",
+                      "end_day_of_week": "Monday",
+                      "bridge_days": [],
+                      "needs_bridge_day": false,
+                      "holidays": [
+                        {
+                          "date": "2026-04-03",
+                          "name": "Good Friday"
+                        },
+                        {
+                          "date": "2026-04-06",
+                          "name": "Easter Monday"
+                        }
+                      ]
+                    },
+                    "… 4 more"
+                  ],
+                  "attribution": "Holidays: the open-source holidays project (github.com/vacanza/holidays, MIT)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/calendar/v1/next-holidays": {
+      "get": {
+        "operationId": "calendarNextHolidays",
+        "summary": "Upcoming holidays",
+        "description": "The next holidays of a country (and region) from today or a date, with days until each.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/calendar-next-holidays",
+        "tags": [
+          "Calendar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "description": "Country: ISO code or English name. See /calendar/v1/holiday-countries.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "IN"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "description": "How many (default 10, max 100).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "5"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start date (YYYY-MM-DD, default today).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subdivision",
+            "in": "query",
+            "required": false,
+            "description": "State, province or region code (e.g. `TX`, `BY`, `ENG`) to add its own holidays to the national ones.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Holiday category: `public` (default) or the country's others, e.g. `bank`, `government`, `optional`, `school`, `unofficial`; comma-separated or `all`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country_code": "IN",
+                  "subdivision": null,
+                  "from": "2026-11-04",
+                  "count": 10,
+                  "holidays": [
+                    {
+                      "date": "2026-11-08",
+                      "day_of_week": "Sunday",
+                      "name": "Diwali",
+                      "local_name": "Diwali",
+                      "categories": [
+                        "public"
+                      ],
+                      "national": true,
+                      "subdivisions": null,
+                      "country_code": "IN",
+                      "days_until": 4
+                    },
+                    {
+                      "date": "2026-11-24",
+                      "day_of_week": "Tuesday",
+                      "name": "Guru Nanak Jayanti",
+                      "local_name": "Guru Nanak Jayanti",
+                      "categories": [
+                        "public"
+                      ],
+                      "national": true,
+                      "subdivisions": null,
+                      "country_code": "IN",
+                      "days_until": 20
+                    },
+                    "… 8 more"
+                  ],
+                  "attribution": "Holidays: the open-source holidays project (github.com/vacanza/holidays, MIT)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/calendar/v1/prayer-times": {
+      "get": {
+        "operationId": "calendarPrayerTimes",
+        "summary": "Islamic prayer times",
+        "description": "Prayer times for any place and date (up to 31 days): imsak, fajr, sunrise, dhuhr, asr, sunset, maghrib, isha and midnight in local time, with the Hijri date. Computed with the chosen method's published angles (default: the method used in the place's country), Standard or Hanafi Asr, and a high-latitude rule.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/calendar-prayer-times",
+        "tags": [
+          "Calendar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Latitude. Pass with `lon`; or use `q`, `postal_code` or `geonameid`.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": false,
+            "description": "Longitude.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Place name, optionally with region and country: `Cairo`, `Birmingham, GB`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Cairo"
+          },
+          {
+            "name": "postal_code",
+            "in": "query",
+            "required": false,
+            "description": "Postal code, with `country` (default US).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country for `q` or `postal_code` (ISO code or English name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "geonameid",
+            "in": "query",
+            "required": false,
+            "description": "GeoNames id of a place (from /geo/v1/cities).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "First date (YYYY-MM-DD, default today).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Days, 1-31 (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "required": false,
+            "description": "Calculation method (default by country, else MWL).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mwl",
+                "isna",
+                "egypt",
+                "makkah",
+                "karachi",
+                "tehran",
+                "jafari",
+                "gulf",
+                "kuwait",
+                "qatar",
+                "dubai",
+                "singapore",
+                "jakim",
+                "kemenag",
+                "turkey",
+                "france",
+                "russia",
+                "tunisia",
+                "algeria",
+                "morocco",
+                "jordan"
+              ]
+            }
+          },
+          {
+            "name": "school",
+            "in": "query",
+            "required": false,
+            "description": "Asr: `standard` (Shafi, Maliki, Hanbali) or `hanafi` (default by country).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "standard",
+                "hanafi"
+              ]
+            }
+          },
+          {
+            "name": "high_latitude",
+            "in": "query",
+            "required": false,
+            "description": "Rule where twilight never ends: `angle_based` (default), `night_middle`, `one_seventh`, `none`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "angle_based",
+                "night_middle",
+                "one_seventh",
+                "none"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "location": {
+                    "geonameid": 360630,
+                    "name": "Cairo",
+                    "ascii_name": "Cairo",
+                    "lat": 30.06263,
+                    "lon": 31.24967,
+                    "country_code": "EG",
+                    "country": "Egypt",
+                    "admin1_code": "11",
+                    "admin1": "Cairo",
+                    "admin2": null,
+                    "population": 9606916,
+                    "elevation_m": 23,
+                    "timezone": "Africa/Cairo",
+                    "feature_code": "PPLC",
+                    "feature": "capital",
+                    "query": {
+                      "q": "Cairo"
+                    }
+                  },
+                  "method": {
+                    "id": "egypt",
+                    "name": "Egyptian General Authority of Survey",
+                    "fajr_angle": 19.5,
+                    "isha": 17.5,
+                    "maghrib_angle": null
+                  },
+                  "school": "standard",
+                  "high_latitude": "angle_based",
+                  "count": 1,
+                  "days": [
+                    {
+                      "date": "2026-11-04",
+                      "imsak": "04:33",
+                      "fajr": "04:43",
+                      "sunrise": "06:10",
+                      "dhuhr": "11:39",
+                      "asr": "14:43",
+                      "sunset": "17:06",
+                      "maghrib": "17:06",
+                      "isha": "18:25",
+                      "midnight": "23:38",
+                      "hijri": {
+                        "date": "1448-05-24",
+                        "year": 1448,
+                        "month": 5,
+                        "month_name": "Jumada al-Awwal",
+                        "day": 24
+                      }
+                    }
+                  ],
+                  "note": "Times are computed astronomically from the method's published angles; local mosques may add their own adjustments.",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/calendar/v1/sun-moon": {
+      "get": {
+        "operationId": "calendarSunMoon",
+        "summary": "Sunrise, sunset and moon phase",
+        "description": "For a place and date (or up to 31 days): sunrise, sunset, solar noon and its sun altitude, day length, civil, nautical and astronomical dawn and dusk, golden hours, polar day or night; moonrise, moonset, moon phase and its name, illumination, age and distance; and the next new moon, first quarter, full moon and last quarter. Times are in the place's local time zone.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/calendar-sun-moon",
+        "tags": [
+          "Calendar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Place name, e.g. London or Paris, France.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "London"
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Latitude (with lon) instead of a place.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": false,
+            "description": "Longitude.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "postal_code",
+            "in": "query",
+            "required": false,
+            "description": "Postal code (with country).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country code to narrow a place or postal code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "First day (YYYY-MM-DD); default today at the place.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Number of days (default 1, max 31).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "elevation",
+            "in": "query",
+            "required": false,
+            "description": "Observer height in metres (moves sunrise and sunset slightly).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "location": {
+                    "geonameid": 2643743,
+                    "name": "London",
+                    "ascii_name": "London",
+                    "lat": 51.50853,
+                    "lon": -0.12574,
+                    "country_code": "GB",
+                    "country": "United Kingdom",
+                    "admin1_code": "ENG",
+                    "admin1": "England",
+                    "admin2": "Greater London",
+                    "population": 8961989,
+                    "elevation_m": 25,
+                    "timezone": "Europe/London",
+                    "feature_code": "PPLC",
+                    "feature": "capital",
+                    "query": {
+                      "q": "London"
+                    }
+                  },
+                  "elevation_m": 25,
+                  "next_moon_phases": {
+                    "new_moon": "2026-11-09T07:06:00+00:00",
+                    "first_quarter": "2026-11-17T09:05:00+00:00",
+                    "full_moon": "2026-11-24T17:36:00+00:00",
+                    "last_quarter": "2026-12-01T08:46:00+00:00"
+                  },
+                  "count": 1,
+                  "days": [
+                    {
+                      "date": "2026-11-03",
+                      "sun": {
+                        "sunrise": "2026-11-03T06:57:04+00:00",
+                        "sunset": "2026-11-03T16:33:34+00:00",
+                        "solar_noon": "2026-11-03T11:45:19+00:00",
+                        "solar_noon_altitude_deg": 23.49,
+                        "day_length_seconds": 34590,
+                        "day_length": "9h 36m",
+                        "polar_day": false,
+                        "polar_night": false,
+                        "civil_dawn": "2026-11-03T06:21:45+00:00",
+                        "civil_dusk": "2026-11-03T17:08:53+00:00",
+                        "nautical_dawn": "2026-11-03T05:42:12+00:00",
+                        "nautical_dusk": "2026-11-03T17:48:26+00:00",
+                        "astronomical_dawn": "2026-11-03T05:03:28+00:00",
+                        "astronomical_dusk": "2026-11-03T18:27:11+00:00",
+                        "golden_hour_morning_end": "2026-11-03T07:46:56+00:00",
+                        "golden_hour_evening_start": "2026-11-03T15:43:43+00:00"
+                      },
+                      "moon": {
+                        "moonrise": null,
+                        "moonset": "2026-11-03T14:24:16+00:00",
+                        "always_up": false,
+                        "always_down": false,
+                        "phase": 0.807,
+                        "phase_name": "Waning Crescent",
+                        "illumination_pct": 32.4,
+                        "age_days": 23.8,
+                        "waxing": false,
+                        "distance_km": 371870
+                      }
+                    }
+                  ],
+                  "note": "Computed astronomically for the location (times in its local time zone, accurate to about a minute; moon times to a few minutes). Phase: 0 n…",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

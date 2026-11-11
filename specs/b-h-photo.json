@@ -1,0 +1,920 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: B&H Photo",
+    "version": "1.0.0",
+    "description": "The B&H Photo API from API.SH: public B&H Photo data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "B&H Photo",
+      "description": "2 endpoints (e-commerce)",
+      "x-slug": "b-h-photo",
+      "x-domains": [
+        "bhphotovideo.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bhphoto/v1/category": {
+      "get": {
+        "operationId": "bhphotoCategory",
+        "summary": "B&H Photo category products",
+        "description": "One page of a B&H Photo category listing (a category link such as https://www.bhphotovideo.com/c/buy/mirrorless-cameras/ci/16158), with the same product fields as search and the category's filter `facets`; pass a value's `filters` back as `filters` to narrow it. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bhphoto-category",
+        "tags": [
+          "B&H Photo"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": true,
+            "description": "A bhphotovideo.com category link (`/c/buy/<name>/ci/<id>`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.bhphotovideo.com/c/buy/mirrorless-cameras/ci/16158"
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "A `filters` value from `facets`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": "/c/buy/mirrorless-cameras/ci/16158",
+                  "filters": null,
+                  "title": "Mirrorless Cameras",
+                  "page": 1,
+                  "total": null,
+                  "pages": 37,
+                  "count": 28,
+                  "next_page": 2,
+                  "products": [
+                    {
+                      "position": 1,
+                      "id": "1970580",
+                      "item_source": "REG",
+                      "name": "Sony a7R VI Mirrorless Camera",
+                      "url": "https://www.bhphotovideo.com/c/product/1970580-REG/sony_ilce7rm6b_a7r_vi_mirrorless_camera.html",
+                      "bh_number": "SOA7R6",
+                      "mfr_number": "ILCE-7RM6/B",
+                      "price": 4498,
+                      "list_price": null,
+                      "savings": null,
+                      "rating": 5,
+                      "review_count": 40,
+                      "key_features": [
+                        "66.8MP FF Stacked Exmor RS BSI Sensor",
+                        "30 fps Shooting with AF/AE & Pre-Capture",
+                        "… 2 more"
+                      ],
+                      "stock": "In Stock",
+                      "shipping": "Free Next Day Shipping",
+                      "store_display": true,
+                      "used_from": {
+                        "text": "Used from $4,049.95",
+                        "url": "https://www.bhphotovideo.com/c/used/1970580/sony_ilce7rm6b_a7r_vi_mirrorless_camera.html"
+                      },
+                      "image": "https://www.bhphotovideo.com/cdn-cgi/image/fit=scale-down,width=345/https://static.bhphoto.com/images/images345x345/1778668198_1970580.jpg"
+                    },
+                    {
+                      "position": 2,
+                      "id": "1935439",
+                      "item_source": "REG",
+                      "name": "Sony a7 V Mirrorless Camera",
+                      "url": "https://www.bhphotovideo.com/c/product/1935439-REG/sony_a7_v_mirrorless_camera.html",
+                      "bh_number": "SOA75",
+                      "mfr_number": "ILCE-7M5/B",
+                      "price": 2898,
+                      "list_price": null,
+                      "savings": null,
+                      "rating": 5,
+                      "review_count": 107,
+                      "key_features": [
+                        "33MP Partially-Stacked Exmor RS Sensor",
+                        "BIONZ XR2 Processor, Built-In AI Unit",
+                        "… 2 more"
+                      ],
+                      "stock": "In Stock",
+                      "shipping": "Free Next Day Shipping",
+                      "store_display": true,
+                      "used_from": {
+                        "text": "Used from $2,665.95",
+                        "url": "https://www.bhphotovideo.com/c/used/1935439/sony_a7_v_mirrorless_camera.html"
+                      },
+                      "image": "https://www.bhphotovideo.com/cdn-cgi/image/fit=scale-down,width=345/https://static.bhphoto.com/images/images345x345/1764667996_1935439.jpg"
+                    },
+                    "… 26 more"
+                  ],
+                  "facets": [
+                    {
+                      "name": "Savings & Stock",
+                      "values": [
+                        {
+                          "label": "Deals & Rebates",
+                          "count": 909,
+                          "filters": "fct_a_filter_by:02_REBATE:REGULAR"
+                        },
+                        {
+                          "label": "In Stock",
+                          "count": 948,
+                          "filters": "fct_a_filter_by:03_INSTOCK:REGULAR"
+                        },
+                        "… 3 more"
+                      ]
+                    },
+                    {
+                      "name": "Brand",
+                      "values": [
+                        {
+                          "label": "Canon",
+                          "count": 122,
+                          "filters": "fct_brand_name:canon:REGULAR"
+                        },
+                        {
+                          "label": "FUJIFILM",
+                          "count": 108,
+                          "filters": "fct_brand_name:fujifilm:REGULAR"
+                        },
+                        "… 3 more"
+                      ]
+                    }
+                  ],
+                  "quick_filters": [],
+                  "url": "https://www.bhphotovideo.com/c/buy/Mirrorless-System-Cameras/ci/16158",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/bhphoto/v1/search": {
+      "get": {
+        "operationId": "bhphotoSearch",
+        "summary": "B&H Photo product search",
+        "description": "Products matching words on B&H Photo Video (bhphotovideo.com, US), one results page at a time: each product with B&H id, name, link, B&H number and manufacturer number, price, list price and savings when discounted, star rating and review count, key features, stock status, shipping message, in-store display, the used price when a used unit is offered, and image. `facets` lists the page's filter groups (category, brand, savings & stock, rating …) with counts; pass a value's `filters` back as `filters` to narrow the search. Some brand words open a brand page instead of a result list (`redirected_to`). Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bhphoto-search",
+        "tags": [
+          "B&H Photo"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search words.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "sony a7"
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "A `filters` value from `facets`, e.g. `fct_category:mirrorless_system_cameras_16158:REGULAR`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "sony a7",
+                  "filters": null,
+                  "title": "sony a7",
+                  "page": 1,
+                  "total": null,
+                  "pages": 24,
+                  "count": 28,
+                  "next_page": 2,
+                  "products": [
+                    {
+                      "position": 1,
+                      "id": "1935439",
+                      "item_source": "REG",
+                      "name": "Sony a7 V Mirrorless Camera",
+                      "url": "https://www.bhphotovideo.com/c/product/1935439-REG/sony_a7_v_mirrorless_camera.html",
+                      "bh_number": "SOA75",
+                      "mfr_number": "ILCE-7M5/B",
+                      "price": 2898,
+                      "list_price": null,
+                      "savings": null,
+                      "rating": 5,
+                      "review_count": 107,
+                      "key_features": [
+                        "33MP Partially-Stacked Exmor RS Sensor",
+                        "BIONZ XR2 Processor, Built-In AI Unit",
+                        "… 2 more"
+                      ],
+                      "stock": "In Stock",
+                      "shipping": "Free Next Day Shipping",
+                      "store_display": true,
+                      "used_from": {
+                        "text": "Used from $2,665.95",
+                        "url": "https://www.bhphotovideo.com/c/used/1935439/sony_a7_v_mirrorless_camera.html"
+                      },
+                      "image": "https://www.bhphotovideo.com/cdn-cgi/image/fit=scale-down,width=345/https://static.bhphoto.com/images/images345x345/1764667996_1935439.jpg"
+                    },
+                    {
+                      "position": 2,
+                      "id": "1667800",
+                      "item_source": "REG",
+                      "name": "Sony a7 IV Mirrorless Camera",
+                      "url": "https://www.bhphotovideo.com/c/product/1667800-REG/sony_ilce_7m4_b_alpha_a7_iv_mirrorless.html",
+                      "bh_number": "SOA74",
+                      "mfr_number": "ILCE-7M4/B",
+                      "price": 1998,
+                      "list_price": 2498,
+                      "savings": "Holiday Savings $500.00",
+                      "rating": 4.5,
+                      "review_count": 499,
+                      "key_features": [
+                        "33MP Full-Frame Exmor R CMOS BSI Sensor",
+                        "Up to 10 fps Shooting, ISO 100-51200",
+                        "… 2 more"
+                      ],
+                      "stock": "In Stock",
+                      "shipping": "Free Next Day Delivery",
+                      "store_display": true,
+                      "used_from": {
+                        "text": "Used from $1,709.95",
+                        "url": "https://www.bhphotovideo.com/c/used/1667800/sony_ilce_7m4_b_alpha_a7_iv_mirrorless.html"
+                      },
+                      "image": "https://www.bhphotovideo.com/cdn-cgi/image/fit=scale-down,width=345/https://static.bhphoto.com/images/images345x345/1634812545_1667800.jpg"
+                    },
+                    "… 26 more"
+                  ],
+                  "facets": [
+                    {
+                      "name": "Category",
+                      "values": [
+                        {
+                          "label": "Mirrorless Cameras",
+                          "count": 165,
+                          "filters": "fct_category:mirrorless_system_cameras_16158:REGULAR"
+                        },
+                        {
+                          "label": "DSLR Video Supports & Rigs",
+                          "count": 112,
+                          "filters": "fct_category:digital_slr_video_stabilizers_3926:REGULAR"
+                        },
+                        "… 3 more"
+                      ]
+                    },
+                    {
+                      "name": "Savings & Stock",
+                      "values": [
+                        {
+                          "label": "Free Shipping",
+                          "count": 423,
+                          "filters": "fct_a_filter_by:01_FREESHIP:REGULAR"
+                        },
+                        {
+                          "label": "Deals & Rebates",
+                          "count": 209,
+                          "filters": "fct_a_filter_by:02_REBATE:REGULAR"
+                        },
+                        "… 3 more"
+                      ]
+                    },
+                    "… 1 more"
+                  ],
+                  "quick_filters": [],
+                  "url": "https://www.bhphotovideo.com/c/search?q=sony+a7",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

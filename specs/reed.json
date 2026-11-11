@@ -1,0 +1,1475 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Reed",
+    "version": "1.0.0",
+    "description": "The Reed API from API.SH: public Reed data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Reed",
+      "description": "4 endpoints (jobs & b2b)",
+      "x-slug": "reed",
+      "x-domains": [
+        "reed.co.uk"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reed/v1/company": {
+      "get": {
+        "operationId": "reedCompany",
+        "summary": "Reed recruiter profile and jobs",
+        "description": "A recruiter's Reed profile with its live jobs: name, about text, logo, banner, agency or employer, total jobs and the jobs (same fields as search), 25 per page. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/reed-company",
+        "tags": [
+          "Reed"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "The recruiter's reed.co.uk/jobs/<name>/p<id> link (company_url in search and job results).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.reed.co.uk/jobs/intec-select-limited/p41618"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "profile_id": "41618",
+                  "url": "https://www.reed.co.uk/jobs/intec-select-limited/p41618",
+                  "name": "INTEC SELECT LIMITED",
+                  "about_html": "<p>Intec Select is a leading specialist IT Recruitment Consultancy which delivers bespoke recruitment services to some of the world&rsquo;s …",
+                  "about": "Intec Select is a leading specialist IT Recruitment Consultancy which delivers bespoke recruitment services to some of the world’s leading o…",
+                  "logo": "https://resources.reed.co.uk/profileimages/logos/thumbs/Logo_41618.png",
+                  "banner": "https://resources.reed.co.uk/brandedjob/banners/resized/Banner_41618.png",
+                  "company_profile_id": "52454",
+                  "recruiter_type": "agency",
+                  "total_jobs": 40,
+                  "count": 25,
+                  "page": 1,
+                  "next_page": 2,
+                  "jobs": [
+                    {
+                      "id": "57520831",
+                      "title": "Infrastructure Project Manager (FTC)",
+                      "url": "https://www.reed.co.uk/jobs/infrastructure-project-manager-ftc/57520831",
+                      "company": "INTEC SELECT LIMITED",
+                      "company_profile_id": "41618",
+                      "company_url": "https://www.reed.co.uk/jobs/intec-select-limited/p41618",
+                      "logo": "https://resources.reed.co.uk/profileimages/logos/thumbs/Logo_41618.png",
+                      "location": "London",
+                      "county": "London",
+                      "working_option": null,
+                      "salary": {
+                        "from": 75000,
+                        "to": 75000,
+                        "type": "per month",
+                        "currency": "GBP",
+                        "hidden": false
+                      },
+                      "contract": "contract",
+                      "full_time": true,
+                      "part_time": false,
+                      "snippet": "Infrastructure Project Manager (FTC) – London (Hybrid - 4x Per Week) London / Hybrid 75,000 + Excellent Package Immediate Starter 12-month F…",
+                      "category": "Manager",
+                      "occupation": "Project Manager",
+                      "posted_at": "2026-11-03T14:31:05.817",
+                      "created_at": "2026-11-03T14:31:05.843",
+                      "updated_at": "2026-11-03T14:31:05.843",
+                      "expires_at": "2026-12-15T23:55:00",
+                      "easy_apply": true,
+                      "external_url": null,
+                      "promoted": false,
+                      "featured": false,
+                      "top_job": false,
+                      "training_job": false,
+                      "early_bird": false,
+                      "uk_only": false,
+                      "agency": true
+                    },
+                    {
+                      "id": "57513174",
+                      "title": "Salesforce Developer (Dev-Ops)",
+                      "url": "https://www.reed.co.uk/jobs/salesforce-developer-dev-ops/57513174",
+                      "company": "INTEC SELECT LIMITED",
+                      "company_profile_id": "41618",
+                      "company_url": "https://www.reed.co.uk/jobs/intec-select-limited/p41618",
+                      "logo": "https://resources.reed.co.uk/profileimages/logos/thumbs/Logo_41618.png",
+                      "location": "London",
+                      "county": "London",
+                      "working_option": "remote",
+                      "salary": {
+                        "from": 70000,
+                        "to": 90000,
+                        "type": "per month",
+                        "currency": "GBP",
+                        "hidden": false
+                      },
+                      "contract": "permanent",
+                      "full_time": true,
+                      "part_time": false,
+                      "snippet": "Platform Developer – Salesforce / DevOps Salary: 70,000 - 90,000 Location: Fully Remote Overview An excellent opportunity has arisen for an …",
+                      "category": "Developer",
+                      "occupation": "Salesforce Developer",
+                      "posted_at": "2026-11-02T09:31:07.55",
+                      "created_at": "2026-11-02T09:31:07.553",
+                      "updated_at": "2026-11-02T09:31:07.553",
+                      "expires_at": "2026-12-14T23:55:00",
+                      "easy_apply": true,
+                      "external_url": null,
+                      "promoted": false,
+                      "featured": false,
+                      "top_job": false,
+                      "training_job": false,
+                      "early_bird": false,
+                      "uk_only": false,
+                      "agency": true
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/reed/v1/job": {
+      "get": {
+        "operationId": "reedJob",
+        "summary": "Reed job details",
+        "description": "One Reed job ad: title, recruiter (name, profile id and page, logo, agency or employer, reference), full location (town, county, region, country, postcode, remote, working option), salary (display text, from/to, yearly equivalents, type, negotiable, OTE, pro rata), contract type and hours, sector and parent sector, taxonomy, skills, dates, easy apply, the full description (HTML and text) and similar jobs. Removed jobs answer 404. Give id/url, or q to open the first current result of a search.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/reed-job",
+        "tags": [
+          "Reed"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Job id (the number at the end of the job URL) or the job URL (`url` is accepted too).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Instead of id: keywords; opens the first current result of that search (all /reed/v1/search filters apply).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "nurse"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "With q: town, city or postcode.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "london"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "57387415",
+                  "title": "Aspiring Nurse",
+                  "url": "https://www.reed.co.uk/jobs/aspiring-nurse/57387415",
+                  "live": true,
+                  "company": "Academics",
+                  "company_profile_id": "14099",
+                  "reference": "12:12",
+                  "company_url": "https://www.reed.co.uk/jobs/academics/p14099",
+                  "logo": "https://resources.reed.co.uk/profileimages/logos/thumbs/Logo_14099.png",
+                  "recruiter_type": "Recruitment consultancy",
+                  "agency": true,
+                  "employer": false,
+                  "location": "East London",
+                  "town": "London",
+                  "county": "London",
+                  "region": "South East England",
+                  "country": "United Kingdom",
+                  "country_code": "GB",
+                  "post_code": null,
+                  "remote": false,
+                  "working_option": "onSite",
+                  "salary": {
+                    "display": "£ 21,600 - £ 25,200 per annum",
+                    "from": 21600,
+                    "to": 25200,
+                    "from_per_annum": 21600,
+                    "to_per_annum": 25200,
+                    "type": "per annum",
+                    "currency": "GBP",
+                    "negotiable": false,
+                    "ote": false,
+                    "pro_rata": false,
+                    "benefits_included": false
+                  },
+                  "contract_type": "Contract",
+                  "full_time": true,
+                  "part_time": false,
+                  "permanent": false,
+                  "temporary": false,
+                  "contract": true,
+                  "graduate": false,
+                  "sector": "Learning Support Assistant",
+                  "sector_id": "311",
+                  "parent_sector": "Education",
+                  "parent_sector_id": "68",
+                  "taxonomy": "Occupation/KD: Education/Nurse",
+                  "skills": [],
+                  "posted_at": "2026-09-24T11:16:23.503",
+                  "created_at": "2026-09-24T11:16:23.517",
+                  "updated_at": "2026-10-06T11:17:17.957",
+                  "expires_at": "2026-11-05T23:55:00",
+                  "easy_apply": true,
+                  "…": "13 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/reed/v1/salary": {
+      "get": {
+        "operationId": "reedSalary",
+        "summary": "Reed average salary",
+        "description": "Reed's average salary checker for a job title in the UK or one location: average, low and high salary in GBP, the number of live Reed jobs for the title, new jobs in the last day and jobs paying above the average, with a link to the jobs.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/reed-salary",
+        "tags": [
+          "Reed"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "description": "Job title.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python developer"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Town, city or region (default: the whole UK).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "title": "python developer",
+                  "location": null,
+                  "url": "https://www.reed.co.uk/average-salary/average-python-developer-salary",
+                  "heading": "The Average Python Developer salary in the UK",
+                  "currency": "GBP",
+                  "average": 83125,
+                  "low": 78500,
+                  "high": 99437,
+                  "new_jobs_last_day": 0,
+                  "jobs": 308,
+                  "jobs_above_average": 19,
+                  "jobs_url": "https://www.reed.co.uk/jobs/python-developer-jobs",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/reed/v1/search": {
+      "get": {
+        "operationId": "reedSearch",
+        "summary": "Reed job search",
+        "description": "UK jobs on Reed.co.uk for a keyword and/or location with the result page's filters: radius, salary range, permanent, temporary, contract, full/part time, agency or employer, graduate, easy apply, early bird, visa sponsorship, remote/hybrid/on-site, date posted, sector, and hiding training jobs or jobs without a salary. Each job: `id`, `title`, `url`, `company`, `company_profile_id`, `company_url`, `logo`, `location`, `county`, `working_option`, `salary` (from, to, per day/hour/annum), `contract`, full/part time, `snippet`, category, dates and flags, plus `raw`. `facets` gives counts per filter and the sector ids. 25 jobs per page; pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/reed-search",
+        "tags": [
+          "Reed"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords. Required unless `location` is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Town, city or postcode.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "london"
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Miles around the location.",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                "0",
+                "1",
+                "3",
+                "5",
+                "10",
+                "15",
+                "20",
+                "30",
+                "50"
+              ]
+            }
+          },
+          {
+            "name": "salary_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum salary (yearly GBP).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "salary_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum salary (yearly GBP).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "permanent",
+            "in": "query",
+            "required": false,
+            "description": "1: permanent jobs.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "temporary",
+            "in": "query",
+            "required": false,
+            "description": "1: temporary jobs.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "contract",
+            "in": "query",
+            "required": false,
+            "description": "1: contract jobs.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "full_time",
+            "in": "query",
+            "required": false,
+            "description": "1: full time.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "part_time",
+            "in": "query",
+            "required": false,
+            "description": "1: part time.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "agency",
+            "in": "query",
+            "required": false,
+            "description": "1: posted by agencies.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "employer",
+            "in": "query",
+            "required": false,
+            "description": "1: posted by employers.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "graduate",
+            "in": "query",
+            "required": false,
+            "description": "1: graduate jobs.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "easy_apply",
+            "in": "query",
+            "required": false,
+            "description": "1: easy-apply jobs.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "early_bird",
+            "in": "query",
+            "required": false,
+            "description": "1: early-bird jobs (few applicants yet).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "visa_sponsorship",
+            "in": "query",
+            "required": false,
+            "description": "1: jobs offering visa sponsorship.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "hide_training",
+            "in": "query",
+            "required": false,
+            "description": "1: hide training courses.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "hide_no_salary",
+            "in": "query",
+            "required": false,
+            "description": "1: hide jobs without a salary.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "remote",
+            "in": "query",
+            "required": false,
+            "description": "Working option.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "remote",
+                "hybrid",
+                "onsite"
+              ]
+            }
+          },
+          {
+            "name": "posted",
+            "in": "query",
+            "required": false,
+            "description": "Date posted.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "lastthreedays",
+                "lastweek",
+                "lasttwoweeks"
+              ]
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "description": "Sector ids from `facets.sector`, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "python",
+                  "location": "london",
+                  "url": "https://www.reed.co.uk/jobs/python-jobs-in-london?keywords=python&location=london",
+                  "applied_filters": {},
+                  "total": 1208,
+                  "count": 25,
+                  "page": 1,
+                  "next_page": 2,
+                  "facets": {
+                    "job_type": [
+                      {
+                        "label": "Permanent",
+                        "name": "perm",
+                        "count": 1040
+                      },
+                      {
+                        "label": "Temporary",
+                        "name": "temp",
+                        "count": 5
+                      },
+                      "… 3 more"
+                    ],
+                    "working_option": [
+                      {
+                        "label": "Any",
+                        "name": null,
+                        "count": 1208
+                      },
+                      {
+                        "label": "On-site",
+                        "name": "onSite",
+                        "count": 635
+                      },
+                      "… 2 more"
+                    ],
+                    "date_posted": [
+                      {
+                        "label": "Anytime",
+                        "name": "anytime",
+                        "count": null
+                      },
+                      {
+                        "label": "Today",
+                        "name": "today",
+                        "count": 1
+                      },
+                      "… 3 more"
+                    ],
+                    "posted_by": [
+                      {
+                        "label": "Agency",
+                        "name": "agency",
+                        "count": 565
+                      },
+                      {
+                        "label": "Employer",
+                        "name": "direct",
+                        "count": 643
+                      },
+                      "… 1 more"
+                    ],
+                    "more": [
+                      {
+                        "label": "Early bird",
+                        "name": "isEarlyBird",
+                        "count": 4
+                      },
+                      {
+                        "label": "Easy apply",
+                        "name": "isEasyApply",
+                        "count": null
+                      },
+                      "… 2 more"
+                    ],
+                    "hide": [
+                      {
+                        "label": "Jobs without salary displayed",
+                        "name": "excludeSalaryDescriptions",
+                        "count": null
+                      },
+                      {
+                        "label": "Training courses",
+                        "name": "hideTrainingJobs",
+                        "count": 221
+                      },
+                      "… 1 more"
+                    ],
+                    "experience": [
+                      {
+                        "label": "Graduate",
+                        "name": "graduate",
+                        "count": null
+                      }
+                    ],
+                    "sector": [
+                      {
+                        "label": "IT & Telecoms",
+                        "name": "parentSectorIds.52",
+                        "count": 733,
+                        "id": "52"
+                      },
+                      {
+                        "label": "Training",
+                        "name": "parentSectorIds.1909",
+                        "count": 0,
+                        "id": "1909"
+                      },
+                      "… 35 more"
+                    ]
+                  },
+                  "related_searches": [
+                    {
+                      "name": null,
+                      "url": null
+                    },
+                    {
+                      "name": null,
+                      "url": null
+                    },
+                    "… 3 more"
+                  ],
+                  "jobs": [
+                    {
+                      "id": "57418395",
+                      "title": "Python Developers",
+                      "url": "https://www.reed.co.uk/jobs/python-developers/57418395",
+                      "company": "INTEC SELECT LIMITED",
+                      "company_profile_id": "41618",
+                      "company_url": "https://www.reed.co.uk/jobs/intec-select-limited/p41618",
+                      "logo": "https://resources.reed.co.uk/profileimages/logos/thumbs/Logo_41618.png",
+                      "location": "London",
+                      "county": "London",
+                      "working_option": "hybrid",
+                      "salary": {
+                        "from": 650,
+                        "to": 750,
+                        "type": "per day",
+                        "currency": "GBP",
+                        "hidden": false
+                      },
+                      "contract": "contract",
+                      "full_time": true,
+                      "part_time": false,
+                      "snippet": "Software Developer - Python (Contract) Location: London - Hybrid, 2 days/week on-site Contract: Initial 6 months (view to extend) Rate: 650–…",
+                      "category": "Developer",
+                      "occupation": "Python Developer",
+                      "posted_at": "2026-10-02T16:58:06.81",
+                      "created_at": "2026-10-02T16:58:06.813",
+                      "updated_at": "2026-10-14T17:02:17.437",
+                      "expires_at": "2026-11-13T23:55:00",
+                      "easy_apply": true,
+                      "external_url": null,
+                      "promoted": false,
+                      "featured": false,
+                      "top_job": false,
+                      "training_job": false,
+                      "early_bird": false,
+                      "uk_only": false,
+                      "agency": true
+                    },
+                    {
+                      "id": "57397629",
+                      "title": "Python Engineer",
+                      "url": "https://www.reed.co.uk/jobs/python-engineer/57397629",
+                      "company": "Ncounter",
+                      "company_profile_id": "97947",
+                      "company_url": "https://www.reed.co.uk/jobs/ncounter/p97947",
+                      "logo": "https://resources.reed.co.uk/profileimages/logos/thumbs/Logo_97947.png",
+                      "location": "London",
+                      "county": "London",
+                      "working_option": "hybrid",
+                      "salary": {
+                        "from": 90000,
+                        "to": 100000,
+                        "type": "per month",
+                        "currency": "GBP",
+                        "hidden": false
+                      },
+                      "contract": "permanent",
+                      "full_time": true,
+                      "part_time": false,
+                      "snippet": "Python Engineer Ncounter is working with a technology consultancy expanding its AI engineering capability across major law enforcement and p…",
+                      "category": "Engineer",
+                      "occupation": null,
+                      "posted_at": "2026-09-28T09:49:19.477",
+                      "created_at": "2026-09-28T09:49:19.48",
+                      "updated_at": "2026-10-10T10:02:17.62",
+                      "expires_at": "2026-11-09T23:59:59",
+                      "easy_apply": true,
+                      "external_url": null,
+                      "promoted": false,
+                      "featured": false,
+                      "top_job": false,
+                      "training_job": false,
+                      "early_bird": false,
+                      "uk_only": true,
+                      "agency": true
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

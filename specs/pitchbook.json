@@ -1,0 +1,1556 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: PitchBook",
+    "version": "1.0.0",
+    "description": "The PitchBook API from API.SH: public PitchBook data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "PitchBook",
+      "description": "4 endpoints (jobs & b2b)",
+      "x-slug": "pitchbook",
+      "x-domains": [
+        "pitchbook.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pitchbook/v1/company": {
+      "get": {
+        "operationId": "pitchbookCompany",
+        "summary": "PitchBook company profile",
+        "description": "A company's PitchBook profile preview as a logged-out visitor sees it: name, logo, description, website, social links, corporate office, year founded, status (private/public), employees, latest deal type and amount, investor count, former names, ownership and financing status, primary and other industries, verticals; the valuation and funding table (deal type, date, amount, stage), competitors, investors, investments and acquisitions, exits and affiliates (each with the total the site states and the rows it shows, usually 5-10, with profile links), the patents summary and recent patents, related PitchBook news and research, and the FAQs. Values PitchBook reserves for its subscribers come back as null. Use /pitchbook/v1/search to find an id.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/pitchbook-company",
+        "tags": [
+          "PitchBook"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The company's PitchBook id (the part after /profiles/company/ in its link), e.g. `54782-29`, or a pitchbook.com/profiles/company/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "54782-29"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "name": "Stripe",
+                  "id": "54782-29",
+                  "url": "https://pitchbook.com/profiles/company/54782-29",
+                  "description": "Developer of an online financial infrastructure platform designed to accept payments, grow revenue, and accelerate new business opportunitie…",
+                  "website": "http://www.stripe.com/",
+                  "office": {
+                    "lines": [
+                      "354 Oyster Point Boulevard",
+                      "South San Francisco, CA 94080",
+                      "… 1 more"
+                    ],
+                    "text": "354 Oyster Point Boulevard, South San Francisco, CA 94080, United States",
+                    "phone": null,
+                    "phone_hidden": true
+                  },
+                  "social": [
+                    "https://www.linkedin.com/company/stripe",
+                    "https://twitter.com/stripe",
+                    "… 1 more"
+                  ],
+                  "overview": {
+                    "Year Founded": "2010",
+                    "Status": "Private",
+                    "Employees": "15,951",
+                    "Latest Deal Type": "Debt",
+                    "Latest Deal Amount": "$418K",
+                    "Investors": "162"
+                  },
+                  "info": {
+                    "Website": "www.stripe.com",
+                    "Formerly Known As": "DevPayments, HGSC, SlashDevSlashFinance",
+                    "Ownership Status": "Privately Held (backing)",
+                    "Financing Status": "Venture Capital-Backed",
+                    "Corporate Office": "354 Oyster Point Boulevard, South San Francisco, CA 94080, United States",
+                    "Primary Industry": "Other Financial Services",
+                    "Other Industries": "Financial Software",
+                    "Vertical(s)": [
+                      "SaaS",
+                      "Artificial Intelligence & Machine Learning",
+                      "… 2 more"
+                    ]
+                  },
+                  "logo": "https://image.pitchbook.com/myiyrcWQFQ4FmsDfgLyHzNw9QYK1769706917290_200x200",
+                  "year_founded": 2010,
+                  "status": "Private",
+                  "employees": 15951,
+                  "latest_deal_type": "Debt",
+                  "latest_deal_amount": "$418K",
+                  "investors_count": 162,
+                  "formerly_known_as": "DevPayments, HGSC, SlashDevSlashFinance",
+                  "ownership_status": "Privately Held (backing)",
+                  "financing_status": "Venture Capital-Backed",
+                  "primary_industry": "Other Financial Services",
+                  "other_industries": "Financial Software",
+                  "verticals": [
+                    "SaaS",
+                    "Artificial Intelligence & Machine Learning",
+                    "… 2 more"
+                  ],
+                  "parent_company": null,
+                  "funding": {
+                    "title": "Stripe Valuation & Funding",
+                    "total": null,
+                    "shown": 10,
+                    "locked": false,
+                    "note": null,
+                    "columns": [
+                      "Deal Type",
+                      "Date",
+                      "… 5 more"
+                    ],
+                    "items": [
+                      {
+                        "deal_type": "30. Debt - General",
+                        "date": null,
+                        "amount": "$418K",
+                        "raised_to_date": null,
+                        "post_val": null,
+                        "status": "Completed",
+                        "stage": "Profitable"
+                      },
+                      {
+                        "deal_type": "29. Secondary Transaction - Private",
+                        "date": "27-Mar-2026",
+                        "amount": null,
+                        "raised_to_date": null,
+                        "post_val": null,
+                        "status": "Completed",
+                        "stage": "Profitable"
+                      },
+                      "… 8 more"
+                    ]
+                  },
+                  "competitors": {
+                    "title": "Stripe Competitors (120)",
+                    "total": 120,
+                    "shown": 5,
+                    "locked": false,
+                    "note": "One of Stripe’s 120 competitors is Payscout, a Venture Capital-Backed company based in Sherman Oaks, CA.",
+                    "columns": [
+                      "Company Name",
+                      "Financing Status",
+                      "… 5 more"
+                    ],
+                    "items": [
+                      {
+                        "company_name": "Payscout",
+                        "financing_status": "Venture Capital-Backed",
+                        "location": "Sherman Oaks, CA",
+                        "employees": null,
+                        "total_raised": null,
+                        "last_financing_date_type": null,
+                        "last_financing_amount": null,
+                        "company_name_url": "https://pitchbook.com/profiles/company/96534-82"
+                      },
+                      {
+                        "company_name": "Matchmove",
+                        "financing_status": "Venture Capital-Backed",
+                        "location": "Singapore, Singapore",
+                        "employees": null,
+                        "total_raised": null,
+                        "last_financing_date_type": null,
+                        "last_financing_amount": null,
+                        "company_name_url": "https://pitchbook.com/profiles/company/89601-85"
+                      },
+                      "… 3 more"
+                    ]
+                  },
+                  "investors": {
+                    "title": "Stripe Investors (162)",
+                    "total": 162,
+                    "shown": 5,
+                    "locked": false,
+                    "note": null,
+                    "columns": [
+                      "Investor Name",
+                      "Investor Type",
+                      "… 3 more"
+                    ],
+                    "items": [
+                      {
+                        "investor_name": "Irving Investors",
+                        "investor_type": "Growth/Expansion",
+                        "holding": "Minority",
+                        "investor_since": null,
+                        "participating_rounds": null
+                      },
+                      {
+                        "investor_name": "Robinhood Ventures (Menlo Park)",
+                        "investor_type": "Venture Capital",
+                        "holding": "Minority",
+                        "investor_since": null,
+                        "participating_rounds": null
+                      },
+                      "… 3 more"
+                    ]
+                  },
+                  "investments": {
+                    "title": "Stripe Investments & Acquisitions (135)",
+                    "total": 135,
+                    "shown": 5,
+                    "locked": false,
+                    "note": "Stripe’s most recent deal was a Early Stage VC with Rocker (Business/Productivity Software) for . The deal was made on 28-Oct-2026.",
+                    "columns": [
+                      "Company Name",
+                      "Deal Date",
+                      "… 4 more"
+                    ],
+                    "items": [
+                      {
+                        "company_name": "Rocker (Business/Productivity Software)",
+                        "deal_date": "28-Oct-2026",
+                        "deal_type": "Early Stage VC",
+                        "deal_size": null,
+                        "industry": "Business/Productivity Software",
+                        "lead_partner": null,
+                        "company_name_url": "https://pitchbook.com/profiles/company/1584125-56"
+                      },
+                      {
+                        "company_name": "TrueLayer",
+                        "deal_date": "08-Oct-2026",
+                        "deal_type": "Later Stage VC",
+                        "deal_size": null,
+                        "industry": "Financial Software",
+                        "lead_partner": null,
+                        "company_name_url": "https://pitchbook.com/profiles/company/170527-06"
+                      },
+                      "… 3 more"
+                    ]
+                  },
+                  "exits": null,
+                  "affiliates": {
+                    "title": "Stripe Affiliates",
+                    "total": 18,
+                    "shown": 5,
+                    "locked": false,
+                    "note": "Subsidiaries (18)",
+                    "columns": [
+                      "Name",
+                      "Industry",
+                      "… 2 more"
+                    ],
+                    "items": [
+                      {
+                        "name": "Bridge (Financial Software)",
+                        "industry": null,
+                        "location": "San Antonio, TX",
+                        "year_founded": "2022",
+                        "name_url": "https://pitchbook.com/profiles/company/510427-90"
+                      },
+                      {
+                        "name": "Privy (Network Management Software)",
+                        "industry": null,
+                        "location": "New York, NY",
+                        "year_founded": "2021",
+                        "name_url": "https://pitchbook.com/profiles/company/494638-66"
+                      },
+                      "… 3 more"
+                    ]
+                  },
+                  "patents": {
+                    "summary": {
+                      "Total Documents": "1,202",
+                      "Total Patents": null,
+                      "Granted": "845",
+                      "Pending": "171",
+                      "Expiring": null
+                    },
+                    "recent": {
+                      "title": "Stripe Patents",
+                      "total": null,
+                      "shown": 5,
+                      "locked": false,
+                      "note": null,
+                      "columns": [
+                        "Publication ID",
+                        "Patent Title",
+                        "… 4 more"
+                      ],
+                      "items": [
+                        {
+                          "publication_id": "US-12725150-B1",
+                          "patent_title": "Systems and methods for controlling execution of operations across services distributed in networked environments via network operation prot…",
+                          "status": "Active",
+                          "first_filing_date": "10-Dec-2025",
+                          "technology_cpc": null,
+                          "citations": null
+                        },
+                        {
+                          "publication_id": "US-20260300467-A1",
+                          "patent_title": "Systems and methods for configuration of execution of authorization processes for access to a distributed service system",
+                          "status": "Pending",
+                          "first_filing_date": "31-Mar-2025",
+                          "technology_cpc": null,
+                          "citations": null
+                        },
+                        "… 3 more"
+                      ]
+                    }
+                  },
+                  "news": [
+                    {
+                      "title": "Stripe’s $7B+ OpenRouter deal signals shift to AI plumbing",
+                      "summary": "With its latest AI acquisition, Stripe is proving the fintech AI playbook is all about owning the infrastructure stack.",
+                      "date": "Aug 19, 2026",
+                      "kind": "NEWS",
+                      "url": "https://pitchbook.com/news/articles/stripes-openrouter-deal-shift-to-ai-plumbing",
+                      "image": "https://pitchbook.brightspotcdn.com/52/45/bf6a20254db08fb6318674915994/gettyimages-1322377127.jpg"
+                    },
+                    {
+                      "title": "Stripe and Advent's bid for PayPal is not irresistible",
+                      "summary": "The bid values the business at 7x EBITDA, less than has been paid for weaker payments businesses.",
+                      "date": "Jul 15, 2026",
+                      "kind": "NEWS",
+                      "url": "https://pitchbook.com/news/articles/stripe-and-advents-bid-for-paypal-is-not-irresistible",
+                      "image": "https://pitchbook.brightspotcdn.com/aa/77/29d94a3640cd935f0949763e4411/gettyimages-2262985909.jpg"
+                    },
+                    "… 3 more"
+                  ],
+                  "research": [
+                    {
+                      "title": "AI Report: Fundraising Surpasses $500 Billion in 2026, a New Record",
+                      "date": "November 4, 2026",
+                      "url": "https://pitchbook.com/news/reports/q3-2026-ai-report-fundraising-surpasses-500-billion-in-2026-a-new-record"
+                    },
+                    {
+                      "title": "Fintech Report: A Selective Investment Environment Favoring AI-Native Bets",
+                      "date": "October 22, 2026",
+                      "url": "https://pitchbook.com/news/reports/q3-2026-fintech-report-a-selective-investment-environment-favoring-ai-native-bets"
+                    },
+                    "… 1 more"
+                  ],
+                  "faqs": [
+                    {
+                      "question": "When was Stripe founded?",
+                      "answer": "Stripe was founded in 2010."
+                    },
+                    {
+                      "question": "Where is Stripe headquartered?",
+                      "answer": "Stripe is headquartered in South San Francisco, CA."
+                    },
+                    "… 7 more"
+                  ],
+                  "sections": [
+                    "overview",
+                    "timeline",
+                    "… 13 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/pitchbook/v1/fund": {
+      "get": {
+        "operationId": "pitchbookFund",
+        "summary": "PitchBook fund profile",
+        "description": "A fund's PitchBook profile preview as a logged-out visitor sees it: name, fund strategy and status, vintage, size and dry powder (when shown), fund manager with its profile link, website and location, fund category, close date, native currency and domiciles; the fund's investments (company, date, industry, stage) and its benchmark peer funds, each with the site's total and the rows it shows, plus FAQs. Values PitchBook reserves for its subscribers come back as null.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/pitchbook-fund",
+        "tags": [
+          "PitchBook"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The fund's PitchBook id (the part after /profiles/fund/ in its link, ending in F), e.g. `15880-78F`, or a pitchbook.com/profiles/fund/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "15880-78F"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "name": "Sequoia - IDG Capital - China CYTS Tours Holdings Fund",
+                  "id": "15880-78F",
+                  "url": "https://pitchbook.com/profiles/fund/15880-78F",
+                  "description": "Sequoia - IDG Capital - China CYTS Tours Holdings Fund is a 2017 vintage venture capital fund managed by Wayview Capital. The fund is locate…",
+                  "website": null,
+                  "office": null,
+                  "social": [],
+                  "overview": {
+                    "Fund Strategy": "Venture",
+                    "Fund Status": "Closed",
+                    "Fund Manager": "Weiguan Hongqi...",
+                    "Size": null,
+                    "Vintage": "2017",
+                    "Dry Powder": null
+                  },
+                  "info": {
+                    "Fund Manager": "Weiguan Hongqi (Zhuhai) Private Equity Fund Management",
+                    "Fund Manager Website": "www.wayview.net/index.html",
+                    "Fund Category": "Venture Capital",
+                    "Close Date": null,
+                    "Native Currency": "CNY",
+                    "Fund Manager's Location": "Room 1317-1318, CYTS Building, Number 5, Dongzhimen South Street, Dongcheng District, Beijing, China",
+                    "Fund Domiciles": "China"
+                  },
+                  "fund_strategy": "Venture",
+                  "fund_status": "Closed",
+                  "vintage": 2017,
+                  "fund_size": null,
+                  "dry_powder": null,
+                  "fund_manager": "Weiguan Hongqi (Zhuhai) Private Equity Fund Management",
+                  "fund_manager_url": "https://pitchbook.com/profiles/investor/496349-92",
+                  "fund_manager_website": "https://www.wayview.net/index.html",
+                  "fund_manager_location": "Room 1317-1318, CYTS Building, Number 5, Dongzhimen South Street, Dongcheng District, Beijing, China",
+                  "fund_category": "Venture Capital",
+                  "close_date": null,
+                  "native_currency": "CNY",
+                  "domiciles": "China",
+                  "investments": {
+                    "title": "Sequoia - IDG Capital - China CYTS Tours Holdings Fund Investments (5)",
+                    "total": 5,
+                    "shown": 5,
+                    "locked": false,
+                    "note": "Sequoia - IDG Capital - China CYTS Tours Holdings Fund has made a total of 5 investments. Its most recent deal was a with EasyLiao for . The…",
+                    "columns": [
+                      "Company Name",
+                      "Deal Date",
+                      "… 5 more"
+                    ],
+                    "items": [
+                      {
+                        "company_name": "EasyLiao",
+                        "deal_date": "21-Feb-2022",
+                        "deal_type": null,
+                        "deal_size": null,
+                        "industry": "Business/Productivity Software",
+                        "company_stage": "Profitable",
+                        "lead_partner": null,
+                        "company_name_url": "https://pitchbook.com/profiles/company/465227-74"
+                      },
+                      {
+                        "company_name": "Wenjuan.com",
+                        "deal_date": "22-Mar-2021",
+                        "deal_type": null,
+                        "deal_size": null,
+                        "industry": "Business/Productivity Software",
+                        "company_stage": "Generating Revenue",
+                        "lead_partner": null,
+                        "company_name_url": "https://pitchbook.com/profiles/company/103250-71"
+                      },
+                      "… 3 more"
+                    ]
+                  },
+                  "benchmark": {
+                    "title": "Sequoia - IDG Capital - China CYTS Tours Holdings Fund Benchmark (82)",
+                    "total": 82,
+                    "shown": 10,
+                    "locked": false,
+                    "note": null,
+                    "columns": [
+                      "Fund Name",
+                      "Fund Type",
+                      "… 4 more"
+                    ],
+                    "items": [
+                      {
+                        "fund_name": "North Pacific SDGs Promotion Fund No. 1",
+                        "fund_type": null,
+                        "vintage": null,
+                        "irr": null,
+                        "quartile": null,
+                        "as_of_date": null,
+                        "fund_name_url": "https://pitchbook.com/profiles/fund/18853-75F"
+                      },
+                      {
+                        "fund_name": "Life.SRED MDEC Fintech Fund",
+                        "fund_type": null,
+                        "vintage": null,
+                        "irr": null,
+                        "quartile": null,
+                        "as_of_date": null,
+                        "fund_name_url": "https://pitchbook.com/profiles/fund/15904-99F"
+                      },
+                      "… 8 more"
+                    ]
+                  },
+                  "news": [],
+                  "faqs": [
+                    {
+                      "question": "What is Sequoia - IDG Capital - China CYTS Tours Holdings Fund?",
+                      "answer": "Sequoia - IDG Capital - China CYTS Tours Holdings Fund is a 2017 vintage venture capital fund managed by Wayview Capital."
+                    },
+                    {
+                      "question": "Who manages Sequoia - IDG Capital - China CYTS Tours Holdings Fund?",
+                      "answer": "Sequoia - IDG Capital - China CYTS Tours Holdings Fund is managed by Weiguan Hongqi (Zhuhai) Private Equity Fund Management."
+                    },
+                    "… 6 more"
+                  ],
+                  "sections": [
+                    "overview",
+                    "investments",
+                    "… 5 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/pitchbook/v1/investor": {
+      "get": {
+        "operationId": "pitchbookInvestor",
+        "summary": "PitchBook investor profile",
+        "description": "An investor's PitchBook profile preview as a logged-out visitor sees it: name, logo, description, website, office, social links, investor type and status, professionals, investment, portfolio and exit counts, year founded, investor status (e.g. actively seeking new investments), primary and other investor types, trade association; recent investments (company, date, deal type, industry, stage), exits, fund list, co-investors (with how many deals together) and affiliates, each with the site's total and the rows it shows, plus related news and FAQs. Values PitchBook reserves for its subscribers come back as null.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/pitchbook-investor",
+        "tags": [
+          "PitchBook"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The investor's PitchBook id (the part after /profiles/investor/ in its link), e.g. `11295-73` (Sequoia Capital), or a pitchbook.com/profiles/investor/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "11295-73"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "name": "Sequoia Capital",
+                  "id": "11295-73",
+                  "url": "https://pitchbook.com/profiles/investor/11295-73",
+                  "description": "Founded in 1972, Sequoia Capital is a venture capital investment firm based in Menlo Park, California. The firm seeks to invest in companies…",
+                  "website": "http://sequoiacap.com/",
+                  "office": {
+                    "lines": [
+                      "2800 Sand Hill Road",
+                      "Suite 101",
+                      "… 2 more"
+                    ],
+                    "text": "2800 Sand Hill Road, Suite 101, Menlo Park, CA 94025, United States",
+                    "phone": null,
+                    "phone_hidden": true
+                  },
+                  "social": [
+                    "https://www.linkedin.com/company/sequoia",
+                    "https://twitter.com/sequoia",
+                    "… 1 more"
+                  ],
+                  "overview": {
+                    "Investor Type": "Venture Capital",
+                    "Status": "Active",
+                    "Professionals": "45",
+                    "Investments": "3,119",
+                    "Portfolio": "896",
+                    "Exits": "1,054"
+                  },
+                  "info": {
+                    "Website": "sequoiacap.com",
+                    "Year Founded": "1972",
+                    "Investor Status": "Actively Seeking New Investments",
+                    "Trade Association": "National Venture Capital Association (NVCA)",
+                    "Primary Investor Type": "Venture Capital",
+                    "Other Investor Types": "Growth/Expansion",
+                    "Corporate Office": "2800 Sand Hill Road, Suite 101, Menlo Park, CA 94025, United States"
+                  },
+                  "logo": "https://image.pitchbook.com/3m9ATgSWiMbrtCXBCTo7i7QlHjN1767616590481_200x200",
+                  "investor_type": "Venture Capital",
+                  "status": "Active",
+                  "professionals": 45,
+                  "investments_count": 3119,
+                  "portfolio_count": 896,
+                  "exits_count": 1054,
+                  "aum": null,
+                  "dry_powder": null,
+                  "year_founded": 1972,
+                  "investor_status": "Actively Seeking New Investments",
+                  "primary_investor_type": "Venture Capital",
+                  "other_investor_types": "Growth/Expansion",
+                  "trade_association": "National Venture Capital Association (NVCA)",
+                  "investments": {
+                    "title": "Sequoia Capital Investments & Acquisitions (3,119)",
+                    "total": 3119,
+                    "shown": 10,
+                    "locked": false,
+                    "note": null,
+                    "columns": [
+                      "Company Name",
+                      "Deal Date",
+                      "… 5 more"
+                    ],
+                    "items": [
+                      {
+                        "company_name": "Traversal",
+                        "deal_date": "03-Nov-2026",
+                        "deal_type": "Early Stage VC",
+                        "deal_size": null,
+                        "industry": "Business/Productivity Software",
+                        "company_stage": "Generating Revenue",
+                        "lead_partner": null,
+                        "company_name_url": "https://pitchbook.com/profiles/company/607973-14"
+                      },
+                      {
+                        "company_name": "Trajectory",
+                        "deal_date": "02-Nov-2026",
+                        "deal_type": null,
+                        "deal_size": null,
+                        "industry": "Business/Productivity Software",
+                        "company_stage": "Generating Revenue",
+                        "lead_partner": null,
+                        "company_name_url": "https://pitchbook.com/profiles/company/1393041-88"
+                      },
+                      "… 8 more"
+                    ]
+                  },
+                  "exits": {
+                    "title": "Sequoia Capital Exits (1,054)",
+                    "total": 1054,
+                    "shown": 10,
+                    "locked": false,
+                    "note": null,
+                    "columns": [
+                      "Company Name",
+                      "Exit Date",
+                      "… 2 more"
+                    ],
+                    "items": [
+                      {
+                        "company_name": "Zenlytic",
+                        "exit_date": "03-Nov-2026",
+                        "exit_type": "Merger/Acquisition",
+                        "exit_size": null,
+                        "company_name_url": "https://pitchbook.com/profiles/company/436224-52"
+                      },
+                      {
+                        "company_name": "Ascend.io",
+                        "exit_date": "30-Oct-2026",
+                        "exit_type": null,
+                        "exit_size": null,
+                        "company_name_url": "https://pitchbook.com/profiles/company/149718-52"
+                      },
+                      "… 8 more"
+                    ]
+                  },
+                  "funds": {
+                    "title": "Sequoia Capital Fund Performance",
+                    "total": null,
+                    "shown": 0,
+                    "locked": true,
+                    "note": "This information is available in the PitchBook Platform. To explore Sequoia Capital‘s full profile, request access.",
+                    "columns": [
+                      "Fund Name",
+                      "Vintage",
+                      "… 6 more"
+                    ],
+                    "items": []
+                  },
+                  "coinvestors": {
+                    "title": "Sequoia Capital Co-Investors (4,434)",
+                    "total": 4434,
+                    "shown": 5,
+                    "locked": false,
+                    "note": null,
+                    "columns": [
+                      "Name",
+                      "With",
+                      "… 4 more"
+                    ],
+                    "items": [
+                      {
+                        "name": "Andreessen Horowitz",
+                        "with": "73",
+                        "exits": null,
+                        "lead_partner": null,
+                        "series": null,
+                        "industry": null,
+                        "name_url": "https://pitchbook.com/profiles/investor/41716-90"
+                      },
+                      {
+                        "name": "Peak XV Partners",
+                        "with": null,
+                        "exits": null,
+                        "lead_partner": null,
+                        "series": null,
+                        "industry": null,
+                        "name_url": "https://pitchbook.com/profiles/investor/167489-20"
+                      },
+                      "… 3 more"
+                    ]
+                  },
+                  "affiliates": {
+                    "title": "Sequoia Capital Affiliates",
+                    "total": 3,
+                    "shown": 3,
+                    "locked": false,
+                    "note": "Subsidiaries (3)",
+                    "columns": [
+                      "Name",
+                      "Industry",
+                      "… 2 more"
+                    ],
+                    "items": [
+                      {
+                        "name": "Sequoia Arc",
+                        "industry": null,
+                        "location": "Menlo Park, CA",
+                        "year_founded": "2022",
+                        "name_url": "https://pitchbook.com/profiles/investor/498375-28"
+                      },
+                      {
+                        "name": "SCGE Management",
+                        "industry": null,
+                        "location": "Menlo Park, CA",
+                        "year_founded": "2009"
+                      },
+                      "… 1 more"
+                    ]
+                  },
+                  "news": [
+                    {
+                      "title": "Nvidia's $12.9B Hugging Face deal shows why IPOs are now optional",
+                      "summary": "The chipmaker's acquisition is the latest sign that AI's exit path runs through corporate balance sheets, not Wall Street.",
+                      "date": "Sep 6, 2026",
+                      "kind": "NEWS",
+                      "url": "https://pitchbook.com/news/articles/nvidias-hugging-deal-ipos-are-optional",
+                      "image": "https://pitchbook.brightspotcdn.com/ce/e2/03379fcb422598479d3f6d8f9f49/nb-03-30-25-bodley-weekender-header-image.png"
+                    },
+                    {
+                      "title": "Granite Asia raises over $500 million for debut Asian private credit fund",
+                      "summary": "Anchor LPs include sovereign-linked funds from Singapore, Malaysia and Indonesia.",
+                      "date": "Aug 24, 2026",
+                      "kind": "NEWS",
+                      "url": "https://pitchbook.com/news/articles/granite-asia-closes-over-500-million-for-debut-asian-private-credit-fund",
+                      "image": "https://pitchbook.brightspotcdn.com/0a/e3/cd2a7215493584ce1fc7352cfb16/gettyimages-1791101362-1.jpg"
+                    },
+                    "… 3 more"
+                  ],
+                  "research": [],
+                  "faqs": [
+                    {
+                      "question": "What is Sequoia Capital?",
+                      "answer": "Founded in 1972, Sequoia Capital is a venture capital investment firm based in Menlo Park, California."
+                    },
+                    {
+                      "question": "When was Sequoia Capital founded?",
+                      "answer": "Sequoia Capital was founded in 1972."
+                    },
+                    "… 5 more"
+                  ],
+                  "sections": [
+                    "overview",
+                    "investments",
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/pitchbook/v1/search": {
+      "get": {
+        "operationId": "pitchbookSearch",
+        "summary": "PitchBook profile search",
+        "description": "Companies, investors and funds whose name matches, in the order PitchBook's profile search lists them (15 per page): name, type (company, investor or fund), id for /pitchbook/v1/company, /investor or /fund, link and logo. `last_page` is the highest page the site links to. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/pitchbook-search",
+        "tags": [
+          "PitchBook"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Name to search for (1-200 characters).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "sequoia capital"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Results page, 1 and up (default 1).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "sequoia capital",
+                  "page": 1,
+                  "count": 15,
+                  "last_page": 8,
+                  "next_page": 2,
+                  "results": [
+                    {
+                      "name": "Sequoia Capital",
+                      "type": "investor",
+                      "id": "11295-73",
+                      "url": "https://pitchbook.com/profiles/investor/11295-73",
+                      "logo": "https://image.pitchbook.com/3m9ATgSWiMbrtCXBCTo7i7QlHjN1767616590481_200x200"
+                    },
+                    {
+                      "name": "Sequoia Capital (Hongkong)",
+                      "type": "company",
+                      "id": "162233-74",
+                      "url": "https://pitchbook.com/profiles/company/162233-74",
+                      "logo": null
+                    },
+                    "… 13 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

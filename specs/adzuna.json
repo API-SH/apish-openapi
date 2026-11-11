@@ -1,0 +1,1412 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Adzuna",
+    "version": "1.0.0",
+    "description": "The Adzuna API from API.SH: public Adzuna data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Adzuna",
+      "description": "4 endpoints (jobs & b2b)",
+      "x-slug": "adzuna",
+      "x-domains": [
+        "adzuna.co.uk"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/adzuna/v1/job": {
+      "get": {
+        "operationId": "adzunaJob",
+        "summary": "Adzuna job ad",
+        "description": "One Adzuna job ad: title, company, advertiser, location and address, salary (as shown and as structured data), contract type and hours, breadcrumb (category), badges, date posted, closing date, the full description as text and HTML, and the apply link. `latest=true` with search parameters (`q`, `location`, filters) returns the newest matching ad. 404 when the ad has expired.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adzuna-job",
+        "tags": [
+          "Adzuna"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Adzuna job id (the number in /details/<id>, `id` in search results) or a job link. A link sets the country. Required unless latest=true.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "5295889392"
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`true`: the newest ad of a search with the other parameters (`q`, `location` and the search filters) instead of an `id`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "With latest=true: search keywords.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "With latest=true: town, region or postcode.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country site of the id (ignored for a link).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "gb",
+                "us",
+                "au",
+                "ca",
+                "de",
+                "fr",
+                "nl",
+                "be",
+                "at",
+                "ch",
+                "it",
+                "es",
+                "pl",
+                "in",
+                "sg",
+                "nz",
+                "za",
+                "br",
+                "mx"
+              ],
+              "default": "gb"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "5953645937",
+                  "country": "gb",
+                  "url": "https://www.adzuna.co.uk/jobs/details/5953645937",
+                  "title": "Software Systems Engineer",
+                  "company": "IBM",
+                  "company_slug": "ibm",
+                  "company_url": "https://www.adzuna.co.uk/jobs/company/ibm",
+                  "advertiser_logo": "https://zunastatic-abf.kxcdn.com/images/logo/jobs/partners/x5fDArs5BuyKapCtYfIRmk8ofpM.png",
+                  "advertiser": "Direct Employers",
+                  "location": "Hursley",
+                  "address": {
+                    "locality": "Hursley",
+                    "region": "Winchester",
+                    "postal_code": "SO212JX",
+                    "country": "GB"
+                  },
+                  "latitude": 51.025299,
+                  "longitude": -1.39064,
+                  "salary": {
+                    "text": "£53,063 per year",
+                    "min": 53063,
+                    "max": 53063,
+                    "currency": "GBP",
+                    "period": "year",
+                    "estimated": true
+                  },
+                  "salary_structured": {
+                    "value": 53063,
+                    "min": null,
+                    "max": null,
+                    "unit": "YEAR",
+                    "currency": "GBP"
+                  },
+                  "contract_type": "Permanent",
+                  "contract_time": null,
+                  "employment_type": [
+                    "FULL_TIME"
+                  ],
+                  "breadcrumb": [
+                    {
+                      "name": "Jobs",
+                      "url": "https://www.adzuna.co.uk"
+                    },
+                    {
+                      "name": "South East England",
+                      "url": "https://www.adzuna.co.uk/jobs/south-east-england"
+                    },
+                    "… 3 more"
+                  ],
+                  "badges": [
+                    "NEW"
+                  ],
+                  "date_posted": "2026-07-22T04:24:08",
+                  "valid_through": "2026-11-19T03:02:35",
+                  "direct_apply": false,
+                  "description": "**Introduction** THIS ROLE IS BASED IN IBM HURSLEY AND YOU MUST HAVE PERMANENT RIGHT TO WORK IN THE UK Data storage is at the heart of every…",
+                  "description_html": "**Introduction** THIS ROLE IS BASED IN IBM HURSLEY AND YOU MUST HAVE PERMANENT RIGHT TO WORK IN THE UK Data storage is at the heart of every…",
+                  "apply_url": "https://www.adzuna.co.uk/jobs/land/ad/5953645937?aztt=eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3OTQ0NjEyMjEsImlhdCI6MTc5Mzg1NjQyMSwidHMiOiJub25lIiwiY…",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/adzuna/v1/salaries": {
+      "get": {
+        "operationId": "adzunaSalaries",
+        "summary": "Adzuna UK salary stats",
+        "description": "Adzuna's live UK salary stats for a job title, optionally in one town or region: average advertised salary, the site's fast facts (vs national average, year-on-year change, vacancy count), the last 12 months of average salary and vacancy counts, the top hiring companies and related searches. 404 when Adzuna has no stats for the title.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adzuna-salaries",
+        "tags": [
+          "Adzuna"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "description": "Job title (e.g. software developer) or an adzuna.co.uk/jobs/salaries link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "software developer"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Town or region, e.g. manchester, london, scotland. Omit for the whole UK.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "manchester"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "gb",
+                  "url": "https://www.adzuna.co.uk/jobs/salaries/software-developer",
+                  "title": "Software developer",
+                  "title_slug": "software-developer",
+                  "type": "term",
+                  "location": null,
+                  "region": {
+                    "id": 86383,
+                    "slug": "uk"
+                  },
+                  "currency": "GBP",
+                  "average_salary": 66526,
+                  "facts": [
+                    "The average Software developer salary is £66,526. This is 56.0% above the national average advertised salary of £42,652.",
+                    "Meanwhile, the number of Software developer job ads is 4.6% lower than last year, with 9,021 current vacancies.",
+                    "… 4 more"
+                  ],
+                  "monthly": [
+                    {
+                      "month": "2025-11",
+                      "average_salary": 59775,
+                      "vacancies": 9455
+                    },
+                    {
+                      "month": "2025-12",
+                      "average_salary": 61262,
+                      "vacancies": 9055
+                    },
+                    "… 10 more"
+                  ],
+                  "top_companies": [
+                    {
+                      "name": "Amazon",
+                      "slug": "amazon",
+                      "id": 31073,
+                      "vacancies": 280
+                    },
+                    {
+                      "name": "JPMorgan Chase",
+                      "slug": "jpmorgan-chase",
+                      "id": 30851,
+                      "vacancies": 205
+                    },
+                    "… 3 more"
+                  ],
+                  "related_searches": [
+                    {
+                      "name": "software consultant",
+                      "url": "https://www.adzuna.co.uk/jobs/salaries/software-consultant"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/adzuna/v1/search": {
+      "get": {
+        "operationId": "adzunaSearch",
+        "summary": "Adzuna job search",
+        "description": "Job ads on Adzuna in any of its 19 countries: title, company (with its Adzuna company page), location, advertised or estimated salary (min, max, period, currency), badges, snippet and logo, 10 per page; plus the total and, on page 1, the filter values the site offers for this search (locations, categories, companies, contract types, hours, date posted, salary bands) with the ids the filters take. Filter by place or postcode with a radius, location id, category, company, contract type, hours, salary range, date posted and remote; sort by relevance, date or salary. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adzuna-search",
+        "tags": [
+          "Adzuna"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords (job title, skill, company). Required unless location, location_id, category or company_id is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "developer"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Town, region or postcode (the site's \"where\" box), e.g. Manchester or SW1A.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "distance",
+            "in": "query",
+            "required": false,
+            "description": "Radius around `location`, in miles (km in metric countries), e.g. 5, 10, 25.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "description": "Adzuna location id (from facets.locations or /adzuna/v1/suggest?type=where).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category id from facets.categories (e.g. 2 IT Jobs in the UK).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "company_id",
+            "in": "query",
+            "required": false,
+            "description": "Company id from facets.companies.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "contract_type",
+            "in": "query",
+            "required": false,
+            "description": "Contract type.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "permanent",
+                "contract"
+              ]
+            }
+          },
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "description": "Working hours.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full_time",
+                "part_time"
+              ]
+            }
+          },
+          {
+            "name": "salary_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum annual salary in the country's currency.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "salary_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum annual salary in the country's currency.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Posted within this many days.",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                "1",
+                "3",
+                "7",
+                "14",
+                "30"
+              ]
+            }
+          },
+          {
+            "name": "remote",
+            "in": "query",
+            "required": false,
+            "description": "true: remote jobs only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order of the results.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "date",
+                "salary_desc",
+                "salary_asc"
+              ],
+              "default": "relevance"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Adzuna country site (gb = adzuna.co.uk, us = adzuna.com, ...).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "gb",
+                "us",
+                "au",
+                "ca",
+                "de",
+                "fr",
+                "nl",
+                "be",
+                "at",
+                "ch",
+                "it",
+                "es",
+                "pl",
+                "in",
+                "sg",
+                "nz",
+                "za",
+                "br",
+                "mx"
+              ],
+              "default": "gb"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1 for the first. Pass back `next_page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "gb",
+                  "query": "developer",
+                  "applied_filters": {
+                    "sort": "relevance"
+                  },
+                  "page": 1,
+                  "total": 13412,
+                  "count": 10,
+                  "next_page": 2,
+                  "sort_options": [
+                    "relevance",
+                    "date",
+                    "… 2 more"
+                  ],
+                  "facets": {
+                    "date_posted": [
+                      {
+                        "days": 1,
+                        "name": "Last 24 hours"
+                      },
+                      {
+                        "days": 3,
+                        "name": "Last 3 days"
+                      },
+                      "… 1 more"
+                    ],
+                    "salary_min": [],
+                    "locations": [
+                      {
+                        "id": 86384,
+                        "name": "London"
+                      },
+                      {
+                        "id": 86394,
+                        "name": "South East England"
+                      },
+                      "… 11 more"
+                    ],
+                    "categories": [
+                      {
+                        "id": 2,
+                        "name": "IT Jobs"
+                      },
+                      {
+                        "id": 5,
+                        "name": "Engineering Jobs"
+                      },
+                      "… 8 more"
+                    ],
+                    "companies": [
+                      {
+                        "id": 30819,
+                        "name": "Accenture"
+                      },
+                      {
+                        "id": 19396,
+                        "name": "Cognizant Technology Solutions"
+                      },
+                      "… 8 more"
+                    ],
+                    "contract_types": [
+                      {
+                        "id": "contract",
+                        "name": "Contract"
+                      },
+                      {
+                        "id": "permanent",
+                        "name": "Permanent"
+                      }
+                    ],
+                    "hours": [
+                      {
+                        "id": "full_time",
+                        "name": "Full time"
+                      },
+                      {
+                        "id": "part_time",
+                        "name": "Part time"
+                      }
+                    ]
+                  },
+                  "jobs": [
+                    {
+                      "id": "5295889392",
+                      "title": "Developer",
+                      "url": "https://www.adzuna.co.uk/jobs/details/5295889392",
+                      "company": "WIPRO",
+                      "company_display_name": "Wipro Digital",
+                      "company_slug": "wipro-digital",
+                      "company_url": "https://www.adzuna.co.uk/jobs/company/wipro-digital",
+                      "location": "UK",
+                      "salary": {
+                        "text": "£42,603 per year",
+                        "min": 42603,
+                        "max": 42603,
+                        "currency": "GBP",
+                        "period": "year",
+                        "estimated": true
+                      },
+                      "badges": [
+                        "TOP MATCH",
+                        "CLOSING SOON"
+                      ],
+                      "snippet": "its meet 100% quality assuranceparameters Do Instrumental in understanding the requirements and design ofthe product/ software Develop softw…",
+                      "logo": "https://zunastatic-abf.kxcdn.com/images/logo/jobs/partners/R-izGTjBzgWRRA2WFLYbXGopGpk.png"
+                    },
+                    {
+                      "id": "5210490973",
+                      "title": "Developer",
+                      "url": "https://www.adzuna.co.uk/jobs/details/5210490973",
+                      "company": "WIPRO",
+                      "company_display_name": null,
+                      "company_slug": null,
+                      "company_url": null,
+                      "location": "UK",
+                      "salary": {
+                        "text": "£42,327 per year",
+                        "min": 42327,
+                        "max": 42327,
+                        "currency": "GBP",
+                        "period": "year",
+                        "estimated": true
+                      },
+                      "badges": [
+                        "CLOSING SOON"
+                      ],
+                      "snippet": "its meet 100% quality assuranceparameters Do Instrumental in understanding the requirements and design ofthe product/ software Develop softw…",
+                      "logo": "https://zunastatic-abf.kxcdn.com/images/global/jobs/partners/logo_e2ehiring.png"
+                    },
+                    "… 8 more"
+                  ],
+                  "search_url": "https://www.adzuna.co.uk/jobs/search?q=developer",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/adzuna/v1/suggest": {
+      "get": {
+        "operationId": "adzunaSuggest",
+        "summary": "Adzuna search suggestions",
+        "description": "The suggestions of Adzuna's search boxes for a partial word: `what` (job titles and keywords), `where` (places with their location id for search) or `title` (UK salary-stats job titles and categories, with the slugs /adzuna/v1/salaries takes).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adzuna-suggest",
+        "tags": [
+          "Adzuna"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "At least 2 characters.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "devel"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Which box.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "what",
+                "where",
+                "title"
+              ],
+              "default": "what"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country site.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "gb",
+                "us",
+                "au",
+                "ca",
+                "de",
+                "fr",
+                "nl",
+                "be",
+                "at",
+                "ch",
+                "it",
+                "es",
+                "pl",
+                "in",
+                "sg",
+                "nz",
+                "za",
+                "br",
+                "mx"
+              ],
+              "default": "gb"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "gb",
+                  "q": "devel",
+                  "type": "what",
+                  "count": 10,
+                  "suggestions": [
+                    {
+                      "value": "Aem Developer",
+                      "label": "Aem Developer"
+                    },
+                    {
+                      "value": "Analyst Developer",
+                      "label": "Analyst Developer"
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

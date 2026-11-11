@@ -1,0 +1,1355 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Allrecipes",
+    "version": "1.0.0",
+    "description": "The Allrecipes API from API.SH: public Allrecipes data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Allrecipes",
+      "description": "5 endpoints (food & delivery)",
+      "x-slug": "allrecipes",
+      "x-domains": [
+        "allrecipes.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/allrecipes/v1/category": {
+      "get": {
+        "operationId": "allrecipesCategory",
+        "summary": "Allrecipes recipe category",
+        "description": "A recipe category page (e.g. Desserts): title, description, breadcrumbs, its subcategories (id, name, link) and the recipes it lists (id, title, link, stars, rating count, image). Leave `id` out for the top-level recipe index.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/allrecipes-category",
+        "tags": [
+          "Allrecipes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "The category's allrecipes.com/recipes/... link, or its id with the name part, e.g. `79/desserts`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "79/desserts"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 79,
+                  "url": "https://www.allrecipes.com/recipes/79/desserts/",
+                  "title": "Desserts",
+                  "description": "Whether you crave sweet, savory, decadent or healthy, we have hundreds of top-rated dessert recipes to satisfy your taste buds.",
+                  "breadcrumbs": [
+                    {
+                      "name": "Recipes",
+                      "url": "https://www.allrecipes.com/recipes/"
+                    }
+                  ],
+                  "subcategories": [
+                    {
+                      "id": 1557,
+                      "name": "Chocolate Desserts",
+                      "url": "https://www.allrecipes.com/recipes/1557/desserts/chocolate/"
+                    },
+                    {
+                      "id": 15840,
+                      "name": "Crisps and Crumbles",
+                      "url": "https://www.allrecipes.com/recipes/15840/desserts/crisps-and-crumbles/"
+                    },
+                    "… 40 more"
+                  ],
+                  "count": 72,
+                  "recipes": [
+                    {
+                      "id": null,
+                      "doc_id": 6660376,
+                      "title": "20 Irresistible Fall Cheesecakes",
+                      "url": "https://www.allrecipes.com/gallery/favorite-fall-cheesecakes/",
+                      "rating": null,
+                      "rating_count": null,
+                      "tag": "Desserts",
+                      "image": "https://www.allrecipes.com/thmb/E7qJR9knZ8Q1BZ_ifkuZbqle2MA=/fit-in/771x514/filters:no_upscale():max_bytes(150000):strip_icc():focal(399x0:4…",
+                      "by": null,
+                      "kind": "article"
+                    },
+                    {
+                      "id": null,
+                      "doc_id": 6655193,
+                      "title": "Our 10 Best Apple Crisp Recipes of All Time",
+                      "url": "https://www.allrecipes.com/gallery/best-apple-crisp-recipes/",
+                      "rating": null,
+                      "rating_count": null,
+                      "tag": "Apple Crisps and Crumbles Recipes",
+                      "image": "https://www.allrecipes.com/thmb/m4-RdlhJkq9hn-wd1h2hyHADcaY=/fit-in/144x95/filters:no_upscale():max_bytes(150000):strip_icc()/277070_Apple-C…",
+                      "by": null,
+                      "kind": "article"
+                    },
+                    "… 70 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/allrecipes/v1/questions": {
+      "get": {
+        "operationId": "allrecipesQuestions",
+        "summary": "Allrecipes recipe questions and answers",
+        "description": "Questions people asked about a recipe, 10 per page, each with its text, author, date, badges and its answers (text, author, date, badges); plus the total. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/allrecipes-questions",
+        "tags": [
+          "Allrecipes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The recipe's link (or id with the name part, e.g. `10813/best-chocolate-chip-cookies`), or its `doc_id` from /allrecipes/v1/recipe.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10813/best-chocolate-chip-cookies"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "doc_id": 6649624,
+                  "total": 35,
+                  "page": 1,
+                  "count": 10,
+                  "questions": [
+                    {
+                      "id": "9a67588f-b46a-47cf-9624-9f318a241691",
+                      "text": "Should I chill the cookie dough before baking?",
+                      "author": "Lena",
+                      "created": "2024-11-04T21:55:42.761Z",
+                      "modified": "2024-11-04T21:55:43.008Z",
+                      "badges": [],
+                      "answer_count": 6,
+                      "answers": [
+                        {
+                          "id": "be069fe2-66f6-42ef-a75d-4b9bc59af444",
+                          "text": "I’d recommend you chill the cookie dough for 30 minutes which not only intensifies the flavor but keeps them from spreading.  A side benefit…",
+                          "author": "lutzflcat",
+                          "created": "2024-11-05T11:13:22.169Z",
+                          "badges": [
+                            "Allstar"
+                          ],
+                          "helpful": null
+                        },
+                        {
+                          "id": "6384e198-4a17-49b3-afee-014190be179d",
+                          "text": "I normally make the dough the night before. Then I pre-form the cookie rounds and keep them cold until they go in the oven. Makes for chewie…",
+                          "author": "LilacKnife5916",
+                          "created": "2025-08-29T05:27:49.715Z",
+                          "badges": [],
+                          "helpful": null
+                        },
+                        "… 4 more"
+                      ]
+                    },
+                    {
+                      "id": "1fc009eb-478a-4465-a31b-685ad6db7619",
+                      "text": "does anyone add cream of tartar to this recipe?",
+                      "author": "ssbaker03",
+                      "created": "2024-11-11T19:54:30.522Z",
+                      "modified": "2024-11-11T19:54:30.716Z",
+                      "badges": [],
+                      "answer_count": 5,
+                      "answers": [
+                        {
+                          "id": "1aa67d18-69a7-4022-a134-bc1ad52d5005",
+                          "text": "Yes, 1/2 teaspoon cream of tartar.",
+                          "author": "ToughSieve6772",
+                          "created": "2024-12-01T12:49:01.179Z",
+                          "badges": [],
+                          "helpful": null
+                        },
+                        {
+                          "id": "a1cce748-fdb3-4852-85b9-33098ef74611",
+                          "text": "It be good and tangy",
+                          "author": "SweetBass5879",
+                          "created": "2024-12-10T09:30:49.769Z",
+                          "badges": [],
+                          "helpful": null
+                        },
+                        "… 3 more"
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/allrecipes/v1/recipe": {
+      "get": {
+        "operationId": "allrecipesRecipe",
+        "summary": "Allrecipes recipe",
+        "description": "A recipe's page: id, name, description, rating and rating count, review and photo counts, author, published / updated dates, prep / cook / additional / total time, servings and yield, ingredients (as written and split into quantity, unit and name, with group headings), directions with their step photos, nutrition per serving and the full nutrition facts table, category, cuisine, keywords, breadcrumbs, images, video and the featured reviews. `doc_id` is the key for reviews and questions.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/allrecipes-recipe",
+        "tags": [
+          "Allrecipes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The recipe's allrecipes.com link, or its id with the name part, e.g. `10813/best-chocolate-chip-cookies` (the site needs both).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.allrecipes.com/recipe/10813/best-chocolate-chip-cookies/"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 10813,
+                  "doc_id": 6649624,
+                  "url": "https://www.allrecipes.com/recipe/10813/best-chocolate-chip-cookies/",
+                  "name": "Best Chocolate Chip Cookies",
+                  "description": "This classic chocolate chip cookie recipe makes deliciously buttery cookies with crisp edges, chewy middles, and gooey chocolate chips in ev…",
+                  "intro": "This chocolate chip cookie recipe makes dozens of delicious cookies with crisp edges, chewy centers, and plenty of chocolate chips.",
+                  "rating": 4.6,
+                  "rating_count": 19333,
+                  "review_count": 14912,
+                  "photo_count": 4926,
+                  "author": "Dora",
+                  "date_published": "1998-04-18T16:10:32-04:00",
+                  "date_modified": "2026-10-05T05:42:35-04:00",
+                  "updated": "Updated on October 5, 2026",
+                  "prep_time": "20 mins",
+                  "cook_time": "10 mins",
+                  "additional_time": null,
+                  "total_time": "30 mins",
+                  "servings": "48",
+                  "yield": "4 dozen cookies",
+                  "details": {
+                    "prep_time": "20 mins",
+                    "cook_time": "10 mins",
+                    "total_time": "30 mins",
+                    "servings": "48",
+                    "yield": "4 dozen cookies"
+                  },
+                  "times_iso": {
+                    "prep": "PT20M",
+                    "cook": "PT10M",
+                    "total": "PT30M"
+                  },
+                  "ingredients": [
+                    "1 cup butter, softened",
+                    "1 cup white sugar",
+                    "… 9 more"
+                  ],
+                  "ingredients_structured": [
+                    {
+                      "quantity": "1",
+                      "unit": "cup",
+                      "name": "butter, softened",
+                      "text": "1 cup butter, softened"
+                    },
+                    {
+                      "quantity": "1",
+                      "unit": "cup",
+                      "name": "white sugar",
+                      "text": "1 cup white sugar"
+                    },
+                    "… 9 more"
+                  ],
+                  "ingredient_groups": [],
+                  "directions": [
+                    "Gather your ingredients, making sure your butter is softened, and your eggs are room temperature.",
+                    "Preheat the oven to 350 degrees F (175 degrees C). Beat butter, white sugar, and brown sugar together in a large bowl with an electric mixer…",
+                    "… 7 more"
+                  ],
+                  "direction_images": [
+                    "https://www.allrecipes.com/thmb/R96Ob6S72KWjk_yQzHF-ZoKr7xI=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc():format(webp)/10813-be…",
+                    "https://www.allrecipes.com/thmb/08WyvFf-_Uro3FpO7wKBa4XbYrQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc():format(webp)/10813-be…",
+                    "… 7 more"
+                  ],
+                  "nutrition": {
+                    "calories": "146 kcal",
+                    "carbohydrateContent": "19 g",
+                    "cholesterolContent": "10 mg",
+                    "fiberContent": "1 g",
+                    "proteinContent": "2 g",
+                    "saturatedFatContent": "4 g",
+                    "sodiumContent": "76 mg",
+                    "fatContent": "8 g",
+                    "unsaturatedFatContent": "0 g"
+                  },
+                  "nutrition_facts": [
+                    [
+                      "146",
+                      "Calories"
+                    ],
+                    [
+                      "8g",
+                      "Fat"
+                    ],
+                    "… 16 more"
+                  ],
+                  "category": [
+                    "Dessert"
+                  ],
+                  "cuisine": [
+                    "American"
+                  ],
+                  "keywords": "publisher-tested",
+                  "breadcrumbs": [
+                    {
+                      "name": "Recipes",
+                      "url": "https://www.allrecipes.com/recipes/"
+                    },
+                    {
+                      "name": "Desserts",
+                      "url": "https://www.allrecipes.com/recipes/79/desserts/"
+                    },
+                    "… 2 more"
+                  ],
+                  "images": [
+                    "https://www.allrecipes.com/thmb/8xwaWAHtl_QLij6D-G0Z4B1HDVA=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/10813-best-chocolate-…"
+                  ],
+                  "video": "https://content.jwplatform.com/videos/qHQSNVCK-K3AjnAEN.mp4",
+                  "top_reviews": [
+                    {
+                      "author": "Chuck Sampson",
+                      "rating": 5,
+                      "body": "vERRY eXXCELLENT cOOOKIE! I worked 10 years as a baker and the recipe we used at the bake shop was similar except this recipe didn't call fo…",
+                      "date": null
+                    },
+                    {
+                      "author": "Jen Gerbrandt",
+                      "rating": 5,
+                      "body": "I've tried a lot of different chocolate chip cookie recipes and this is the best one by far! The only change I've made is to the sugar amoun…",
+                      "date": "2005-11-17T15:41:13.467Z"
+                    },
+                    "… 18 more"
+                  ],
+                  "reviews_endpoint": "/allrecipes/v1/reviews?id=6649624",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/allrecipes/v1/reviews": {
+      "get": {
+        "operationId": "allrecipesReviews",
+        "summary": "Allrecipes recipe reviews",
+        "description": "A recipe's reviews with the site's sorts and filters: id, stars, text, the tags the reviewer picked (e.g. Easy to follow), date and edit date, helpful votes, reply count, reviewer name and profile link, and photos; plus the total. Pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/allrecipes-reviews",
+        "tags": [
+          "Allrecipes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The recipe's link (or id with the name part, e.g. `10813/best-chocolate-chip-cookies`), or its `doc_id` from /allrecipes/v1/recipe.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10813/best-chocolate-chip-cookies"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default `newest`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "oldest",
+                "most_helpful",
+                "most_positive",
+                "least_positive"
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "required": false,
+            "description": "Only these star ratings, comma-separated (e.g. `5,4`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "with_photo",
+            "in": "query",
+            "required": false,
+            "description": "`true`: reviews with a photo only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page (default 20, max 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_cursor` from the previous answer to get the next page; null on the last page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "doc_id": 6649624,
+                  "sort": "newest",
+                  "rating": [],
+                  "with_photo": false,
+                  "total": 14912,
+                  "count": 20,
+                  "reviews": [
+                    {
+                      "id": "538fb3e4393338694409fc8035d57ce8908e85ae_6649624",
+                      "rating": 5,
+                      "text": "easy but tooo much flour",
+                      "tags": [
+                        "A keeper!",
+                        "Easy to follow",
+                        "… 4 more"
+                      ],
+                      "created": "2026-10-31T22:24:50.434Z",
+                      "edited": "2026-10-31T22:33:23.930Z",
+                      "helpful": 0,
+                      "replies": 0,
+                      "author": "Katerina",
+                      "author_url": "https://www.allrecipes.com/cook/28333951",
+                      "photos": [
+                        {
+                          "url": "https://public-assets.meredithcorp.io/b7b49bf8ed6a3fa0f490d2852a25f78e/1793485449420image.jpg",
+                          "width": 4032,
+                          "height": 3024
+                        }
+                      ]
+                    },
+                    {
+                      "id": "3195a9487e55469b1c6238ab12d0f1eec9f169cd_6649624",
+                      "rating": 5,
+                      "text": "NO IT WAS GREAT AND I FED IT TO MY PARENTS AND EVERYONE LOVED IT, WILL TRY AGAIN.",
+                      "tags": [
+                        "Family favorite",
+                        "Worth the effort",
+                        "… 2 more"
+                      ],
+                      "created": "2026-10-27T13:46:45.853Z",
+                      "edited": null,
+                      "helpful": 0,
+                      "replies": 0,
+                      "author": "Swagata",
+                      "author_url": "https://www.allrecipes.com/cook/5ce652420ebf4882",
+                      "photos": []
+                    },
+                    "… 18 more"
+                  ],
+                  "next_cursor": "1786294811489",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/allrecipes/v1/search": {
+      "get": {
+        "operationId": "allrecipesSearch",
+        "summary": "Allrecipes recipe search",
+        "description": "Recipes (and articles) matching a search, 24 per page: id, title, link, stars, rating count, tag, image and whether it is a recipe or an article. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/allrecipes-search",
+        "tags": [
+          "Allrecipes"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search words, e.g. `lasagna`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lasagna"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "lasagna",
+                  "page": 1,
+                  "total": null,
+                  "count": 24,
+                  "results": [
+                    {
+                      "id": 11959,
+                      "doc_id": 6738880,
+                      "title": "Slow Cooker Lasagna",
+                      "url": "https://www.allrecipes.com/recipe/11959/slow-cooker-lasagna/",
+                      "rating": 4.5,
+                      "rating_count": 1103,
+                      "tag": "Meat Lasagna Recipes",
+                      "image": "https://www.allrecipes.com/thmb/ZgRczXtRrwLuvjFQAT_7hxzdiwA=/282x188/filters:no_upscale():max_bytes(150000):strip_icc()/AR-202007-slow-cooke…",
+                      "by": null,
+                      "kind": "recipe"
+                    },
+                    {
+                      "id": 23600,
+                      "doc_id": 6664254,
+                      "title": "World's Best Lasagna",
+                      "url": "https://www.allrecipes.com/recipe/23600/worlds-best-lasagna/",
+                      "rating": 5,
+                      "rating_count": 21017,
+                      "tag": "Meat Lasagna Recipes",
+                      "image": "https://www.allrecipes.com/thmb/--D4QjJ8RwHQmk4fGOKe-f7OHEA=/282x188/filters:no_upscale():max_bytes(150000):strip_icc()/23600-worlds-best-la…",
+                      "by": null,
+                      "kind": "recipe"
+                    },
+                    "… 22 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

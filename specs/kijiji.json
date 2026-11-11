@@ -1,0 +1,1544 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Kijiji",
+    "version": "1.0.0",
+    "description": "The Kijiji API from API.SH: public Kijiji data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Kijiji",
+      "description": "4 endpoints (e-commerce)",
+      "x-slug": "kijiji",
+      "x-domains": [
+        "kijiji.ca"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kijiji/v1/categories": {
+      "get": {
+        "operationId": "kijijiCategories",
+        "summary": "Kijiji categories",
+        "description": "Kijiji's category tree one level at a time: the subcategories of a category with their ids, listing counts (in the chosen location) and browse links, and the path above it. Category ids work as the category of `/kijiji/v1/search`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kijiji-categories",
+        "tags": [
+          "Kijiji"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "A Kijiji category id (0 for all categories, 10 Buy & Sell, 27 Cars & Vehicles, 34 Real Estate, ...). Default 0.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "A Kijiji location id for the counts (0 for Canada). Default 0.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9004"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category_id": 10,
+                  "location_id": 9004,
+                  "name": "Buy & Sell",
+                  "path": [
+                    {
+                      "id": 0,
+                      "name": "All Categories",
+                      "parent_id": null,
+                      "listings": null,
+                      "url": "https://www.kijiji.ca/b-ontario/l9004"
+                    }
+                  ],
+                  "count": 32,
+                  "categories": [
+                    {
+                      "id": 12,
+                      "name": "Arts & Collectibles",
+                      "parent_id": 10,
+                      "listings": 283300,
+                      "url": "https://www.kijiji.ca/b-art-collectibles/ontario/c12l9004"
+                    },
+                    {
+                      "id": 767,
+                      "name": "Audio",
+                      "parent_id": 10,
+                      "listings": 20585,
+                      "url": "https://www.kijiji.ca/b-audio/ontario/c767l9004"
+                    },
+                    "… 30 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kijiji/v1/listing": {
+      "get": {
+        "operationId": "kijijiListing",
+        "summary": "Kijiji ad details",
+        "description": "One Kijiji ad: price, full description, every attribute, photos, location, posting and end dates, views, category path and, for business sellers, the business profile (name, website, logo, listing count, address). Pass `id`, `url`, or `latest=1` with search params (`q`, `location_id`, `category`, ...). Private sellers' names, phone numbers and email addresses are never returned (masked in ad text).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kijiji-listing",
+        "tags": [
+          "Kijiji"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Kijiji ad id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Kijiji ad url.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`1`: open the first current result of a search made with this route's search params (q, location and filters) instead of an id. Ads expire, so this keeps a link working.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search keywords (with latest=1).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "sofa"
+          },
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "description": "Kijiji location id (with latest=1).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1700273"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Kijiji category id (with latest=1).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seller_type",
+            "in": "query",
+            "required": false,
+            "description": "With latest=1: private or business.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "private",
+                "business"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1745679339",
+                  "url": "https://www.kijiji.ca/v-couch-futon/city-of-toronto/sectional-sofa-sectional-couch-3-seater-sectional-sofa-couch/1745679339",
+                  "title": "Sectional Sofa Sectional Couch 3 Seater Sectional Sofa Couch ",
+                  "description": "Brand New 3 Seater Sectional Sofa L Shape Sofa With Separate Ottoman Reversible chaise\nCash on Delivery or Store Visit Pick Up both Availabl…",
+                  "price": {
+                    "amount": 350,
+                    "original_amount": null,
+                    "type": "FIXED",
+                    "currency": "CAD"
+                  },
+                  "type": "OFFER",
+                  "category_id": 238,
+                  "seller_type": "business",
+                  "posted": "2026-11-03T13:19:57.000Z",
+                  "sorting_date": "2026-11-03T13:19:58.000Z",
+                  "ends": "2027-01-02T13:19:58.000Z",
+                  "status": "ACTIVE",
+                  "ad_source": "ORGANIC",
+                  "views": 46,
+                  "location": {
+                    "id": 1700273,
+                    "name": "City of Toronto",
+                    "address": "Glenholme Ave, Toronto, M6H 3A8",
+                    "latitude": 43.68,
+                    "longitude": -79.44,
+                    "distance_m": null,
+                    "nearest_intersection": null
+                  },
+                  "image_count": 10,
+                  "images": [
+                    "https://media.kijiji.ca/api/v1/ca-prod-fsbo-ads/images/83/83c40ac0-3655-4d72-8e76-f28dda8d7339?rule=kijijica-960-webp",
+                    "https://media.kijiji.ca/api/v1/ca-prod-fsbo-ads/images/4b/4bfcbeeb-fb6a-4231-b4a9-a17cd6882310?rule=kijijica-960-webp",
+                    "… 8 more"
+                  ],
+                  "youtube_video_id": null,
+                  "flags": {
+                    "categorySpecificBadge": false,
+                    "highlight": false,
+                    "hpGallery": null,
+                    "topAd": true,
+                    "priceDrop": false,
+                    "showcase": false,
+                    "isFromAutosDealer": false,
+                    "isFromDealer": true,
+                    "isMoVe": false,
+                    "isPint": false,
+                    "isSM360": false,
+                    "isVerticalCategory": false
+                  },
+                  "attributes": {
+                    "cashless": "Yes",
+                    "forsaleby": "Business",
+                    "curbside": "Yes",
+                    "shipping": "Yes",
+                    "inventory": "20",
+                    "fulfillment": [
+                      "Curbside pick up",
+                      "Shipping",
+                      "… 1 more"
+                    ],
+                    "dropoff": "Yes",
+                    "cashaccepted": "Yes",
+                    "condition": "New",
+                    "payment": [
+                      "Cash accepted",
+                      "Cashless payment"
+                    ]
+                  },
+                  "seller_id": "1046784726",
+                  "seller_website": "https://sunrisefurniture.ca/",
+                  "seller_verified": false,
+                  "seller_rating": null,
+                  "category_path": [
+                    {
+                      "id": 10,
+                      "name": "Buy & Sell"
+                    },
+                    {
+                      "id": 235,
+                      "name": "Furniture"
+                    },
+                    "… 1 more"
+                  ],
+                  "seller": {
+                    "id": "1046784726",
+                    "name": "Sunrise Furniture",
+                    "type": "PROFESSIONAL",
+                    "listings": 450,
+                    "verified": false,
+                    "website": "https://sunrisefurniture.ca/",
+                    "logo": null,
+                    "profile_url": "https://www.kijiji.ca/o-sunrise-furniture/1046784726/listings/1",
+                    "phone_masked": null,
+                    "address": "Glenholme Ave, Toronto, M6H 3A8"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kijiji/v1/locations": {
+      "get": {
+        "operationId": "kijijiLocations",
+        "summary": "Kijiji locations",
+        "description": "Kijiji's location tree one level at a time: the provinces of Canada, the regions of a province or the areas of a region, with their ids, listing counts and browse links, and the path above. Location ids work as the location of `/kijiji/v1/search`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kijiji-locations",
+        "tags": [
+          "Kijiji"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "A Kijiji location id (0 for Canada, 9004 Ontario, 1700272 Toronto (GTA), ...) or a kijiji.ca browse link. Default 0.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9004"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "A Kijiji category id for the counts. Default 0 (all).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "0"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "location_id": 9004,
+                  "category_id": 0,
+                  "name": "Ontario",
+                  "path": [
+                    {
+                      "id": 0,
+                      "name": "Canada",
+                      "parent_id": null,
+                      "listings": null,
+                      "url": "https://www.kijiji.ca/b-canada/l0"
+                    }
+                  ],
+                  "count": 30,
+                  "locations": [
+                    {
+                      "id": 1700217,
+                      "name": "Peterborough Area",
+                      "parent_id": 9004,
+                      "listings": 26481,
+                      "url": "https://www.kijiji.ca/b-peterborough-area/l1700217"
+                    },
+                    {
+                      "id": 1700220,
+                      "name": "Windsor Region",
+                      "parent_id": 9004,
+                      "listings": 35397,
+                      "url": "https://www.kijiji.ca/b-windsor-area-on/l1700220"
+                    },
+                    "… 28 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kijiji/v1/search": {
+      "get": {
+        "operationId": "kijijiSearch",
+        "summary": "Search Kijiji ads",
+        "description": "Kijiji (Canada) classified ads for a keyword, category and location, with price, radius around a point, seller type, price type and sort. Each result has price, photos, location, posting date, attributes and flags; `filters` lists every category, location and attribute value the site offers for the search (use their ids), `top_ads` the promoted ads. 40 per page. Private sellers' names, phone numbers and email addresses are never returned (masked in ad text).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kijiji-search",
+        "tags": [
+          "Kijiji"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "iphone"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Kijiji category id (10 Buy & Sell, 27 Cars & Vehicles, 37 Real Estate, 644 Bikes, 760 Cell phones); see `filters`. Default 0 = all.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10"
+          },
+          {
+            "name": "location_id",
+            "in": "query",
+            "required": false,
+            "description": "Kijiji location id (0 Canada, 9004 Ontario, 1700273 City of Toronto, 1700281 Montreal, 1700287 Vancouver); see `filters`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1700273"
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Latitude for a radius search (with lng).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "description": "Longitude for a radius search (with lat).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Radius in km around lat/lng (default 50).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "required": false,
+            "description": "Label for the lat/lng point (optional).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price (CAD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price (CAD).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "500"
+          },
+          {
+            "name": "seller_type",
+            "in": "query",
+            "required": false,
+            "description": "private or business.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "private",
+                "business"
+              ]
+            }
+          },
+          {
+            "name": "price_type",
+            "in": "query",
+            "required": false,
+            "description": "Only free, contact-for-price or swap/trade ads.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "free",
+                "contact",
+                "swap_trade"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "oldest",
+                "price_asc",
+                "price_desc",
+                "distance"
+              ]
+            }
+          },
+          {
+            "name": "attributes",
+            "in": "query",
+            "required": false,
+            "description": "Category attribute filters as name:value, comma-separated (names from `results[].attributes`, e.g. phonebrand:apple).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Results page, 1 for the first. Pass back `next_page`; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "iphone",
+                  "page": 1,
+                  "total": 2945,
+                  "count": 40,
+                  "next_page": 2,
+                  "applied": {
+                    "search": "sort=MATCH&order=DESC&type=OFFER&offset=0&limit=40&topAdCount=6&keywords=iphone&category=10&location=1700273&eaTopAdPosition=1",
+                    "keywords": "iphone",
+                    "area": null,
+                    "url": "https://www.kijiji.ca/b-buy-sell/canada/iphone/k0c10l1700273"
+                  },
+                  "results": [
+                    {
+                      "id": "1745673563",
+                      "url": "https://www.kijiji.ca/v-cell-phone/city-of-toronto/iphone-17e-iphone-16-iphone-15-iphone-14-iphone-13-iphone-12-11/1745673563",
+                      "title": "iPhone 17e iPhone 16 iPhone 15 iPhone 14 iPhone 13 iPhone 12 11",
+                      "description": "Apple iPhone 17e, iPhone 16, iPhone 16e, iPhone 15, iPhone 15 Plus, iPhone 15 Pro, iPhone 15 Pro Max, iPhone 14, iPhone 14 Plus, iPhone 14 P…",
+                      "price": {
+                        "amount": 89.99,
+                        "original_amount": null,
+                        "type": "FIXED",
+                        "currency": "CAD"
+                      },
+                      "type": null,
+                      "category_id": 760,
+                      "seller_type": "business",
+                      "posted": "2026-11-03T08:18:53.000Z",
+                      "sorting_date": "2026-11-03T13:06:00.000Z",
+                      "ends": null,
+                      "status": null,
+                      "ad_source": "ORGANIC",
+                      "views": null,
+                      "location": {
+                        "id": 1700273,
+                        "name": "Toronto",
+                        "address": "Yonge Street, Toronto, ON, M4T 1Y7",
+                        "latitude": 43.68781,
+                        "longitude": -79.39356,
+                        "distance_m": null,
+                        "nearest_intersection": null
+                      },
+                      "image_count": 9,
+                      "images": [
+                        "https://media.kijiji.ca/api/v1/ca-prod-dealer-ads/images/8d/8d8151b8-8b63-4d57-ac77-801b0ef079e0?rule=kijijica-960-webp"
+                      ],
+                      "youtube_video_id": null,
+                      "flags": {
+                        "categorySpecificBadge": false,
+                        "priceDrop": false,
+                        "showcase": false,
+                        "topAd": false,
+                        "highlight": false,
+                        "shippedBySeller": null,
+                        "isPromotionProvTopAd": null,
+                        "isPromotionTopAd": null
+                      },
+                      "attributes": {
+                        "phonecarrier": "unlck",
+                        "phonebrand": "apple",
+                        "fulfillment": "shipping",
+                        "forsaleby": "delr",
+                        "srpLogoUrl": "https://media.kijiji.ca/api/v1/ca-prod-statics/images/1b/1b84ff40-3517-4f29-8e4b-083b5fc5b0c6?rule=kijijica-60-jpg"
+                      },
+                      "seller_id": "1045509290",
+                      "seller_website": null,
+                      "seller_verified": false,
+                      "seller_rating": null
+                    },
+                    {
+                      "id": "1745706578",
+                      "url": "https://www.kijiji.ca/v-cell-phone/city-of-toronto/i-buy-iphone-13-iphone-16-iphone-14-iphone-12-pro-iphone-15/1745706578",
+                      "title": "I buy iphone 13, iphone 16, iphone 14, iphone 12 pro, iphone 15",
+                      "description": "I buy iphone 13, iphone 16, iphone 14, iphone 12 pro, iphone 15 Are you selling your iPhone? If it's in good condition with good battery hea…",
+                      "price": {
+                        "amount": null,
+                        "original_amount": null,
+                        "type": "CONTACT",
+                        "currency": "CAD"
+                      },
+                      "type": null,
+                      "category_id": 760,
+                      "seller_type": "private",
+                      "posted": "2026-11-04T00:12:46.000Z",
+                      "sorting_date": "2026-11-04T00:12:46.000Z",
+                      "ends": null,
+                      "status": null,
+                      "ad_source": "ORGANIC",
+                      "views": null,
+                      "location": {
+                        "id": 1700273,
+                        "name": "Toronto",
+                        "address": null,
+                        "latitude": 43.79328,
+                        "longitude": -79.35412,
+                        "distance_m": null,
+                        "nearest_intersection": null
+                      },
+                      "image_count": 1,
+                      "images": [
+                        "https://media.kijiji.ca/api/v1/ca-prod-fsbo-ads/images/58/58f12f3d-34f5-4765-956c-d4f308de72fb?rule=kijijica-960-webp"
+                      ],
+                      "youtube_video_id": null,
+                      "flags": {
+                        "categorySpecificBadge": false,
+                        "priceDrop": false,
+                        "showcase": false,
+                        "topAd": false,
+                        "highlight": false,
+                        "shippedBySeller": null,
+                        "isPromotionProvTopAd": null,
+                        "isPromotionTopAd": null
+                      },
+                      "attributes": {
+                        "forsaleby": "ownr",
+                        "phonecarrier": "unlck",
+                        "phonebrand": "apple"
+                      }
+                    },
+                    "… 38 more"
+                  ],
+                  "top_ads": [
+                    {
+                      "id": "1739391416",
+                      "url": "https://www.kijiji.ca/v-cell-phone/city-of-toronto/sell-your-phone-now-iphone-samsung-pixel-macbook-cash/1739391416",
+                      "title": "Sell Your Phone Now! · iPhone Samsung Pixel MacBook CASH",
+                      "description": "Flipafone makes selling your phone safe and simple. Quotes in seconds | We come to you | Trusted by thousands across Canada Text or Call 647…",
+                      "price": {
+                        "amount": null,
+                        "original_amount": null,
+                        "type": "CONTACT",
+                        "currency": "CAD"
+                      },
+                      "type": null,
+                      "category_id": 760,
+                      "seller_type": "business",
+                      "posted": "2026-06-18T23:06:08.000Z",
+                      "sorting_date": "2026-10-16T00:33:28.000Z",
+                      "ends": null,
+                      "status": null,
+                      "ad_source": "TOP_AD",
+                      "views": null,
+                      "location": {
+                        "id": 1700273,
+                        "name": "City of Toronto",
+                        "address": "Billy Bishop Way, North York, ON, M3K 2C8",
+                        "latitude": 43.73037,
+                        "longitude": -79.45279,
+                        "distance_m": null,
+                        "nearest_intersection": null
+                      },
+                      "image_count": 1,
+                      "images": [
+                        "https://media.kijiji.ca/api/v1/ca-prod-dealer-ads/images/8f/8f65fa9f-02e8-4f44-9081-1bba2e155618?rule=kijijica-960-webp"
+                      ],
+                      "youtube_video_id": null,
+                      "flags": {
+                        "categorySpecificBadge": false,
+                        "priceDrop": false,
+                        "showcase": false,
+                        "topAd": true,
+                        "highlight": false,
+                        "shippedBySeller": null,
+                        "isPromotionProvTopAd": null,
+                        "isPromotionTopAd": true
+                      },
+                      "attributes": {
+                        "phonecarrier": "unlck",
+                        "payment": "cashless",
+                        "phonebrand": "apple",
+                        "fulfillment": [
+                          "delivery",
+                          "shipping",
+                          "… 1 more"
+                        ],
+                        "forsaleby": "delr",
+                        "srpLogoUrl": "https://media.kijiji.ca/api/v1/ca-prod-statics/images/d1/d1d34e5d-b854-46aa-836f-b3923cac43aa?rule=kijijica-60-jpg"
+                      },
+                      "seller_id": "1046543630",
+                      "seller_website": null,
+                      "seller_verified": false,
+                      "seller_rating": null
+                    },
+                    {
+                      "id": "1739766251",
+                      "url": "https://www.kijiji.ca/v-cell-phone/city-of-toronto/sell-your-phone-now-iphone-samsung-pixel-macbook-cash/1739766251",
+                      "title": "Sell Your Phone Now! · iPhone Samsung Pixel MacBook CASH",
+                      "description": "Flipafone makes selling your phone safe and simple. Quotes in seconds | We come to you | Trusted by thousands across Canada Text or Call 647…",
+                      "price": {
+                        "amount": null,
+                        "original_amount": null,
+                        "type": "CONTACT",
+                        "currency": "CAD"
+                      },
+                      "type": null,
+                      "category_id": 760,
+                      "seller_type": "business",
+                      "posted": "2026-06-26T23:06:16.000Z",
+                      "sorting_date": "2026-10-24T00:37:05.000Z",
+                      "ends": null,
+                      "status": null,
+                      "ad_source": "TOP_AD",
+                      "views": null,
+                      "location": {
+                        "id": 1700273,
+                        "name": "City of Toronto",
+                        "address": "Bremner Blvd, Toronto, ON, M5V 1J3",
+                        "latitude": 43.64224,
+                        "longitude": -79.38981,
+                        "distance_m": null,
+                        "nearest_intersection": null
+                      },
+                      "image_count": 1,
+                      "images": [
+                        "https://media.kijiji.ca/api/v1/ca-prod-dealer-ads/images/79/79ea1b5c-1cb0-4b6a-bd4a-f48edbe5fc87?rule=kijijica-960-webp"
+                      ],
+                      "youtube_video_id": null,
+                      "flags": {
+                        "categorySpecificBadge": false,
+                        "priceDrop": false,
+                        "showcase": false,
+                        "topAd": true,
+                        "highlight": false,
+                        "shippedBySeller": null,
+                        "isPromotionProvTopAd": null,
+                        "isPromotionTopAd": true
+                      },
+                      "attributes": {
+                        "forsaleby": "delr",
+                        "phonecarrier": "unlck",
+                        "phonebrand": "apple",
+                        "srpLogoUrl": "https://media.kijiji.ca/api/v1/ca-prod-statics/images/6e/6ed296fd-372a-42b6-a8bc-855e02240300?rule=kijijica-60-jpg"
+                      },
+                      "seller_id": "1046543625",
+                      "seller_website": null,
+                      "seller_verified": false,
+                      "seller_rating": null
+                    },
+                    "… 4 more"
+                  ],
+                  "filters": [
+                    {
+                      "name": "category",
+                      "label": "Category",
+                      "type": "TREE_SELECT",
+                      "selected": [
+                        "10"
+                      ],
+                      "values": [
+                        {
+                          "label": "All Categories",
+                          "value": "0",
+                          "parent": null,
+                          "count": null
+                        },
+                        {
+                          "label": "Buy & Sell",
+                          "value": "10",
+                          "parent": "0",
+                          "count": 2945
+                        },
+                        "… 32 more"
+                      ]
+                    },
+                    {
+                      "name": "location",
+                      "label": "Location",
+                      "type": "TREE_SELECT",
+                      "selected": [
+                        "1700273"
+                      ],
+                      "values": [
+                        {
+                          "label": "Canada",
+                          "value": "0",
+                          "parent": null,
+                          "count": null
+                        },
+                        {
+                          "label": "Ontario",
+                          "value": "9004",
+                          "parent": "0",
+                          "count": null
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    "… 6 more"
+                  ],
+                  "sort_options": [
+                    {
+                      "by": "DATE",
+                      "direction": "DESC",
+                      "label": "Most recent",
+                      "selected": false
+                    },
+                    {
+                      "by": "DATE",
+                      "direction": "ASC",
+                      "label": "Least recent",
+                      "selected": false
+                    },
+                    "… 4 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

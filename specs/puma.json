@@ -1,0 +1,1790 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: PUMA",
+    "version": "1.0.0",
+    "description": "The PUMA API from API.SH: public PUMA data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "PUMA",
+      "description": "6 endpoints (e-commerce)",
+      "x-slug": "puma",
+      "x-domains": [
+        "puma.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/puma/v1/autocomplete": {
+      "get": {
+        "operationId": "pumaAutocomplete",
+        "summary": "PUMA search suggestions",
+        "description": "What PUMA's search box suggests while typing: suggested searches with result counts, matching categories and products (id, name, price, sale price, image, link).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/puma-autocomplete",
+        "tags": [
+          "PUMA"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The start of a search.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "sue"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "sue",
+                  "suggestions": [
+                    {
+                      "text": "suede",
+                      "results": 247
+                    },
+                    {
+                      "text": "suede xl",
+                      "results": 30
+                    },
+                    "… 4 more"
+                  ],
+                  "categories": [
+                    {
+                      "name": "US > Suede",
+                      "id": "catalog01_us_us0womens_us0womens0shoes_us0womens0shoes0suedes",
+                      "results": 130
+                    },
+                    {
+                      "name": "US > Suede",
+                      "id": "catalog01_us_us0collections_us0collections0lifestyle_us0puma0classics0shop0all_us0collections0lifestyle0suede",
+                      "results": 188
+                    },
+                    "… 1 more"
+                  ],
+                  "products": [
+                    {
+                      "id": "410351_01",
+                      "master_id": "410351",
+                      "color": "01",
+                      "name": "PUMA x SIGMA GAMMA RHO SORORITY, INC. Suede Sneakers",
+                      "header": "PUMA x SIGMA GAMMA RHO SORORITY, INC. Suede",
+                      "sub_header": "Sneakers",
+                      "price": 100,
+                      "sale_price": 100,
+                      "image": "https://images.puma.net/images/410351/01/sv01/fnd/PNA/w/600/h/600/",
+                      "url": "https://us.puma.com/us/en/pd/x/410351?swatch=01"
+                    },
+                    {
+                      "id": "410352_01",
+                      "master_id": "410352",
+                      "color": "01",
+                      "name": "PUMA x PHI BETA SIGMA FRATERNITY, INC. Suede Sneakers",
+                      "header": "PUMA x PHI BETA SIGMA FRATERNITY, INC. Suede",
+                      "sub_header": "Sneakers",
+                      "price": 100,
+                      "sale_price": 100,
+                      "image": "https://images.puma.net/images/410352/01/sv01/fnd/PNA/w/600/h/600/",
+                      "url": "https://us.puma.com/us/en/pd/x/410352?swatch=01"
+                    },
+                    "… 6 more"
+                  ],
+                  "redirect": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/puma/v1/category": {
+      "get": {
+        "operationId": "pumaCategory",
+        "summary": "PUMA category listing",
+        "description": "All products of a PUMA US category page, with the same filters, sorts and product fields as search, plus the category's id, name, link and description.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/puma-category",
+        "tags": [
+          "PUMA"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": true,
+            "description": "Category path (e.g. /men/shoes, /women/clothing/hoodies-and-sweatshirts) or a us.puma.com category link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "/men/shoes"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort id from `sort_options`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "id:value filter, repeatable (see search).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price in USD.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price in USD.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back as `page`; null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Products per page, up to 48 (default 24).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": {
+                    "id": "mens-shoes",
+                    "name": "Men's Shoes and Sneakers",
+                    "path": "/men/shoes",
+                    "url": "https://us.puma.com/us/en/men/shoes",
+                    "description": "Designed for style, engineered for performance and built for your active lifestyle, PUMA's collection of men's sneakers are ready to take yo…"
+                  },
+                  "sort": null,
+                  "applied_filters": {},
+                  "total": 768,
+                  "page": 1,
+                  "count": 24,
+                  "next_page": 2,
+                  "sort_options": [
+                    {
+                      "id": "price-low-to-high",
+                      "label": "Price Low To High"
+                    },
+                    {
+                      "id": "price-high-to-low",
+                      "label": "Price High To Low"
+                    },
+                    "… 2 more"
+                  ],
+                  "filters": [
+                    {
+                      "id": "style",
+                      "label": "Style",
+                      "values": [
+                        {
+                          "value": "Lows",
+                          "label": "Lows",
+                          "count": 692
+                        },
+                        {
+                          "value": "Mids",
+                          "label": "Mids",
+                          "count": 58
+                        },
+                        "… 1 more"
+                      ]
+                    },
+                    {
+                      "id": "size",
+                      "label": "Size",
+                      "values": [
+                        {
+                          "value": "4",
+                          "label": "4",
+                          "count": 109
+                        },
+                        {
+                          "value": "4.5",
+                          "label": "4.5",
+                          "count": 103
+                        },
+                        "… 22 more"
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "items": [
+                    {
+                      "id": "398846_01",
+                      "master_id": "398846",
+                      "variant_id": "197670315807",
+                      "color": "01",
+                      "color_name": "PUMA Black-PUMA White",
+                      "name": "Speedcat OG Sneakers",
+                      "header": "Speedcat OG",
+                      "sub_header": "Sneakers",
+                      "brand": "Speedcat",
+                      "price": 100,
+                      "sale_price": 100,
+                      "promotion_price": null,
+                      "discount_percent": null,
+                      "currency": "USD",
+                      "orderable": true,
+                      "out_of_stock": null,
+                      "badges": [
+                        "Best Seller"
+                      ],
+                      "promotions": [],
+                      "app_exclusive": false,
+                      "rating": 4.3,
+                      "reviews": 120,
+                      "color_count": 13,
+                      "colors": [
+                        {
+                          "value": "01",
+                          "name": "PUMA Black-PUMA White",
+                          "image": "https://images.puma.net/images/398846/01/sv01/fnd/PNA/w/80/h/80/"
+                        },
+                        {
+                          "value": "02",
+                          "name": "For All Time Red-PUMA White",
+                          "image": "https://images.puma.net/images/398846/02/sv01/fnd/PNA/w/80/h/80/"
+                        },
+                        "… 11 more"
+                      ],
+                      "ean": "4067979315715",
+                      "image": "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/398846/01/sv01/fnd/PNA/fmt/png/Speedcat-OG-Sneakers",
+                      "images": [
+                        "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/398846/01/sv01/fnd/PNA/fmt/png/Speedcat-OG-Sneakers"
+                      ],
+                      "url": "https://us.puma.com/us/en/pd/x/398846?swatch=01"
+                    },
+                    {
+                      "id": "314156_01",
+                      "master_id": "314156",
+                      "variant_id": "199261035521",
+                      "color": "01",
+                      "color_name": "Intense Mint-Light Lavender",
+                      "name": "PUMA x HYROX Deviate NITRO™ Elite 4 Men's Training Shoes",
+                      "header": "PUMA x HYROX Deviate NITRO™ Elite 4",
+                      "sub_header": "Men's Training Shoes",
+                      "brand": null,
+                      "price": 260,
+                      "sale_price": 260,
+                      "promotion_price": null,
+                      "discount_percent": null,
+                      "currency": "USD",
+                      "orderable": true,
+                      "out_of_stock": null,
+                      "badges": [
+                        "New"
+                      ],
+                      "promotions": [],
+                      "app_exclusive": false,
+                      "rating": 5,
+                      "reviews": 7,
+                      "color_count": 2,
+                      "colors": [
+                        {
+                          "value": "01",
+                          "name": "Intense Mint-Light Lavender",
+                          "image": "https://images.puma.net/images/314156/01/sv01/fnd/PNA/w/80/h/80/"
+                        },
+                        {
+                          "value": "02",
+                          "name": "PUMA Black-Vibrant Yellow",
+                          "image": "https://images.puma.net/images/314156/02/sv01/fnd/PNA/w/80/h/80/"
+                        }
+                      ],
+                      "ean": "4070033034156",
+                      "image": "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/314156/01/sv01/fnd/PNA/fmt/png/PUMA-x-HYROX-Deviate-NIT…",
+                      "images": [
+                        "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/314156/01/sv01/fnd/PNA/fmt/png/PUMA-x-HYROX-Deviate-NIT…"
+                      ],
+                      "url": "https://us.puma.com/us/en/pd/x/314156?swatch=01"
+                    },
+                    "… 22 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/puma/v1/product": {
+      "get": {
+        "operationId": "pumaProduct",
+        "summary": "PUMA product details",
+        "description": "One PUMA product (style) with every colour: per colour the price and sale price, discount, orderable and final-sale flags, badges, gender, material, care, keywords, story, country of origin, EAN/UPC, every size (group, label, size code, product id, orderable, maximum quantity) and images; plus the style's description, brand line, division, category, rating, review count, promotions, size measurements and link. Pass a colour (399781_01 or ?swatch=01 in a link) to get only that colour.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/puma-product",
+        "tags": [
+          "PUMA"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Style number (e.g. 399781), style_colour (399781_01) or a us.puma.com product link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "399781"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "399781",
+                  "name": "Suede Classic Sneakers",
+                  "header": "Suede Classic",
+                  "sub_header": "Sneakers",
+                  "brand": "Suede",
+                  "division": "Footwear",
+                  "category_id": "mens-shoes-suedes",
+                  "description": "The Suede hit the scene in 1968 and has been changing the game ever since. It's been worn by icons of every generation, and it's stayed clas…",
+                  "rating": 4.6,
+                  "reviews": 60,
+                  "orderable": true,
+                  "fast_selling": false,
+                  "exclusivity": null,
+                  "promotions": [],
+                  "measurements": {
+                    "metric": [
+                      [
+                        "Size",
+                        "Heel Height",
+                        "… 3 more"
+                      ],
+                      [
+                        "4",
+                        "3",
+                        "… 3 more"
+                      ],
+                      "… 18 more"
+                    ],
+                    "imperial": [
+                      [
+                        "Size",
+                        "Heel Height",
+                        "… 3 more"
+                      ],
+                      [
+                        "4",
+                        "1.2",
+                        "… 3 more"
+                      ],
+                      "… 18 more"
+                    ]
+                  },
+                  "currency": "USD",
+                  "selected_color": null,
+                  "color_count": 22,
+                  "variations": [
+                    {
+                      "id": "399781_01",
+                      "color": "01",
+                      "color_name": "PUMA Black-PUMA White",
+                      "variant_id": "197670841399",
+                      "style_number": "399781_01",
+                      "gender": "Unisex",
+                      "price": 90,
+                      "sale_price": 90,
+                      "discount_percent": null,
+                      "orderable": true,
+                      "final_sale": null,
+                      "out_of_stock": null,
+                      "badges": [
+                        "New"
+                      ],
+                      "material": [
+                        "Sockliner: 100% Textile",
+                        "Outsole: 100% Rubber",
+                        "… 2 more"
+                      ],
+                      "care": null,
+                      "keywords": [],
+                      "story": "<h3>PRODUCT STORY</h3>The Suede hit the scene in 1968 and has been changing the game ever since. It's been worn by icons of every generation…",
+                      "country_of_origin": [
+                        ""
+                      ],
+                      "ean": "4067979841306",
+                      "upc": "197670841399",
+                      "sizes": [
+                        {
+                          "group": "Mens",
+                          "label": "4",
+                          "value": "0140",
+                          "product_id": "197670841337",
+                          "orderable": false,
+                          "max_quantity": 12
+                        },
+                        {
+                          "group": "Mens",
+                          "label": "4.5",
+                          "value": "0150",
+                          "product_id": "197670841344",
+                          "orderable": false,
+                          "max_quantity": 12
+                        },
+                        "… 36 more"
+                      ],
+                      "images": [
+                        "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/399781/01/sv01/fnd/PNA/fmt/png/Suede-Classic-Sneakers",
+                        "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/399781/01/mod01/fnd/PNA/fmt/png/Suede-Classic-Sneakers",
+                        "… 6 more"
+                      ],
+                      "url": "https://us.puma.com/us/en/pd/x/399781?swatch=01"
+                    },
+                    {
+                      "id": "399781_02",
+                      "color": "02",
+                      "color_name": "For All Time Red-PUMA White",
+                      "variant_id": "197670841689",
+                      "style_number": "399781_02",
+                      "gender": "Unisex",
+                      "price": 90,
+                      "sale_price": 90,
+                      "discount_percent": null,
+                      "orderable": true,
+                      "final_sale": null,
+                      "out_of_stock": null,
+                      "badges": [
+                        "New"
+                      ],
+                      "material": [
+                        "Sockliner: 100% Textile",
+                        "Outsole: 100% Rubber",
+                        "… 2 more"
+                      ],
+                      "care": null,
+                      "keywords": [],
+                      "story": "<h3>PRODUCT STORY</h3>The Suede hit the scene in 1968 and has been changing the game ever since. It's been worn by icons of every generation…",
+                      "country_of_origin": [
+                        ""
+                      ],
+                      "ean": "4067979841597",
+                      "upc": "197670841689",
+                      "sizes": [
+                        {
+                          "group": "Mens",
+                          "label": "4",
+                          "value": "0140",
+                          "product_id": "197670841757",
+                          "orderable": false,
+                          "max_quantity": 12
+                        },
+                        {
+                          "group": "Mens",
+                          "label": "4.5",
+                          "value": "0150",
+                          "product_id": "197670841764",
+                          "orderable": false,
+                          "max_quantity": 12
+                        },
+                        "… 36 more"
+                      ],
+                      "images": [
+                        "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/399781/02/sv01/fnd/PNA/fmt/png/Suede-Classic-Sneakers",
+                        "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/399781/02/mod01/fnd/PNA/fmt/png/Suede-Classic-Sneakers",
+                        "… 6 more"
+                      ],
+                      "url": "https://us.puma.com/us/en/pd/x/399781?swatch=02"
+                    },
+                    "… 20 more"
+                  ],
+                  "url": "https://us.puma.com/us/en/pd/x/399781",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/puma/v1/reviews": {
+      "get": {
+        "operationId": "pumaReviews",
+        "summary": "PUMA product reviews",
+        "description": "Customer reviews of a PUMA product: rating, title, text, date, purchase date, recommended and incentivized flags, author (first name and last initial) with nickname, location, age range and profile answers when given, helpful votes, the quality/value/fit/size ratings, the reviewed SKU and photos; with the total count. 20 per page (up to 50).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/puma-reviews",
+        "tags": [
+          "PUMA"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Style number (e.g. 399781) or a us.puma.com product link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "399781"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "recent (default), oldest, helpful, media.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recent",
+                "oldest",
+                "helpful",
+                "media"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back as `page`; null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page, up to 50 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "399781",
+                  "product": "Suede Classic Sneakers | Sneakers",
+                  "total": 63,
+                  "sort": "recent",
+                  "page": 1,
+                  "count": 20,
+                  "next_page": 2,
+                  "reviews": [
+                    {
+                      "id": 63153,
+                      "rating": 3,
+                      "title": "Shoes sizes run large",
+                      "text": "I ordered a 9 1/2 and then more like a size 10 plus!",
+                      "date": "2026-10-11T16:59:28.000Z",
+                      "purchase_date": "Sep 25, 2026",
+                      "recommended": false,
+                      "incentivized": false,
+                      "author": "Monty D.",
+                      "author_profile": {
+                        "firstName": "Monty",
+                        "lastName": "D"
+                      },
+                      "upvotes": 0,
+                      "downvotes": 0,
+                      "ratings": [
+                        {
+                          "label": "How would you rate the quality of this product?",
+                          "value": 3,
+                          "scale": null
+                        },
+                        {
+                          "label": "How would you rate the value of this product?",
+                          "value": 3,
+                          "scale": null
+                        },
+                        "… 2 more"
+                      ],
+                      "sku": "197670873451",
+                      "media": []
+                    },
+                    {
+                      "id": 63107,
+                      "rating": 5,
+                      "title": "Comfortable yet stylish even in size 11W!",
+                      "text": "So comfortable yet stylish even in my size! I'm a woman wearing size 11 shoes. What looks all nice in size 8 often looks enormous in size 11…",
+                      "date": "2026-10-08T12:29:56.000Z",
+                      "purchase_date": "Oct 1, 2026",
+                      "recommended": false,
+                      "incentivized": false,
+                      "author": "Elise M.",
+                      "author_profile": {
+                        "firstName": "Elise",
+                        "lastName": "M"
+                      },
+                      "upvotes": 0,
+                      "downvotes": 0,
+                      "ratings": [],
+                      "sku": "197670874403",
+                      "media": []
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/puma/v1/search": {
+      "get": {
+        "operationId": "pumaSearch",
+        "summary": "PUMA product search",
+        "description": "Search PUMA's US store (us.puma.com) by keywords with every filter and sort the site offers. Each product (one per colour): style and colour ids, name, header and sub-header, brand line, price, sale and promotion price, discount, orderable flag, out-of-stock label, badges, promotions, app-exclusive flag, rating and review count, every colour on offer, EAN, images and link, plus `raw`. Also returns `filters` (ids, values and counts) and `sort_options`. 24 per page (up to 48 with `limit`).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/puma-search",
+        "tags": [
+          "PUMA"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Keywords.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "suede"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort id from `sort_options`: top-sellers, newest, price-low-to-high, price-high-to-low.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "A filter as id:value (several values comma-separated), repeatable, e.g. `gender:Men` and `size:10,10.5`. Ids and values as `filters` lists them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price in USD.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price in USD.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back as `page`; null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Products per page, up to 48 (default 24).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "suede",
+                  "sort": null,
+                  "applied_filters": {},
+                  "total": 147,
+                  "page": 1,
+                  "count": 20,
+                  "next_page": 2,
+                  "sort_options": [
+                    {
+                      "id": "top-sellers",
+                      "label": "Top Sellers"
+                    },
+                    {
+                      "id": "newest",
+                      "label": "Newest"
+                    },
+                    "… 2 more"
+                  ],
+                  "filters": [
+                    {
+                      "id": "gender",
+                      "label": "Gender",
+                      "values": [
+                        {
+                          "value": "Unisex",
+                          "label": "Unisex",
+                          "count": 85
+                        },
+                        {
+                          "value": "Women",
+                          "label": "Women",
+                          "count": 27
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    {
+                      "id": "ageGroup",
+                      "label": "Age",
+                      "values": [
+                        {
+                          "value": "Big Kids",
+                          "label": "Big Kids",
+                          "count": 18
+                        },
+                        {
+                          "value": "Little Kids",
+                          "label": "Little Kids",
+                          "count": 9
+                        },
+                        "… 1 more"
+                      ]
+                    },
+                    "… 9 more"
+                  ],
+                  "items": [
+                    {
+                      "id": "403700_01",
+                      "master_id": "403700",
+                      "variant_id": "197674515982",
+                      "color": "01",
+                      "color_name": "PUMA Black-PUMA White",
+                      "name": "Charles F. Stead Suede Sneakers",
+                      "header": "Charles F. Stead Suede",
+                      "sub_header": "Sneakers",
+                      "brand": null,
+                      "price": 120,
+                      "sale_price": 120,
+                      "promotion_price": null,
+                      "discount_percent": null,
+                      "currency": "USD",
+                      "orderable": true,
+                      "out_of_stock": null,
+                      "badges": [
+                        "New"
+                      ],
+                      "promotions": [],
+                      "app_exclusive": false,
+                      "rating": 0,
+                      "reviews": 0,
+                      "color_count": 1,
+                      "colors": [
+                        {
+                          "value": "01",
+                          "name": "PUMA Black-PUMA White",
+                          "image": "https://images.puma.net/images/403700/01/sv01/fnd/PNA/w/80/h/80/"
+                        }
+                      ],
+                      "ean": "4067984515490",
+                      "image": "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/403700/01/sv01/fnd/PNA/fmt/png/Charles-F.-Stead-Suede-S…",
+                      "images": [
+                        "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/403700/01/sv01/fnd/PNA/fmt/png/Charles-F.-Stead-Suede-S…"
+                      ],
+                      "url": "https://us.puma.com/us/en/pd/x/403700?swatch=01"
+                    },
+                    {
+                      "id": "403701_01",
+                      "master_id": "403701",
+                      "variant_id": "197674513544",
+                      "color": "01",
+                      "color_name": "PUMA White-PUMA White",
+                      "name": "Charles F. Stead Suede Sneakers",
+                      "header": "Charles F. Stead Suede",
+                      "sub_header": "Sneakers",
+                      "brand": null,
+                      "price": 120,
+                      "sale_price": 120,
+                      "promotion_price": null,
+                      "discount_percent": null,
+                      "currency": "USD",
+                      "orderable": true,
+                      "out_of_stock": null,
+                      "badges": [
+                        "New"
+                      ],
+                      "promotions": [],
+                      "app_exclusive": false,
+                      "rating": 5,
+                      "reviews": 1,
+                      "color_count": 1,
+                      "colors": [
+                        {
+                          "value": "01",
+                          "name": "PUMA White-PUMA White",
+                          "image": "https://images.puma.net/images/403701/01/sv01/fnd/PNA/w/80/h/80/"
+                        }
+                      ],
+                      "ean": "4067984513052",
+                      "image": "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/403701/01/sv01/fnd/PNA/fmt/png/Charles-F.-Stead-Suede-S…",
+                      "images": [
+                        "https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/403701/01/sv01/fnd/PNA/fmt/png/Charles-F.-Stead-Suede-S…"
+                      ],
+                      "url": "https://us.puma.com/us/en/pd/x/403701?swatch=01"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/puma/v1/stock": {
+      "get": {
+        "operationId": "pumaStock",
+        "summary": "PUMA stock per size",
+        "description": "Units on hand per size for one colour of a PUMA product: size label and code, product id, orderable, quantity and a limited-availability flag.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/puma-stock",
+        "tags": [
+          "PUMA"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "style_colour like 399781_01 (or a product link with ?swatch=); a bare style number uses its first colour.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "399781_01"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "399781_01",
+                  "name": "Suede Classic Sneakers",
+                  "color": "01",
+                  "color_name": "PUMA Black-PUMA White",
+                  "count": 38,
+                  "sizes": [
+                    {
+                      "label": "4",
+                      "value": "0140",
+                      "group": "Mens",
+                      "product_id": "197670841337",
+                      "orderable": false,
+                      "quantity": 0,
+                      "limited": true
+                    },
+                    {
+                      "label": "4.5",
+                      "value": "0150",
+                      "group": "Mens",
+                      "product_id": "197670841344",
+                      "orderable": false,
+                      "quantity": 0,
+                      "limited": true
+                    },
+                    "… 36 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

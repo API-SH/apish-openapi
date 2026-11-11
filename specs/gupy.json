@@ -1,0 +1,1293 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Gupy",
+    "version": "1.0.0",
+    "description": "The Gupy API from API.SH: public Gupy data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Gupy",
+      "description": "4 endpoints (jobs & b2b)",
+      "x-slug": "gupy",
+      "x-domains": [
+        "gupy.io"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gupy/v1/companies": {
+      "get": {
+        "operationId": "gupyCompanies",
+        "summary": "Gupy company directory",
+        "description": "Companies hiring on Gupy: search the directory by name (`q`), or list the companies that have open jobs matching a job search (`job` plus the search filters: workplace, type, state, city, pwd, feedback_badge). Each company has name, career page slug and link, logo and the feedback-badge flag. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gupy-companies",
+        "tags": [
+          "Gupy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Company name to look up in the directory (e.g. itau).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "itau"
+          },
+          {
+            "name": "job",
+            "in": "query",
+            "required": false,
+            "description": "Job keyword: list companies with matching open jobs instead (other job filters: workplace, type, state, city, pwd, feedback_badge).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workplace",
+            "in": "query",
+            "required": false,
+            "description": "remote, hybrid, on-site, comma separated (with job).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Job types, comma separated (with job).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "State name (with job).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "City name (with job).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (1-100, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Results to skip. Pass next_offset back; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "applied_filters": {
+                    "q": "itau"
+                  },
+                  "total": 4,
+                  "count": 4,
+                  "offset": 0,
+                  "limit": 20,
+                  "next_offset": null,
+                  "companies": [
+                    {
+                      "name": "Itaú Unibanco",
+                      "slug": "vemproitau",
+                      "url": "https://vemproitau.gupy.io/",
+                      "logo": "https://attachments.gupy.io/production/companies/2022/career/3759/images/2024-03-18_20-11_companyLogoUrl.png",
+                      "feedback_badge": false
+                    },
+                    {
+                      "name": "Fundação Itaú",
+                      "slug": "fundacaoitau",
+                      "url": "https://fundacaoitau.gupy.io/",
+                      "logo": "https://attachments.gupy.io/production/companies/2022/career/63493/images/2025-06-18_15-16_companyLogoUrl.png",
+                      "feedback_badge": false
+                    },
+                    "… 2 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gupy/v1/company": {
+      "get": {
+        "operationId": "gupyCompany",
+        "summary": "Gupy career page",
+        "description": "A company's Gupy career page: name, logo, banner, about text, social title and description, the page sections (videos, photos, values and employee testimonials, social links), the departments, and every open job with id, title, link, type, department, work model, city, district and state. Filter the jobs with `q` (title words), `workplace` or `department`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gupy-company",
+        "tags": [
+          "Gupy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": true,
+            "description": "Career page slug (e.g. stefanini) or its <company>.gupy.io link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "stefanini"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs whose title contains these words.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workplace",
+            "in": "query",
+            "required": false,
+            "description": "remote, hybrid, on-site, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "department",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs in this department (as listed in departments).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "stefanini",
+                  "url": "https://stefanini.gupy.io/",
+                  "id": 84556,
+                  "company_id": 39703,
+                  "name": "Stefanini Group",
+                  "publication_name": "Stefanini Group",
+                  "logo": "https://attachments.gupy.io/production/companies/39703/career/84556/images/2024-10-08_17-35_companyLogoUrl.png",
+                  "banner": "https://attachments.gupy.io/production/companies/39703/career/84556/images/2026-09-17_18-19_bannerUrl.webp",
+                  "social_title": "Stefanini Group - Vagas",
+                  "social_description": "Aqui, a inovação é defendida e mantida. Você quer transformar o futuro? A gente também. Hoje, contamos com milhares de Stefaniners espalhado…",
+                  "social_image": "https://attachments.gupy.io/production/socialmedias/39703/e2255601e3e9e2b2f0a8886e0f6303f6_GUPY%20social.png",
+                  "about_title": "Stefanini: Acreditar para Cocriar 🌟",
+                  "about": "No Grupo Stefanini, acreditamos que o futuro não acontece sozinho: ele é construído por pessoas que têm atitude para transformar ideias em r…",
+                  "feedback_badge": true,
+                  "departments": [
+                    "Agilidade",
+                    "BackOffice",
+                    "… 19 more"
+                  ],
+                  "sections": [
+                    {
+                      "type": "about_company_section",
+                      "title": null,
+                      "text": "No Grupo Stefanini, acreditamos que o futuro não acontece sozinho: ele é construído por pessoas que têm atitude para transformar ideias em r…",
+                      "companyDescriptionTitle": "Stefanini: Acreditar para Cocriar 🌟"
+                    },
+                    {
+                      "type": "video_section",
+                      "title": null,
+                      "text": null,
+                      "urls": [
+                        "https://youtu.be/D-gFOP4K5ig?si=8-g6ln0X2lEvOZkl"
+                      ]
+                    },
+                    "… 5 more"
+                  ],
+                  "total_jobs": 232,
+                  "count": 232,
+                  "jobs": [
+                    {
+                      "id": 12736156,
+                      "title": "ADMINISTRADOR DE REDES I",
+                      "url": "https://stefanini.gupy.io/jobs/12736156",
+                      "type": "effective",
+                      "department": "Infraestrutura",
+                      "workplace": "on-site",
+                      "city": "São Paulo",
+                      "district": "Pacaembu",
+                      "state": "São Paulo",
+                      "state_code": "SP",
+                      "country": "Brasil",
+                      "quick_apply": false
+                    },
+                    {
+                      "id": 12480528,
+                      "title": "Advogado(a) Pleno – Governança de Inteligência Artificial & Tecnologia",
+                      "url": "https://stefanini.gupy.io/jobs/12480528",
+                      "type": "effective",
+                      "department": "BackOffice",
+                      "workplace": "on-site",
+                      "city": "São Paulo",
+                      "district": "Pinheiros",
+                      "state": "São Paulo",
+                      "state_code": "SP",
+                      "country": "Brasil",
+                      "quick_apply": false
+                    },
+                    "… 230 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gupy/v1/job": {
+      "get": {
+        "operationId": "gupyJob",
+        "summary": "Gupy job ad",
+        "description": "One job ad on a Gupy career page: title, internal code, status, job type, work model, PwD flag, publication date, application deadline and expiry, full address, hiring reason, the full description, responsibilities, requirements and additional information as text, the hiring steps (registration, tests, interviews), and the company (name, slug, logo, website, about). Give the job's link, or `id` with `company`, or `q` (plus any search filter) to open the newest matching current ad.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gupy-job",
+        "tags": [
+          "Gupy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Job link on <company>.gupy.io (/jobs/<id> or the portal's /job/<code> link).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Job id (with company).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "description": "Career page slug, e.g. stefanini (with id).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Instead of url: open the first current job for this keyword (any search filter can be added).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "analista"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "With q: relevance, newest or oldest.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "oldest"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 12845927,
+                  "url": "https://stefaninilatam.gupy.io/jobs/12845927",
+                  "title": "Analista ETL - Oracle",
+                  "code": "54256-12845927",
+                  "status": "published",
+                  "type": "effective",
+                  "workplace": "hybrid",
+                  "pwd": false,
+                  "published_at": "2026-11-06T04:46:11.591Z",
+                  "application_deadline": "2027-01-05",
+                  "expires_at": "2026-12-25",
+                  "address": {
+                    "line": "San Salvador, San Salvador, El Salvador",
+                    "district": null,
+                    "city": "San Salvador",
+                    "state": "San Salvador",
+                    "state_code": null,
+                    "country": "El Salvador",
+                    "country_code": "SV",
+                    "zip": null
+                  },
+                  "language": null,
+                  "reason": "staff_increase",
+                  "publication_type": "external",
+                  "quick_apply": false,
+                  "description": "¡Sé parte de Stefanini!\n\nEn Stefanini somos más de 30.000 genios, conectados desde 41 países, haciendo lo que les apasiona y co-creando un f…",
+                  "responsibilities": "• Solucionar incidencias en procesos de generación de información que son utilizados en el día a día por las áreas de negocio.\n\n• Desarrolla…",
+                  "prerequisites": "Conocimientos: (carrera y nivel académico):\nGraduados en carreras afines a informatica\n\nExperiencia en el puesto:\n\n• Desarrollo de Procesos …",
+                  "additional_info": null,
+                  "skills": null,
+                  "steps": [
+                    {
+                      "name": "Registro",
+                      "order": 0,
+                      "type": "register",
+                      "category": "registration"
+                    },
+                    {
+                      "name": "Entrevistas",
+                      "order": 2,
+                      "type": "offline",
+                      "category": "interview"
+                    },
+                    "… 3 more"
+                  ],
+                  "video_url": null,
+                  "picture": null,
+                  "company": {
+                    "name": "Stefanini Latam",
+                    "slug": "stefaninilatam",
+                    "url": "https://stefaninilatam.gupy.io/",
+                    "logo": "https://attachments.gupy.io/production/companies/54256/career/114440/images/2025-06-18_21-01_companyLogoUrl.png",
+                    "website": null,
+                    "about_title": "Creer para co-crear",
+                    "about": "¿Buscas un lugar donde tus ideas brillen?\nCon más de 38 años y una presencia global, en Stefanini transformamos el mañana juntos. Aquí, cada…"
+                  },
+                  "apply_url": "https://stefaninilatam.gupy.io/jobs/12845927",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gupy/v1/search": {
+      "get": {
+        "operationId": "gupySearch",
+        "summary": "Search Gupy jobs",
+        "description": "Job ads on the Gupy job portal (Brazil) by keyword, with every filter the portal has: work model (remote, hybrid, on site), job type (effective, internship, apprentice, trainee, temporary and the rest), state and city, company, ads also open to people with disabilities (PwD) and companies with the feedback badge, sorted by relevance, newest or oldest. Each job has id, title, link, company name, slug, logo and career page, type, work model, city, state, publication date, application deadline, PwD and feedback-badge flags and the description text. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gupy-search",
+        "tags": [
+          "Gupy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Job title or keyword (e.g. desenvolvedor, analista, vendedor).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "desenvolvedor"
+          },
+          {
+            "name": "workplace",
+            "in": "query",
+            "required": false,
+            "description": "remote, hybrid, on-site (or remoto, hibrido, presencial), comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Job types, comma separated: effective, internship, apprentice, trainee, temporary, talent_pool, associate, summer, outsource, volunteer, lecturer, freelancer, autonomous, intermittent, legal_entity, partner.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "State name as the portal writes it (e.g. São Paulo, Rio de Janeiro, Minas Gerais).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "City name (e.g. Campinas); use with state.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "description": "Company (career page) name exactly as shown on the portal, e.g. Stefanini Group.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pwd",
+            "in": "query",
+            "required": false,
+            "description": "true: only ads also open to people with disabilities.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "feedback_badge",
+            "in": "query",
+            "required": false,
+            "description": "true: only companies with the portal's feedback badge.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "oldest"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (1-50, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Results to skip. Pass next_offset back; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "applied_filters": {
+                    "q": "desenvolvedor"
+                  },
+                  "total": null,
+                  "count": 20,
+                  "offset": 0,
+                  "limit": 20,
+                  "next_offset": 20,
+                  "jobs": [
+                    {
+                      "id": 12700694,
+                      "title": "22430-Desenvolvedor(a) FullStack PHP",
+                      "url": "https://globalhitss.gupy.io/jobs/12700694",
+                      "company": "Hitss Brasil",
+                      "company_slug": "globalhitss",
+                      "company_logo": "https://attachments.gupy.io/production/companies/57061/career/142570/images/2025-01-23_13-49_companyLogoUrl.png",
+                      "company_url": "https://globalhitss.gupy.io/",
+                      "type": "effective",
+                      "workplace": "remote",
+                      "city": null,
+                      "state": null,
+                      "published_at": "2026-11-06T00:58:03.410Z",
+                      "application_deadline": "2026-11-30T00:00:00.000Z",
+                      "pwd": true,
+                      "feedback_badge": false,
+                      "description": "Na Hitss, a inovação é o nosso combustível, a curiosidade é o nosso motor e o respeito pelo cliente é o nosso guia. Se você é movido pela pa…"
+                    },
+                    {
+                      "id": 12844891,
+                      "title": "Desenvolvedor Full Stack  - Pleno",
+                      "url": "https://vemprabip.gupy.io/jobs/12844891",
+                      "company": "BIP Brasil",
+                      "company_slug": "vemprabip",
+                      "company_logo": "https://attachments.gupy.io/production/companies/31982/career/75976/images/2025-10-27_19-44_companyLogoUrl.png",
+                      "company_url": "https://vemprabip.gupy.io/",
+                      "type": "effective",
+                      "workplace": "remote",
+                      "city": null,
+                      "state": null,
+                      "published_at": "2026-11-05T21:03:18.144Z",
+                      "application_deadline": "2027-01-04T00:00:00.000Z",
+                      "pwd": true,
+                      "feedback_badge": false,
+                      "description": "Essa pessoa será responsável por desenvolver aplicações back-end e front-end, implementar modelos de Machine Learning e IA Generativa (GenAI…"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

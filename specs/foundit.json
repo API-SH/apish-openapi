@@ -1,0 +1,1282 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: foundit",
+    "version": "1.0.0",
+    "description": "The foundit API from API.SH: public foundit data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "foundit",
+      "description": "3 endpoints (jobs & b2b)",
+      "x-slug": "foundit",
+      "x-domains": [
+        "foundit.in"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/foundit/v1/company": {
+      "get": {
+        "operationId": "founditCompany",
+        "summary": "foundit company jobs",
+        "description": "A company's open jobs on foundit (India): the company name, logo and jobs page, and its jobs with the same fields, filters and paging as search (keywords, location, experience, salary, freshness, sort).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/foundit-company",
+        "tags": [
+          "foundit"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The company number (company_id on any job) or a foundit.in/search/<name>-<id>-jobs-career link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "501221"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs matching these keywords.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "java"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs in this location.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "bangalore"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default relevance).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "date"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Jobs a page (up to 50, default 15).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "15"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company": {
+                    "id": "501221",
+                    "name": "Blue Yonder",
+                    "logo": "https://media.monsterindia.com/logos/xSP_blueydinx/jdlogo.gif",
+                    "jobs_url": "https://www.foundit.in/search/blue-yonder-501221-jobs-career"
+                  },
+                  "query": null,
+                  "location": null,
+                  "company_id": "501221",
+                  "page": 1,
+                  "per_page": 15,
+                  "total": 156,
+                  "count": 19,
+                  "next_page": 2,
+                  "jobs": [
+                    {
+                      "id": "69710654",
+                      "title": "IN-Sr Support Engineer 1",
+                      "company": "Blue Yonder",
+                      "company_id": 501221,
+                      "locations": [
+                        "Coimbatore",
+                        "India"
+                      ],
+                      "experience_min": 0,
+                      "experience_max": 0,
+                      "salary_min": null,
+                      "salary_max": null,
+                      "salary_currency": "INR",
+                      "skills": [],
+                      "industries": [
+                        "IT/Computers - Software"
+                      ],
+                      "functions": [],
+                      "roles": [
+                        "Software Engineer/Programmer"
+                      ],
+                      "employment_types": [
+                        "Full time"
+                      ],
+                      "job_types": [],
+                      "employer_types": [
+                        "Company"
+                      ],
+                      "qualifications": [],
+                      "experience_label": null,
+                      "company_jobs_url": "https://www.foundit.in/search/blue-yonder-501221-jobs-career",
+                      "posted_at": "2026-11-04T02:32:07.000Z",
+                      "posted_label": "3 hours ago",
+                      "closes_at": "2026-12-18T18:30:00.000Z",
+                      "applicants": 0,
+                      "urgent": false,
+                      "walk_in": null,
+                      "url": "https://www.foundit.in/job/in-sr-support-engineer-1-blue-yonder-coimbatore-india-69710654",
+                      "apply_url": "https://jda.wd5.myworkdayjobs.com/en-US/JDA_Careers/job/IND---Coimbatore-708/IN-Sr-Support-Engineer-1_262208"
+                    },
+                    {
+                      "id": "69703031",
+                      "title": "Lead Software Engineer - PLSQL, Unix Batch Scripting & Node JS",
+                      "company": "Blue Yonder",
+                      "company_id": 501221,
+                      "locations": [
+                        "Bengaluru",
+                        "India"
+                      ],
+                      "experience_min": 8,
+                      "experience_max": 10,
+                      "salary_min": null,
+                      "salary_max": null,
+                      "salary_currency": "INR",
+                      "skills": [
+                        "Event Hub",
+                        "AKS",
+                        "… 19 more"
+                      ],
+                      "industries": [
+                        "Other"
+                      ],
+                      "functions": [
+                        "Software Development"
+                      ],
+                      "roles": [],
+                      "employment_types": [
+                        "Full time"
+                      ],
+                      "job_types": [],
+                      "employer_types": [
+                        "Company"
+                      ],
+                      "qualifications": [],
+                      "experience_label": "8-10 Years",
+                      "company_jobs_url": "https://www.foundit.in/search/blue-yonder-501221-jobs-career",
+                      "posted_at": "2026-11-03T17:30:46.000Z",
+                      "posted_label": "12 hours ago",
+                      "closes_at": "2026-12-17T18:30:00.000Z",
+                      "applicants": 3,
+                      "urgent": false,
+                      "walk_in": null,
+                      "url": "https://www.foundit.in/job/lead-software-engineer-plsql-unix-batch-scripting-node-js-blue-yonder-bengaluru-bangalore-india-69703031",
+                      "apply_url": "https://www.linkedin.com/jobs/view/4486121582/"
+                    },
+                    "… 17 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/foundit/v1/search": {
+      "get": {
+        "operationId": "founditSearch",
+        "summary": "foundit job search",
+        "description": "Jobs on foundit (formerly Monster India) for keywords and/or location, with experience, freshness and sort: id, title, company, locations, experience range, salary range (when shown), skills, industries, functions, roles, employment types, job types, employer type (company or consultant), qualifications, experience label, posting and closing dates, applicant count, urgent and walk-in flags, the company's jobs page, job link and apply link. Filter further by experience range, salary range (INR per year on the India site), job type (work from home, contract), employer type, industry, function, skills, role, designation, employment type and qualification; `site` searches the Gulf, Singapore or Malaysia site instead of India. `total` is the site's count. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/foundit-search",
+        "tags": [
+          "foundit"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords, e.g. `python`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "City, e.g. `bangalore`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "bangalore"
+          },
+          {
+            "name": "experience",
+            "in": "query",
+            "required": false,
+            "description": "Years of experience the job must accept.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "experience_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum years of experience (0-99). Use instead of experience.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "experience_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum years of experience (0-99). Use instead of experience.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "salary_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum yearly salary in INR (jobs that show a salary).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "salary_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum yearly salary in INR (jobs that show a salary).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "job_type",
+            "in": "query",
+            "required": false,
+            "description": "wfh (work from home) and/or contract, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "employer_type",
+            "in": "query",
+            "required": false,
+            "description": "Jobs posted by the hiring company or by a recruitment consultant (comma-separate for both).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "company",
+                "consultant"
+              ]
+            }
+          },
+          {
+            "name": "industry",
+            "in": "query",
+            "required": false,
+            "description": "Industry names as the site labels them (the values in jobs[].industries, e.g. `Internet`, `IT/Computers - Software`), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "function",
+            "in": "query",
+            "required": false,
+            "description": "Function names as the site labels them (the values in jobs[].functions, e.g. `IT`, `Software Development`), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skills",
+            "in": "query",
+            "required": false,
+            "description": "Skills the job must list (e.g. `python`, `java`), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "description": "Role names as the site labels them (the values in jobs[].role_names, e.g. `Software Engineer`, `Data Scientist`), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "designation",
+            "in": "query",
+            "required": false,
+            "description": "Job titles as the site labels them (the values in jobs[].roles, e.g. `Software Engineer/Programmer`), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "employment_type",
+            "in": "query",
+            "required": false,
+            "description": "`full_time`, `part_time`, `internship`, `freelance`, `temporary`; comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "qualification",
+            "in": "query",
+            "required": false,
+            "description": "Qualifications exactly as the site labels them (the values in jobs[].qualifications, e.g. `Bachelor Of Technology (B.Tech/B.E)`), comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "site",
+            "in": "query",
+            "required": false,
+            "description": "Which foundit country site to search: `in` India (default), `gulf` (UAE, Saudi Arabia and the Gulf; salaries in AED), `sg` Singapore, `my` Malaysia. Job links point at that site.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "in",
+                "gulf",
+                "sg",
+                "my"
+              ]
+            }
+          },
+          {
+            "name": "freshness",
+            "in": "query",
+            "required": false,
+            "description": "Posted within this many days: 1, 3, 7, 15, 30.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "3",
+                "7",
+                "15",
+                "30"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default) or date.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "date"
+              ]
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (max 50, default 15).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "company_id",
+            "in": "query",
+            "required": false,
+            "description": "Only this company's jobs (the company_id of a job).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "501221"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "python",
+                  "location": "bangalore",
+                  "page": 1,
+                  "per_page": 15,
+                  "total": 9142,
+                  "count": 19,
+                  "next_page": 2,
+                  "jobs": [
+                    {
+                      "id": "69709349",
+                      "title": "Senior Software Engineer (Go & Python, Al)",
+                      "company": "NETAPP",
+                      "company_id": 441960,
+                      "locations": [
+                        "Bengaluru",
+                        "India"
+                      ],
+                      "experience_min": 0,
+                      "experience_max": 0,
+                      "salary_min": null,
+                      "salary_max": null,
+                      "salary_currency": "INR",
+                      "skills": [
+                        "ClickHouse",
+                        "Go",
+                        "… 12 more"
+                      ],
+                      "industries": [
+                        "IT/Computers - Hardware & Networking"
+                      ],
+                      "functions": [
+                        "Software Engineering"
+                      ],
+                      "roles": [
+                        "Software Engineer/Programmer"
+                      ],
+                      "employment_types": [
+                        "Full time"
+                      ],
+                      "job_types": [],
+                      "employer_types": [
+                        "Company"
+                      ],
+                      "qualifications": [],
+                      "experience_label": null,
+                      "company_jobs_url": "https://www.foundit.in/search/netapp-441960-jobs-career",
+                      "posted_at": "2026-11-03T18:34:26.000Z",
+                      "posted_label": "11 hours ago",
+                      "closes_at": "2026-12-18T18:30:00.000Z",
+                      "applicants": 10,
+                      "urgent": false,
+                      "walk_in": null,
+                      "url": "https://www.foundit.in/job/senior-software-engineer-go-python-al-netapp-bengaluru-bangalore-india-69709349",
+                      "apply_url": "https://jobs.netapp.com/job/Bangalore%2C-Karnataka-Senior-Software-Engineer-%28Go-&-Python%2C-Al%29/1446286600/"
+                    },
+                    {
+                      "id": "69710595",
+                      "title": "Java, Python for Automation, Rest Assured API Testing - Automation tester",
+                      "company": "NTT Data",
+                      "company_id": 510094,
+                      "locations": [
+                        "Bengaluru",
+                        "India"
+                      ],
+                      "experience_min": 0,
+                      "experience_max": 0,
+                      "salary_min": null,
+                      "salary_max": null,
+                      "salary_currency": "INR",
+                      "skills": [
+                        "Step Functions",
+                        "Glue",
+                        "… 19 more"
+                      ],
+                      "industries": [
+                        "IT/Computers - Software"
+                      ],
+                      "functions": [
+                        "Information Technology"
+                      ],
+                      "roles": [
+                        "Software Engineer/Programmer"
+                      ],
+                      "employment_types": [
+                        "Full time"
+                      ],
+                      "job_types": [],
+                      "employer_types": [
+                        "Company"
+                      ],
+                      "qualifications": [],
+                      "experience_label": null,
+                      "company_jobs_url": "https://www.foundit.in/search/ntt-data-510094-jobs-career",
+                      "posted_at": "2026-11-04T02:34:35.000Z",
+                      "posted_label": "3 hours ago",
+                      "closes_at": "2026-12-18T18:30:00.000Z",
+                      "applicants": 6,
+                      "urgent": false,
+                      "walk_in": null,
+                      "url": "https://www.foundit.in/job/java-python-for-automation-rest-assured-api-testing-automation-tester-ntt-data-bengaluru-bangalore-india-69710595",
+                      "apply_url": "https://careers-inc.nttdata.com/job/Bangalore-Java%2C-Python-for-Automation%2C-Rest-Assured-API-Testing-Automation-tester-KA/1447112600/"
+                    },
+                    "… 17 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/foundit/v1/skills": {
+      "get": {
+        "operationId": "founditSkills",
+        "summary": "foundit skill and title suggestions",
+        "description": "foundit's search box suggestions for a partial term: skills and job titles with how many open jobs each has, or locations.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/foundit-skills",
+        "tags": [
+          "foundit"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The partial term.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "pyth"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "description": "skills (skills and job titles, default) or locations.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "skills",
+                "locations"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "pyth",
+                  "kind": "skills",
+                  "count": 4,
+                  "suggestions": [
+                    {
+                      "name": "Python",
+                      "type": "skill",
+                      "jobs": 2862,
+                      "aliases": [
+                        "P"
+                      ]
+                    },
+                    {
+                      "name": "Python Developer",
+                      "type": "title",
+                      "jobs": 180,
+                      "aliases": [
+                        "PD"
+                      ]
+                    },
+                    "… 2 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

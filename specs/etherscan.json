@@ -1,0 +1,2429 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Etherscan",
+    "version": "1.0.0",
+    "description": "The Etherscan API from API.SH: public Etherscan data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Etherscan",
+      "description": "11 endpoints (finance & crypto)",
+      "x-slug": "etherscan",
+      "x-domains": [
+        "etherscan.io"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/etherscan/v1/address": {
+      "get": {
+        "operationId": "etherscanAddress",
+        "summary": "Etherscan address overview",
+        "description": "Everything the Etherscan address page shows: balance and its USD value, coin price, name tag (ENS or public label), contract flag, token holdings value and count, multichain portfolio value, latest and first transaction sent, the address that funded it, total transaction count, the latest 25 transactions (hash, method, block, time, from/to with labels, direction, amount, USD value, fee, gas price), the latest 25 internal transactions and every token holding across chains (chain, token, contract, portfolio share, price, amount, USD value). The full transaction history beyond the latest 25 is not available.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-address",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "A 0x address (40 hex characters) or an explorer address link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                  "url": "https://etherscan.io/address/0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                  "name_tag": "vitalik.eth",
+                  "is_contract": false,
+                  "balance": "5.780441042197210512 ETH",
+                  "balance_value": 5.780441042197211,
+                  "coin": "ETH",
+                  "balance_usd": 13942.25,
+                  "coin_price_usd": 2411.97,
+                  "token_holdings_usd": 112142.17,
+                  "token_holdings_count": 401,
+                  "multichain_portfolio_usd": 973204.4,
+                  "latest_tx_sent": {
+                    "hash": "0xdb49480a19408b21be593a51fe479811e267b57419500e49646c33e2965d231c",
+                    "age": "5 days ago"
+                  },
+                  "first_tx_sent": {
+                    "hash": "0x6ff0860e202c61189cb2a3a38286bffd694acbc50577df6cb5a7ff40e21ea074",
+                    "age": "11 yrs 34 days ago"
+                  },
+                  "funded_by": {
+                    "address": "0x1Db3439a222C519ab44bb1144fC28167b4Fa6EE6",
+                    "label": "Vb 2",
+                    "tx_hash": "0x9b629147b75dc0b275d478fa34d97c5d4a26926457540b15a5ce871df36c23fd",
+                    "age": "11 yrs 38 days ago"
+                  },
+                  "transaction_count": 78428,
+                  "transactions": [
+                    {
+                      "hash": "0xd437fbed519296b86127b0b3ea9ed3bfc1c57cc4a7872b25a122ffac57b74539",
+                      "method": "Transfer",
+                      "block": null,
+                      "pending": true,
+                      "timestamp": "2026-11-01T04:32:56.000Z",
+                      "age": "4 days ago",
+                      "from": {
+                        "address": "0x93072e593a233Cef979F37F898fBECfb2a09218e",
+                        "label": null,
+                        "is_contract": false
+                      },
+                      "to": {
+                        "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                        "label": null,
+                        "is_contract": false
+                      },
+                      "direction": "IN",
+                      "amount": "0.0001 ETH",
+                      "amount_value": 0.0001,
+                      "value_usd": 0.24,
+                      "token": null,
+                      "coin": "ETH",
+                      "fee": "(Pending)",
+                      "fee_value": null,
+                      "gas_price_gwei": null
+                    },
+                    {
+                      "hash": "0xf604edf24277fbb173bcb8f900b3aefa142610e28fb547f20a7c7488d8efb042",
+                      "method": "Transfer",
+                      "block": 26343086,
+                      "pending": false,
+                      "timestamp": "2026-11-04T17:56:35.000Z",
+                      "age": "15 hrs ago",
+                      "from": {
+                        "address": "0x1E7ebb2c28B2243cAB601D4C83A096928f8B809e",
+                        "label": "urulokimasanori.eth",
+                        "is_contract": false
+                      },
+                      "to": {
+                        "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                        "label": "vitalik.eth",
+                        "is_contract": false
+                      },
+                      "direction": "IN",
+                      "amount": "0 ETH",
+                      "amount_value": 0,
+                      "value_usd": 0,
+                      "token": null,
+                      "coin": "ETH",
+                      "fee": "0.00004508",
+                      "fee_value": 0.00004508,
+                      "gas_price_gwei": 2.14039583
+                    },
+                    "… 23 more"
+                  ],
+                  "internal_transactions": [
+                    {
+                      "parent_hash": "0x7c17b0b357ea17dfd6a06b3e1d831226f4d222c0589fea38aad33bee416a07f1",
+                      "method": "Transfer",
+                      "block": 26340627,
+                      "timestamp": "2026-11-04T09:43:23.000Z",
+                      "age": "23 hrs ago",
+                      "from": {
+                        "address": "0xA6cd233FA1fAFdE96591D073EAC32ECBeEe0007c",
+                        "label": null,
+                        "is_contract": false
+                      },
+                      "to": {
+                        "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                        "label": "vitalik.eth",
+                        "is_contract": false
+                      },
+                      "amount": "0.0004312 ETH",
+                      "amount_value": 0.0004312,
+                      "value_usd": 1.04,
+                      "coin": "ETH"
+                    },
+                    {
+                      "parent_hash": "0x5d1c4b6f36b758346071e4f1e742c897a81c5e576b189668ae27b7f9eb0d7be9",
+                      "method": "Transfer",
+                      "block": 26302888,
+                      "timestamp": "2026-10-30T03:30:11.000Z",
+                      "age": "6 days ago",
+                      "from": {
+                        "address": "0xE7351Fd770A37282b91D153Ee690B63579D6dd7f",
+                        "label": "deBridge: DlnDestination",
+                        "is_contract": false
+                      },
+                      "to": {
+                        "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                        "label": "vitalik.eth",
+                        "is_contract": false
+                      },
+                      "amount": "0.0008564 ETH",
+                      "amount_value": 0.0008564,
+                      "value_usd": 2.07,
+                      "coin": "ETH"
+                    },
+                    "… 23 more"
+                  ],
+                  "token_holdings": [
+                    {
+                      "chain": "ETH",
+                      "token": "WhiteRock (WHITE)",
+                      "token_address": "0x9cdf242ef7975d8c68d5c1f5b6905801699b1940",
+                      "token_url": "https://etherscan.io/token/0x9cdf242ef7975d8c68d5c1f5b6905801699b1940?a=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                      "portfolio_percent": 32.01,
+                      "price_usd": 0.00003115,
+                      "amount": "10 B",
+                      "value_usd": 311500
+                    },
+                    {
+                      "chain": "ETH",
+                      "token": "Catecoin (CATE)",
+                      "token_address": "0xf05897cfe3ce9bbbfe0751cbe6b1b2c686848dcb",
+                      "token_url": "https://etherscan.io/token/0xf05897cfe3ce9bbbfe0751cbe6b1b2c686848dcb?a=0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                      "portfolio_percent": 11.37,
+                      "price_usd": 0.000001,
+                      "amount": "1.66 T",
+                      "value_usd": 110661.1
+                    },
+                    "… 469 more"
+                  ],
+                  "overview": {
+                    "eth_balance": "5.780441042197210512 ETH",
+                    "eth_value": "$13,942.25 (@ $2,411.97/ETH)",
+                    "transactions_sent": "Latest: 5 days ago First: 11 yrs 34 days ago"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/etherscan/v1/block": {
+      "get": {
+        "operationId": "etherscanBlock",
+        "summary": "Etherscan block details",
+        "description": "One block: timestamp, status, transaction and internal transaction counts, withdrawals, fee recipient (address and label), block reward, gas used and its share, gas limit, base fee, burnt fees, size, hash, parent hash, state root, extra data, slot and epoch, plus every detail row under `details`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-block",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "number",
+            "in": "query",
+            "required": true,
+            "description": "Block height or an explorer block link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "21000000"
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "number": 21000000,
+                  "url": "https://etherscan.io/block/21000000",
+                  "timestamp": "2024-10-19T13:45:47.000Z",
+                  "status": "Finalized",
+                  "transaction_count": 181,
+                  "internal_transaction_count": 49,
+                  "withdrawal_count": 16,
+                  "fee_recipient": {
+                    "address": "0x95222290DD7278Aa3Ddd389Cc1E1d165CC4BAfe5",
+                    "label": "beaverbuild",
+                    "is_contract": false
+                  },
+                  "block_reward": "0.038464972158668286 ETH (0 + 0.292288446667285618 - 0.253823474508617332)",
+                  "block_reward_value": 0.03846497215866829,
+                  "gas_used": 13952884,
+                  "gas_used_percent": 46.51,
+                  "gas_limit": 30000000,
+                  "base_fee_per_gas": "0.000000018191470273 ETH (18.191470273 Gwei)",
+                  "burnt_fees": "🔥 0.253823474508617332 ETH",
+                  "size_bytes": 64771,
+                  "hash": "0xf5e1d15a3e380006bd271e73c8eeed75fafc3ae6942b16f63c21361079bba709",
+                  "parent_hash": "0x215f1fa046ff46999f1a91973d7cc39c6d4e7aa64d3de3a40d31591f543c3386",
+                  "state_root": "0x9c7216c7718d65de085264ec9d1e564660e445aed3a94e297c95e7b2902f872a",
+                  "extra_data": "beaverbuild.org (Hex:0x6265617665726275696c642e6f7267)",
+                  "slot": 10210127,
+                  "epoch": 319066,
+                  "details": {
+                    "block_height": "21000000",
+                    "status": "Finalized",
+                    "timestamp": "Oct-19-2024 01:45:47 PM +UTC",
+                    "proposed_on": "Block proposed on slot 10210127, epoch 319066",
+                    "transactions": "181 transactions and 49 contract internal transactions in this block",
+                    "withdrawals": "16 withdrawals in this block",
+                    "fee_recipient": "beaverbuild in 12 secs",
+                    "block_reward": "0.038464972158668286 ETH (0 + 0.292288446667285618 - 0.253823474508617332)",
+                    "total_difficulty": "58,750,003,716,598,352,816,469",
+                    "size": "64,771 bytes",
+                    "gas_used": "13,952,884 (46.51%)",
+                    "gas_limit": "30,000,000",
+                    "base_fee_per_gas": "0.000000018191470273 ETH (18.191470273 Gwei)",
+                    "burnt_fees": "🔥 0.253823474508617332 ETH",
+                    "extra_data": "beaverbuild.org (Hex:0x6265617665726275696c642e6f7267)",
+                    "ether_price": "$2,648.12 / ETH",
+                    "hash": "0xf5e1d15a3e380006bd271e73c8eeed75fafc3ae6942b16f63c21361079bba709",
+                    "parent_hash": "0x215f1fa046ff46999f1a91973d7cc39c6d4e7aa64d3de3a40d31591f543c3386",
+                    "stateroot": "0x9c7216c7718d65de085264ec9d1e564660e445aed3a94e297c95e7b2902f872a",
+                    "withdrawalsroot": "0x27571045284d65a799f3d5f5ec95b847ee37c58911fae64355c015dc025124bc",
+                    "nonce": "0x0000000000000000",
+                    "slot": "10210127",
+                    "epoch": "319066",
+                    "proposer_index": "309780",
+                    "slot_root_hash": "0x516e25144d5b3ab9fe0a8c7016179b210ed945fdde322ad27e8e087c2bcb1d74",
+                    "parent_root_hash": "0x9456f578ed4a459ad459c32a3c27a0f298617a1e5c2a5b8ad60c97b65b22efef",
+                    "beacon_chain_deposit_count": "1724429",
+                    "slot_graffiti": "0x (Hex:Null)",
+                    "block_randomness": "0xe91a3b64b1b055057197349745c4e64d15f627f6af9be9d87f3c41638177a5b9",
+                    "randao_reveal": "0xa96a8fd8e2f2bb88c4ea3a775f132af2708dfb4e917040413637dda3128eaaa9067419c48882c82213f4251da5a64ac00d996133ad31a8a3f1cca1f828b71df0c96b368601…",
+                    "proposer_fee_recipient": "0x388C818CA8B9251b393131C08a736A67ccB19297 (Lido: Execution Layer Rewards Vault)",
+                    "mev_reward": "0.039531421899718374 ETH",
+                    "mev_payout_txn_hash": "0x061675cd8db1eb2f5761948f85b51f78badba37fa69393702cc58a545cb2bd55",
+                    "blob_tx": "1 transaction",
+                    "blob_size": "640 KiB (5 blobs)",
+                    "blob_utilisation": "5 Blobs (83.33%)",
+                    "blob_gas_price": "1 wei (0.000000001 Gwei)",
+                    "blob_gas_used": "655,360 (83.33%)",
+                    "blob_gas_limit": "786,432",
+                    "total_blob_fees": "0.00000000000065536 ETH",
+                    "…": "1 more fields"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/etherscan/v1/blocks": {
+      "get": {
+        "operationId": "etherscanBlocks",
+        "summary": "Etherscan latest blocks",
+        "description": "The latest blocks, 25 per page, newest first: number, slot, epoch, time, transaction and blob counts, fee recipient, gas used and share, gas limit, base fee, reward and burnt fees. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-blocks",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-400).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "page": 1,
+                  "count": 25,
+                  "total_pages": 1054193,
+                  "next_page": 2,
+                  "blocks": [
+                    {
+                      "number": 26354816,
+                      "slot": 15594342,
+                      "epoch": 487323,
+                      "timestamp": "2026-11-06T09:08:47.000Z",
+                      "age": "17 secs ago",
+                      "transaction_count": 263,
+                      "blob_count": 2,
+                      "fee_recipient": {
+                        "address": "0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97",
+                        "label": "Titan Builder",
+                        "is_contract": false
+                      },
+                      "gas_used": 40043518,
+                      "gas_used_percent": 66.74,
+                      "gas_limit": 60000000,
+                      "base_fee_gwei": 0.148,
+                      "reward": "0.02886 ETH",
+                      "reward_value": 0.02886,
+                      "burnt_fees": "0.005958 (17.11%)",
+                      "burnt_fees_value": 0.005958
+                    },
+                    {
+                      "number": 26354815,
+                      "slot": 15594341,
+                      "epoch": 487323,
+                      "timestamp": "2026-11-06T09:08:35.000Z",
+                      "age": "29 secs ago",
+                      "transaction_count": 334,
+                      "blob_count": 11,
+                      "fee_recipient": {
+                        "address": "0xdadB0d80178819F2319190D340ce9A924f783711",
+                        "label": "BuilderNet",
+                        "is_contract": false
+                      },
+                      "gas_used": 29641244,
+                      "gas_used_percent": 49.4,
+                      "gas_limit": 60000000,
+                      "base_fee_gwei": 0.149,
+                      "reward": "0.01209 ETH",
+                      "reward_value": 0.01209,
+                      "burnt_fees": "0.004417 (26.74%)",
+                      "burnt_fees_value": 0.004417
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/etherscan/v1/gas": {
+      "get": {
+        "operationId": "etherscanGas",
+        "summary": "Etherscan gas tracker",
+        "description": "The gas tracker: standard, fast and rapid gas prices in gwei with base and priority fee, USD cost and confirmation time, the cost of common actions (swap, NFT sale, bridging, borrowing) at each speed, and the top gas spenders over 3 and 24 hours.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-gas",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "low": {
+                    "gwei": 0.064,
+                    "base_fee_gwei": 0.064,
+                    "priority_fee_gwei": 0,
+                    "cost_usd": 0.003,
+                    "time": "~ 30 secs",
+                    "text": "Standard 0.064 gwei Base: 0.064 | Priority: 0 $0.003 | ~ 30 secs"
+                  },
+                  "average": {
+                    "gwei": 0.064,
+                    "base_fee_gwei": 0.064,
+                    "priority_fee_gwei": 0,
+                    "cost_usd": 0.003,
+                    "time": "~ 30 secs",
+                    "text": "Fast 0.064 gwei Base: 0.064 | Priority: 0 $0.003 | ~ 30 secs"
+                  },
+                  "high": {
+                    "gwei": 0.07,
+                    "base_fee_gwei": 0.064,
+                    "priority_fee_gwei": 0.006,
+                    "cost_usd": 0.004,
+                    "time": "~ 30 secs",
+                    "text": "Rapid 0.07 gwei Base: 0.064 | Priority: 0.006 $0.004 | ~ 30 secs"
+                  },
+                  "action_costs": [
+                    {
+                      "action": "Swap",
+                      "standard": "$0.055",
+                      "fast": "$0.055",
+                      "rapid": "$0.06"
+                    },
+                    {
+                      "action": "NFT Sale",
+                      "standard": "$0.093",
+                      "fast": "$0.093",
+                      "rapid": "$0.102"
+                    },
+                    "… 2 more"
+                  ],
+                  "gas_spenders": [
+                    {
+                      "rank": "🥇 1",
+                      "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+                      "fees_last_3hrs": "$4,639.93 (1.92 Eth)",
+                      "used_3hrs": "8.34%",
+                      "fees_last_24hrs": "$50,972.11 (21.12 Eth)",
+                      "used_24hrs": "8.50%",
+                      "analytics": null,
+                      "label": "Tether: USDT Stablecoin"
+                    },
+                    {
+                      "rank": "🥈 2",
+                      "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                      "fees_last_3hrs": "$1,788.80 (0.74 Eth)",
+                      "used_3hrs": "6.25%",
+                      "fees_last_24hrs": "$18,837.28 (7.80 Eth)",
+                      "used_24hrs": "4.45%",
+                      "analytics": null,
+                      "label": "Circle: USDC Token"
+                    },
+                    "… 13 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/etherscan/v1/search": {
+      "get": {
+        "operationId": "etherscanSearch",
+        "summary": "Etherscan search suggestions",
+        "description": "What the explorer's search box suggests for a keyword: tokens, addresses, name tags, labels and websites, with title, group, address, link, price, website, verified flag, reputation and logo.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-search",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Keyword, address or name (up to 68 characters).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "uniswap"
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "Limit to one kind of result (default all).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "addresses",
+                "tokens",
+                "name_tags",
+                "labels",
+                "websites"
+              ]
+            }
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "query": "uniswap",
+                  "filter": "all",
+                  "count": 15,
+                  "results": [
+                    {
+                      "title": "Uniswap",
+                      "group": "Tokens (ERC 20)",
+                      "address": "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+                      "url": "https://etherscan.io/token/0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+                      "price": "$6.97",
+                      "website": "https://uniswap.org/",
+                      "verified": true,
+                      "reputation": "2",
+                      "image": "https://etherscan.io/token/images/uniswap_ofc_32.svg",
+                      "description": null
+                    },
+                    {
+                      "title": "Cream Uniswap",
+                      "group": "Tokens (ERC 20)",
+                      "address": "0xe89a6D0509faF730BD707bf868d9A2A744a363C7",
+                      "url": "https://etherscan.io/token/0xe89a6D0509faF730BD707bf868d9A2A744a363C7",
+                      "price": "$0.00",
+                      "website": "https://cream.finance/",
+                      "verified": true,
+                      "reputation": "1",
+                      "image": "https://etherscan.io/token/images/creamuni_32.png",
+                      "description": null
+                    },
+                    "… 13 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/etherscan/v1/token": {
+      "get": {
+        "operationId": "etherscanToken",
+        "summary": "Etherscan token overview",
+        "description": "An ERC-20 token page: name, symbol, standard, decimals, max total supply, holders and the holder change, price in USD and in the chain coin with its 24h change, on-chain and circulating market cap, contract, official site, description, market data (24h volume, market cap, circulating supply), social and data links. A contract that is not a token answers 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-token",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "Token contract address or an explorer token link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xdac17f958d2ee523a2206206994597c13d831ec7"
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+                  "url": "https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7",
+                  "name": "Tether USD",
+                  "symbol": "USDT",
+                  "standard": "ERC-20",
+                  "decimals": 6,
+                  "max_total_supply": "84,298,550,180.940091 USDT",
+                  "max_total_supply_value": 84298550180.9401,
+                  "holders": 15565337,
+                  "holders_change": "0.064%",
+                  "price_usd": 0.999024,
+                  "price_in_coin": 0.000447,
+                  "price_change_percent": -0.04,
+                  "price_text": "$0.999024 @ 0.000447 ETH (-0.04%)",
+                  "onchain_market_cap_usd": 84216274795.96,
+                  "circulating_market_cap_usd": 177573438405,
+                  "contract": {
+                    "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+                    "label": null,
+                    "is_contract": true
+                  },
+                  "official_site": "https://tether.to/",
+                  "description": "Tether gives you the joint benefits of open blockchain technology and traditional currency by converting your cash into a stable digital cur…",
+                  "market": {
+                    "volume": "$69.75 B",
+                    "market_capitalization": "$177,573,438,405.00",
+                    "circulating_supply": "177,746,950,011.00 USDT"
+                  },
+                  "links": [
+                    {
+                      "name": "https://tether.to/",
+                      "url": "https://tether.to/"
+                    },
+                    {
+                      "name": "CoinMarketCap",
+                      "url": "https://coinmarketcap.com/currencies/tether/"
+                    },
+                    "… 9 more"
+                  ],
+                  "dex_markets": [],
+                  "overview": {
+                    "max_total_supply": "84,298,550,180.940091 USDT",
+                    "holders": "15,565,337 ( 0.064%)",
+                    "price": "$0.999024 @ 0.000447 ETH (-0.04%)",
+                    "onchain_market_cap": "$84,216,274,795.96",
+                    "circulating_supply_market_cap": "$177,573,438,405.00",
+                    "token_contract": "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/etherscan/v1/token-holders": {
+      "get": {
+        "operationId": "etherscanTokenHolders",
+        "summary": "Etherscan token holders",
+        "description": "The holders of a token, largest first, 25 per page: rank, address, name tag, category label, quantity and USD value, with the holder breakdown tables on page 1 (top cohorts, holder tiers, value thresholds) and the total holder count. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-token-holders",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "Token contract address.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xdac17f958d2ee523a2206206994597c13d831ec7"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-400).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+                  "page": 1,
+                  "count": 25,
+                  "total_holders": 15565443,
+                  "total_pages": 40,
+                  "next_page": 2,
+                  "holders": [
+                    {
+                      "rank": 1,
+                      "address": "0xF977814e90dA44bFA03b6295A0616a897441aceC",
+                      "name_tag": "Binance: Cold Wallet 20",
+                      "category": "Exchange",
+                      "quantity": "14,000,000,000.0007",
+                      "quantity_value": 14000000000.0007,
+                      "percentage": null,
+                      "value_usd": 13986336000
+                    },
+                    {
+                      "rank": 2,
+                      "address": "0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503",
+                      "name_tag": "Binance: Binance-Peg Tokens",
+                      "category": "Exchange",
+                      "quantity": "9,184,997,801.4823",
+                      "quantity_value": 9184997801.4823,
+                      "percentage": null,
+                      "value_usd": 9176033243.63
+                    },
+                    "… 23 more"
+                  ],
+                  "top_cohorts": [
+                    {
+                      "cohort": "Top 1-5",
+                      "holding_amount": "32.82 B USDT",
+                      "value": "$32.79 B",
+                      "market_cap": "38.93%"
+                    },
+                    {
+                      "cohort": "Top 6-10",
+                      "holding_amount": "5.48 B USDT",
+                      "value": "$5.47 B",
+                      "market_cap": "6.50%"
+                    },
+                    "… 4 more"
+                  ],
+                  "tiers": [
+                    {
+                      "tier": "🐋 Whale",
+                      "holder_count": "31,791",
+                      "holders": "0.20%",
+                      "market_cap": "95.21%"
+                    },
+                    {
+                      "tier": "🦈 Shark",
+                      "holder_count": "91,322",
+                      "holders": "0.59%",
+                      "market_cap": "3.57%"
+                    },
+                    "… 4 more"
+                  ],
+                  "thresholds": [
+                    {
+                      "threshold": "> $10",
+                      "holders": "3,189,294",
+                      "of_total": "20.48%"
+                    },
+                    {
+                      "threshold": "> $50",
+                      "holders": "1,385,200",
+                      "of_total": "8.90%"
+                    },
+                    "… 7 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/etherscan/v1/token-transfers": {
+      "get": {
+        "operationId": "etherscanTokenTransfers",
+        "summary": "Etherscan ERC-20 transfers of an address",
+        "description": "The ERC-20 token transfers in and out of an address, newest first, 50 per page: transaction hash, method, block, time, from and to (address and label), direction, amount, USD value and the token (contract, name and symbol, logo). The site lists the newest 5,000 transfers. Pass `next_page` back as `page`; it is null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-token-transfers",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "A 0x address or an explorer address link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "`erc20` (default; the only type served).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "erc20"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-100). Pass `next_page` back as `page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                  "type": "erc20",
+                  "page": 1,
+                  "count": 50,
+                  "total": 9990,
+                  "total_pages": 100,
+                  "next_page": 2,
+                  "transfers": [
+                    {
+                      "hash": "0x254d8f2b9ff36034d296a71022a65739859f941f04bef42ffa37b69d01bac497",
+                      "method": "Transfer",
+                      "block": 26343034,
+                      "pending": false,
+                      "timestamp": "2026-11-04T17:46:11.000Z",
+                      "age": "18 hrs ago",
+                      "from": {
+                        "address": "0xdc81079D711088a1Af81efF0394788763eBF59Cb",
+                        "label": null,
+                        "is_contract": false
+                      },
+                      "to": {
+                        "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                        "label": "vitalik.eth",
+                        "is_contract": false
+                      },
+                      "direction": "IN",
+                      "amount": "60,000,000.12",
+                      "amount_value": 60000000.12,
+                      "value_usd": 0.23,
+                      "token": {
+                        "address": "0xfccd6fbca272b4cc11069402f4123b070b7838f9",
+                        "name": "Kimchi Coin (KIMCHI)",
+                        "image": "https://etherscan.io/token/images/kimchicoin_32.png"
+                      },
+                      "fee": null,
+                      "fee_value": null,
+                      "gas_price_gwei": null
+                    },
+                    {
+                      "hash": "0xf0737373d0d635d600fea8c4d4f7c591f811f50857b4be706b5203bfe37e6bcf",
+                      "method": "0x60806040",
+                      "block": 26339132,
+                      "pending": false,
+                      "timestamp": "2026-11-04T04:43:11.000Z",
+                      "age": "31 hrs ago",
+                      "from": {
+                        "address": "0x0000000000000000000000000000000000000000",
+                        "label": null,
+                        "is_contract": false
+                      },
+                      "to": {
+                        "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+                        "label": "vitalik.eth",
+                        "is_contract": false
+                      },
+                      "direction": "IN",
+                      "amount": "10,000,000",
+                      "amount_value": 10000000,
+                      "value_usd": 0,
+                      "token": {
+                        "address": "0x64a22d8eef40434cccbbda49008680edd94c8772",
+                        "name": "VETO (VETO)",
+                        "image": "https://etherscan.io/images/main/empty-token.png"
+                      },
+                      "fee": null,
+                      "fee_value": null,
+                      "gas_price_gwei": null
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/etherscan/v1/tokens": {
+      "get": {
+        "operationId": "etherscanTokens",
+        "summary": "Etherscan top tokens",
+        "description": "The token tracker list, 50 per page: rank, name, symbol, contract, price in USD and in the chain coin, 24h change, 24h volume, circulating and on-chain market cap, holders and holder change. Sortable like the site. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-tokens",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort column (default on-chain market cap).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "onchain_market_cap",
+                "market_cap",
+                "volume_24h",
+                "holders",
+                "change_24h",
+                "price"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "`desc` (default) or `asc`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "desc",
+                "asc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "sort": "onchain_market_cap",
+                  "order": "desc",
+                  "page": 1,
+                  "count": 50,
+                  "total_pages": 74,
+                  "next_page": 2,
+                  "tokens": [
+                    {
+                      "rank": 1,
+                      "name": "Dohrnii",
+                      "symbol": "DHN",
+                      "address": "0x3a54e9b53f32fd3441a87e1a95c853e595c8326f",
+                      "price_usd": 520.7825,
+                      "price_in_coin": 0.232588,
+                      "change_percent": -1.25,
+                      "volume_24h_usd": 9568201,
+                      "circulating_market_cap_usd": 781173748,
+                      "onchain_market_cap_usd": 192216112149,
+                      "holders": 156589,
+                      "holders_change_percent": 0
+                    },
+                    {
+                      "rank": 2,
+                      "name": "Tether USD",
+                      "symbol": "USDT",
+                      "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+                      "price_usd": 0.99904,
+                      "price_in_coin": 0.0004461,
+                      "change_percent": -0.05,
+                      "volume_24h_usd": 69819157980,
+                      "circulating_market_cap_usd": 177576351978,
+                      "onchain_market_cap_usd": 84215600408,
+                      "holders": 15564625,
+                      "holders_change_percent": 0.064
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/etherscan/v1/top-accounts": {
+      "get": {
+        "operationId": "etherscanTopAccounts",
+        "summary": "Etherscan top accounts by balance",
+        "description": "The richest accounts, 25 per page: rank, address, name tag, contract flag, balance, share of supply and transaction count. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-top-accounts",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-400).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "page": 1,
+                  "count": 25,
+                  "total_pages": 400,
+                  "next_page": 2,
+                  "accounts": [
+                    {
+                      "rank": 1,
+                      "address": "0x00000000219ab540356cBB839Cbe05303d7705Fa",
+                      "name_tag": "Beacon Deposit Contract",
+                      "is_contract": true,
+                      "balance": "93,108,167.84 ETH",
+                      "balance_value": 93108167.84,
+                      "percentage": 76.19642146,
+                      "txn_count": 800250
+                    },
+                    {
+                      "rank": 2,
+                      "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                      "name_tag": "Wrapped Ether",
+                      "is_contract": true,
+                      "balance": "2,098,291.08 ETH",
+                      "balance_value": 2098291.08,
+                      "percentage": 1.71716699,
+                      "txn_count": 23572345
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/etherscan/v1/transaction": {
+      "get": {
+        "operationId": "etherscanTransaction",
+        "summary": "Etherscan transaction details",
+        "description": "One transaction as Etherscan shows it: status, block and confirmations, timestamp, from and to (address, label, contract flag), value and USD value, fee and USD fee, gas price, gas limit, gas used and its share, EIP-1559 fees, burnt fees, nonce, position in block, transaction type, input data (decoded function and arguments when the contract is verified) and every ERC-20 transfer inside it (from, to, amount, token contract, name, symbol), plus every detail row of the page under `details`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/etherscan-transaction",
+        "tags": [
+          "Etherscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "query",
+            "required": true,
+            "description": "Transaction hash (0x + 64 hex characters) or an explorer tx link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060"
+          },
+          {
+            "name": "chain",
+            "in": "query",
+            "required": false,
+            "description": "`ethereum` (default, etherscan.io), `base` (basescan.org) or `polygon` (polygonscan.com).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ethereum",
+                "base",
+                "polygon"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chain": "ethereum",
+                  "hash": "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060",
+                  "url": "https://etherscan.io/tx/0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060",
+                  "status": null,
+                  "block": 46147,
+                  "confirmations": 26308719,
+                  "timestamp": "2015-08-07T03:30:33.000Z",
+                  "timestamp_text": "Aug-07-2015 03:30:33 AM +UTC",
+                  "from": {
+                    "address": "0xA1E4380A3B1f749673E270229993eE55F35663b4",
+                    "label": "thanateros.eth",
+                    "is_contract": false
+                  },
+                  "to": {
+                    "address": "0x5DF9B87991262F6BA471F09758CDE1c0FC1De734",
+                    "label": null,
+                    "is_contract": false
+                  },
+                  "interacted_with": null,
+                  "value": "0.000000000000031337 ETH < $0.000001",
+                  "value_amount": 3.1337e-14,
+                  "value_usd": 0.000001,
+                  "fee": "1.05 ETH $2,352.05",
+                  "fee_amount": 1.05,
+                  "fee_usd": 2352.05,
+                  "gas_price": "50,000 Gwei (0.00005 ETH)",
+                  "gas_price_gwei": 50000,
+                  "gas_limit": 21000,
+                  "gas_used": 21000,
+                  "gas_used_percent": 100,
+                  "gas_fees": null,
+                  "burnt_fees": null,
+                  "nonce": 0,
+                  "position_in_block": 0,
+                  "txn_type": null,
+                  "input_data": "0x",
+                  "token_transfers": [],
+                  "details": {
+                    "transaction_hash": "0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060",
+                    "block": "4614726308719 Block Confirmations",
+                    "timestamp": "Aug-07-2015 03:30:33 AM +UTC",
+                    "from": "thanateros.eth",
+                    "to": "0x5DF9B87991262F6BA471F09758CDE1c0FC1De734",
+                    "value": "0.000000000000031337 ETH < $0.000001",
+                    "transaction_fee": "1.05 ETH $2,352.05",
+                    "gas_price": "50,000 Gwei (0.00005 ETH)",
+                    "ether_price": "$2.77 / ETH",
+                    "gas_limit_usage_by_txn": "21,000 | 21,000 (100%)",
+                    "other_attributes": "Nonce: 0 Position In Block: 0",
+                    "input_data": "0x0x"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

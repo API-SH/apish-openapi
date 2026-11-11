@@ -1,0 +1,2338 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Meijer",
+    "version": "1.0.0",
+    "description": "The Meijer API from API.SH: public Meijer data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Meijer",
+      "description": "7 endpoints (e-commerce)",
+      "x-slug": "meijer",
+      "x-domains": [
+        "meijer.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meijer/v1/product": {
+      "get": {
+        "operationId": "meijerProduct",
+        "summary": "Meijer product",
+        "description": "One Meijer product by UPC (or product link) at one store: name, brand, link, description, features, details, ingredients, categories, images, store price, regular price, unit prices, sale flag and price text, savings, stock status, aisle locations, promotions, nutrition label, variants, sold-by unit, maximum order quantity, SNAP and WIC eligibility, delivery and pickup flags, plus `raw`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/meijer-product",
+        "tags": [
+          "Meijer"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "upc",
+            "in": "query",
+            "required": true,
+            "description": "The product's UPC as Meijer shows it, or its product link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "4125010200"
+          },
+          {
+            "name": "store_id",
+            "in": "query",
+            "required": false,
+            "description": "Meijer store number the prices and stock are for (default 265; see /meijer/v1/stores).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "265"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "upc": "4125010200",
+                  "product_id": "504293",
+                  "name": "Meijer Whole Milk, Gallon",
+                  "brand": "Meijer",
+                  "url": "https://www.meijer.com/shopping/product/meijer-whole-milk-gallon/4125010200.html",
+                  "description": "MEIJER MILK WHOLE GAL",
+                  "features": "Gallon Vitamin D Calcium",
+                  "details": "Whether youre dipping your favorite cookie in or making comforting Mac and Cheese, Meijer Whole Milk has you covered. A great source of Vit…",
+                  "ingredients": "V D3.",
+                  "categories": [
+                    {
+                      "id": "L1-865",
+                      "name": "Grocery",
+                      "parent_id": null,
+                      "path": "L1-865"
+                    },
+                    {
+                      "id": "L2-9974",
+                      "name": "Dairy",
+                      "parent_id": "L1-865",
+                      "path": "L1-865,L2-9974"
+                    },
+                    "… 2 more"
+                  ],
+                  "images": [
+                    "https://www.meijer.com/content/dam/meijer/product/0041/25/0102/00/0041250102007_2_A1C1_0080.jpg",
+                    "https://www.meijer.com/content/dam/meijer/product/0041/25/0102/00/0041250102007_2_A1C1_0100.jpg",
+                    "… 10 more"
+                  ],
+                  "store_id": 265,
+                  "store_name": "Evergreen Park, IL",
+                  "price": 3.34,
+                  "regular_price": 3.34,
+                  "price_per_unit": 3.34,
+                  "regular_price_per_unit": 3.34,
+                  "clearance_price": null,
+                  "on_sale": false,
+                  "price_text": "$3.34",
+                  "savings": null,
+                  "buy_quantity": 1,
+                  "sale_ends": "2099-12-31T23:59:00.000Z",
+                  "pricing_unit": "EA",
+                  "deposit": null,
+                  "price_shown": true,
+                  "stock_status": "inStock",
+                  "aisle": "B-1-20-4",
+                  "aisles": "B-1-22-8, B-1-20-7, B-1-22-6, B-1-20-6, B-1-20-5, B-1-20-4, B-1-22-12, B-1-22-10",
+                  "promotions": [],
+                  "nutrition": {
+                    "header": null,
+                    "main": null,
+                    "micronutrients": null,
+                    "minerals": null,
+                    "vitamins": null
+                  },
+                  "variants": {
+                    "productId": "4125010200",
+                    "groups": [
+                      {
+                        "name": "Fat Content",
+                        "primary": false,
+                        "shouldDisplayImages": true,
+                        "attributes": [
+                          {
+                            "…": "6 fields"
+                          },
+                          {
+                            "…": "6 fields"
+                          },
+                          "… 2 more"
+                        ]
+                      },
+                      {
+                        "name": "Volume",
+                        "primary": false,
+                        "shouldDisplayImages": false,
+                        "attributes": [
+                          {
+                            "…": "6 fields"
+                          },
+                          {
+                            "…": "6 fields"
+                          },
+                          "… 1 more"
+                        ]
+                      }
+                    ]
+                  },
+                  "sold_by": "EA",
+                  "max_order_quantity": null,
+                  "snap_eligible": true,
+                  "wic_eligible": null,
+                  "delivery": true,
+                  "pickup": true,
+                  "third_party_offers": null,
+                  "disclaimer": "Statements regarding dietary supplements have not been evaluated by the Food and Drug Administration and are not intended to diagnose, treat…",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/meijer/v1/products": {
+      "get": {
+        "operationId": "meijerProducts",
+        "summary": "Meijer products by UPC",
+        "description": "Up to 50 Meijer products by UPC in one call, priced and stocked for one store (the search fields for each product). UPCs the shop does not know come back in `missing`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/meijer-products",
+        "tags": [
+          "Meijer"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "upcs",
+            "in": "query",
+            "required": true,
+            "description": "Comma-separated UPCs (up to 50).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "4125010200,4125010201"
+          },
+          {
+            "name": "store_id",
+            "in": "query",
+            "required": false,
+            "description": "Meijer store number the prices and stock are for (default 265; see /meijer/v1/stores).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "265"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "store_id": 265,
+                  "count": 2,
+                  "items": [
+                    {
+                      "upc": "4125010200",
+                      "product_id": null,
+                      "name": "Meijer Whole Milk, Gallon",
+                      "url": null,
+                      "image": "https://www.meijer.com/content/dam/meijer/product/0041/25/0102/00/0041250102007_2_A1C1_0200.jpg",
+                      "images": [],
+                      "price": null,
+                      "regular_price": null,
+                      "price_per_unit": 3.34,
+                      "regular_price_per_unit": 3.34,
+                      "clearance_price": null,
+                      "on_sale": false,
+                      "price_text": null,
+                      "savings": null,
+                      "buy_quantity": null,
+                      "sale_ends": null,
+                      "pricing_unit": null,
+                      "deposit": null,
+                      "price_shown": true,
+                      "stock_status": "inStock",
+                      "promotions": [],
+                      "sold_by": "EA",
+                      "sold_by_weight": false,
+                      "mperks": false,
+                      "sponsored": null,
+                      "third_party": false,
+                      "wic_eligible": null,
+                      "delivery": true,
+                      "pickup": true,
+                      "alcohol": false
+                    },
+                    {
+                      "upc": "4125010201",
+                      "product_id": null,
+                      "name": "Meijer Whole Milk, 1/2 Gallon",
+                      "url": null,
+                      "image": "https://www.meijer.com/content/dam/meijer/product/0041/25/0102/01/0041250102014_2_A1C1_0200.jpg",
+                      "images": [],
+                      "price": null,
+                      "regular_price": null,
+                      "price_per_unit": 2.29,
+                      "regular_price_per_unit": 2.29,
+                      "clearance_price": null,
+                      "on_sale": false,
+                      "price_text": null,
+                      "savings": null,
+                      "buy_quantity": null,
+                      "sale_ends": null,
+                      "pricing_unit": null,
+                      "deposit": null,
+                      "price_shown": true,
+                      "stock_status": "inStock",
+                      "promotions": [],
+                      "sold_by": "EA",
+                      "sold_by_weight": false,
+                      "mperks": false,
+                      "sponsored": null,
+                      "third_party": false,
+                      "wic_eligible": null,
+                      "delivery": true,
+                      "pickup": true,
+                      "alcohol": false
+                    }
+                  ],
+                  "missing": [],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/meijer/v1/reviews": {
+      "get": {
+        "operationId": "meijerReviews",
+        "summary": "Meijer product reviews",
+        "description": "A Meijer product's customer reviews with its average rating, rating distribution and recommended count. Each review: id, rating, title, text, nickname, reviewer location as shown, date, recommended flag, helpful votes, verified-purchaser and incentivized flags, photos, the shop's responses and secondary ratings. Filter by star rating; six sorts. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/meijer-reviews",
+        "tags": [
+          "Meijer"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "upc",
+            "in": "query",
+            "required": true,
+            "description": "The product's UPC or product link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "4125010200"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "oldest",
+                "rating_high",
+                "rating_low",
+                "helpful"
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews with this star rating (1-5).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page (default 20, max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Reviews to skip (`next_offset` from the previous page).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "upc": "4125010200",
+                  "sort": "relevance",
+                  "rating_filter": null,
+                  "total": 417,
+                  "count": 20,
+                  "average_rating": 4.376498800959233,
+                  "rating_distribution": [
+                    {
+                      "RatingValue": 5,
+                      "Count": 323
+                    },
+                    {
+                      "RatingValue": 1,
+                      "Count": 45
+                    },
+                    "… 3 more"
+                  ],
+                  "recommended_count": 71,
+                  "reviews": [
+                    {
+                      "id": "419413846",
+                      "rating": 5,
+                      "title": null,
+                      "text": null,
+                      "author": null,
+                      "submitted": "2026-11-04T21:06:04.000+00:00",
+                      "recommended": null,
+                      "helpful": 0,
+                      "not_helpful": 0,
+                      "verified_purchaser": false,
+                      "incentivized": false,
+                      "photos": [],
+                      "ratings_only": true,
+                      "client_responses": [],
+                      "secondary_ratings": {}
+                    },
+                    {
+                      "id": "419006905",
+                      "rating": 5,
+                      "title": null,
+                      "text": null,
+                      "author": null,
+                      "submitted": "2026-11-03T22:33:37.000+00:00",
+                      "recommended": null,
+                      "helpful": 0,
+                      "not_helpful": 0,
+                      "verified_purchaser": false,
+                      "incentivized": false,
+                      "photos": [],
+                      "ratings_only": true,
+                      "client_responses": [],
+                      "secondary_ratings": {}
+                    },
+                    "… 18 more"
+                  ],
+                  "next_offset": 20,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/meijer/v1/search": {
+      "get": {
+        "operationId": "meijerSearch",
+        "summary": "Meijer product search",
+        "description": "Search Meijer products by keywords or browse a category, priced and stocked for one store, with the shop's filters (values from `filters`), a price range and five sorts. Each product: UPC, product id, name, link, images, price, regular price, unit prices, clearance price, sale flag and price text, savings, sale end date, stock status, promotions, sold-by unit, mPerks, sponsored, WIC, delivery and pickup flags, plus `raw`. Also returns the filter options with counts and the matching categories. A keyword the shop sends to another page answers `redirect_url` and no items. Pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/meijer-search",
+        "tags": [
+          "Meijer"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords. Optional when category is set.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "milk"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category group id from a search's `categories`, e.g. L1-865; alone it browses the category.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "Filters as name:value pairs from a search's `filters`, comma-separated, e.g. brand:Meijer.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price (USD).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Highest price (USD).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc",
+                "name_asc",
+                "name_desc"
+              ]
+            }
+          },
+          {
+            "name": "store_id",
+            "in": "query",
+            "required": false,
+            "description": "Meijer store number the prices and stock are for (default 265; see /meijer/v1/stores).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "265"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (default 52, max 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "`next_cursor` from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "milk",
+                  "category": null,
+                  "store_id": 265,
+                  "sort": "relevance",
+                  "applied_filters": [],
+                  "total": 973,
+                  "count": 52,
+                  "items": [
+                    {
+                      "upc": "4125010200",
+                      "product_id": "504293",
+                      "name": "Meijer Whole Milk, Gallon",
+                      "url": "https://www.meijer.com/shopping/product/meijer-whole-milk-gallon/4125010200.html",
+                      "image": "https://www.meijer.com/content/dam/meijer/product/0041/25/0102/00/0041250102007_2_A1C1_0200.jpg",
+                      "images": [
+                        "https://www.meijer.com/content/dam/meijer/product/0041/25/0102/00/0041250102007_2_A1C1_0080.jpg",
+                        "https://www.meijer.com/content/dam/meijer/product/0041/25/0102/00/0041250102007_2_A1C1_0100.jpg",
+                        "… 10 more"
+                      ],
+                      "price": 3.34,
+                      "regular_price": 3.34,
+                      "price_per_unit": 3.34,
+                      "regular_price_per_unit": 3.34,
+                      "clearance_price": null,
+                      "on_sale": false,
+                      "price_text": "$3.34",
+                      "savings": null,
+                      "buy_quantity": 1,
+                      "sale_ends": "2099-12-31T23:59:00.000Z",
+                      "pricing_unit": "EA",
+                      "deposit": null,
+                      "price_shown": true,
+                      "stock_status": "inStock",
+                      "promotions": [],
+                      "sold_by": "EA",
+                      "sold_by_weight": false,
+                      "mperks": false,
+                      "sponsored": false,
+                      "third_party": false,
+                      "wic_eligible": null,
+                      "delivery": true,
+                      "pickup": true,
+                      "alcohol": false
+                    },
+                    {
+                      "upc": "4125010210",
+                      "product_id": "504295",
+                      "name": "Meijer 2% Reduced Fat Milk, Gallon",
+                      "url": "https://www.meijer.com/shopping/product/meijer-2-reduced-fat-milk-gallon/4125010210.html",
+                      "image": "https://www.meijer.com/content/dam/meijer/product/0041/25/0102/10/0041250102106_2_A1C1_0200.jpg",
+                      "images": [
+                        "https://www.meijer.com/content/dam/meijer/product/0041/25/0102/10/0041250102106_2_A1C1_0080.jpg",
+                        "https://www.meijer.com/content/dam/meijer/product/0041/25/0102/10/0041250102106_2_A1C1_0100.jpg",
+                        "… 10 more"
+                      ],
+                      "price": 3.34,
+                      "regular_price": 3.34,
+                      "price_per_unit": 3.34,
+                      "regular_price_per_unit": 3.34,
+                      "clearance_price": null,
+                      "on_sale": false,
+                      "price_text": "$3.34",
+                      "savings": null,
+                      "buy_quantity": 1,
+                      "sale_ends": "2099-12-31T23:59:00.000Z",
+                      "pricing_unit": "EA",
+                      "deposit": null,
+                      "price_shown": true,
+                      "stock_status": "inStock",
+                      "promotions": [],
+                      "sold_by": "EA",
+                      "sold_by_weight": false,
+                      "mperks": false,
+                      "sponsored": false,
+                      "third_party": false,
+                      "wic_eligible": null,
+                      "delivery": true,
+                      "pickup": true,
+                      "alcohol": false
+                    },
+                    "… 50 more"
+                  ],
+                  "filters": [
+                    {
+                      "name": "brand",
+                      "label": "brand",
+                      "options": [
+                        {
+                          "value": "Meijer",
+                          "label": "Meijer",
+                          "count": 68,
+                          "selected": false
+                        },
+                        {
+                          "value": "TRUE GOODNESS",
+                          "label": "True Goodness",
+                          "count": 31,
+                          "selected": false
+                        },
+                        "… 187 more"
+                      ]
+                    },
+                    {
+                      "name": "discountSalePriceValue",
+                      "label": "price",
+                      "options": [
+                        {
+                          "value": "\"-inf\"-\"5\"",
+                          "label": "5 and less",
+                          "count": 413,
+                          "selected": false
+                        },
+                        {
+                          "value": "\"5\"-\"10\"",
+                          "label": "5 - 10",
+                          "count": 297,
+                          "selected": false
+                        },
+                        "… 9 more"
+                      ]
+                    },
+                    "… 13 more"
+                  ],
+                  "categories": [
+                    {
+                      "id": "L1-865",
+                      "name": "Grocery",
+                      "count": 643
+                    },
+                    {
+                      "id": "L1-914",
+                      "name": "Halloween",
+                      "count": 3
+                    },
+                    "… 11 more"
+                  ],
+                  "sorts": [
+                    "relevance",
+                    "price_asc",
+                    "… 3 more"
+                  ],
+                  "next_cursor": "eyJPZmZzZXQiOjUxLCJJZGVudGl0eSI6eyJTZWFyY2hJZCI6Ijk5ODljNjIxLWFkMDktNDk2Zi1iMTc1LTEzNDU1N2NmYjI2YyIsIkNyZWF0ZWRBdCI6IjIwMjYtMTEtMDZUMDk6MTI6…",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/meijer/v1/stock": {
+      "get": {
+        "operationId": "meijerStock",
+        "summary": "Meijer product stock by store",
+        "description": "Stock of one product at the Meijer stores near a place: each store's details with its stock status, aisle and unit price for the product.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/meijer-stock",
+        "tags": [
+          "Meijer"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "upc",
+            "in": "query",
+            "required": true,
+            "description": "The product's UPC or product link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "4125010200"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "description": "ZIP code or \"city, state\".",
+            "schema": {
+              "type": "string"
+            },
+            "example": "49503"
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Radius in miles (default 50).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Stores (default 10, max 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "upc": "4125010200",
+                  "location": "49503",
+                  "radius_miles": 50,
+                  "count": 10,
+                  "stores": [
+                    {
+                      "store_id": 466,
+                      "name": "Meijer Pharmacy at Corewell Blodgett",
+                      "address": "1840 Wealthy St SE",
+                      "city": "Grand Rapids",
+                      "state": "MI",
+                      "zip": "49506",
+                      "phone": "+1 555 010 0000",
+                      "latitude": 42.95334,
+                      "longitude": -85.6229,
+                      "distance_miles": 1.366125013677179,
+                      "type": null,
+                      "format": null,
+                      "time_zone": null,
+                      "services": [],
+                      "stock_status": null,
+                      "aisle": null,
+                      "price_per_unit": null
+                    },
+                    {
+                      "store_id": 465,
+                      "name": "Meijer Pharmacy at Spectrum GR",
+                      "address": "100 Michigan St. N.E. Suite 1830",
+                      "city": "Grand Rapids",
+                      "state": "MI",
+                      "zip": "49503",
+                      "phone": "+1 555 010 0000",
+                      "latitude": 42.96944,
+                      "longitude": -85.66451,
+                      "distance_miles": 1.3749246558180248,
+                      "type": null,
+                      "format": null,
+                      "time_zone": null,
+                      "services": [],
+                      "stock_status": null,
+                      "aisle": null,
+                      "price_per_unit": null
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/meijer/v1/store": {
+      "get": {
+        "operationId": "meijerStore",
+        "summary": "Meijer store",
+        "description": "One Meijer store by number: address, phone, coordinates, type, format, services, opening date, market and region, store director, landmark, opening hours, store features and fuel station, plus `raw`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/meijer-store",
+        "tags": [
+          "Meijer"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "query",
+            "required": true,
+            "description": "Meijer store number.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "265"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "store_id": 265,
+                  "name": "Evergreen Park, IL",
+                  "address": "9200 S. Western Ave.",
+                  "city": "Evergreen Park",
+                  "state": "IL",
+                  "zip": "60805",
+                  "phone": "+1 555 010 0000",
+                  "latitude": 41.72475,
+                  "longitude": -87.68544,
+                  "distance_miles": null,
+                  "type": "MS",
+                  "format": null,
+                  "time_zone": "C",
+                  "services": [
+                    "PICKUP",
+                    "DELIVERY"
+                  ],
+                  "opened": "2013-07-22T20:00:00.000Z",
+                  "market": null,
+                  "region": null,
+                  "landmark": "",
+                  "hours": {
+                    "storeDefault": {
+                      "sun": {
+                        "start": "06:00:00",
+                        "end": "23:00:00"
+                      },
+                      "mon": {
+                        "start": "06:00:00",
+                        "end": "23:00:00"
+                      },
+                      "tue": {
+                        "start": "06:00:00",
+                        "end": "23:00:00"
+                      },
+                      "wed": {
+                        "start": "06:00:00",
+                        "end": "23:00:00"
+                      },
+                      "thu": {
+                        "start": "06:00:00",
+                        "end": "23:00:00"
+                      },
+                      "fri": {
+                        "start": "06:00:00",
+                        "end": "23:00:00"
+                      },
+                      "sat": {
+                        "start": "06:00:00",
+                        "end": "23:00:00"
+                      },
+                      "holidayDefault": {
+                        "start": null,
+                        "end": null
+                      },
+                      "exceptions": []
+                    },
+                    "fuel": {
+                      "sun": {
+                        "start": "06:00:00",
+                        "end": "23:30:00"
+                      },
+                      "mon": {
+                        "start": "06:00:00",
+                        "end": "23:30:00"
+                      },
+                      "tue": {
+                        "start": "06:00:00",
+                        "end": "23:30:00"
+                      },
+                      "wed": {
+                        "start": "06:00:00",
+                        "end": "23:30:00"
+                      },
+                      "thu": {
+                        "start": "06:00:00",
+                        "end": "23:30:00"
+                      },
+                      "fri": {
+                        "start": "06:00:00",
+                        "end": "23:30:00"
+                      },
+                      "sat": {
+                        "start": "06:00:00",
+                        "end": "23:30:00"
+                      },
+                      "holidayDefault": {
+                        "start": null,
+                        "end": null
+                      },
+                      "exceptions": []
+                    },
+                    "alcoholRestriction": {
+                      "sun": {
+                        "start": null,
+                        "end": "09:00:00"
+                      }
+                    },
+                    "alcoholDelivery": {
+                      "sun": {
+                        "start": null,
+                        "end": "09:00:00"
+                      }
+                    },
+                    "pharmacy": {
+                      "sun": {
+                        "start": "10:00:00",
+                        "end": "18:00:00"
+                      },
+                      "mon": {
+                        "start": "09:00:00",
+                        "end": "20:00:00"
+                      },
+                      "tue": {
+                        "start": "09:00:00",
+                        "end": "20:00:00"
+                      },
+                      "wed": {
+                        "start": "09:00:00",
+                        "end": "20:00:00"
+                      },
+                      "thu": {
+                        "start": "09:00:00",
+                        "end": "20:00:00"
+                      },
+                      "fri": {
+                        "start": "09:00:00",
+                        "end": "20:00:00"
+                      },
+                      "sat": {
+                        "start": "10:00:00",
+                        "end": "18:00:00"
+                      },
+                      "holidayDefault": {
+                        "start": "06:09:00",
+                        "end": "06:09:00"
+                      },
+                      "exceptions": []
+                    },
+                    "pharmacyDriveThrough": {
+                      "sun": {
+                        "start": "10:00:00",
+                        "end": "18:00:00"
+                      },
+                      "mon": {
+                        "start": "09:00:00",
+                        "end": "20:00:00"
+                      },
+                      "tue": {
+                        "start": "09:00:00",
+                        "end": "20:00:00"
+                      },
+                      "wed": {
+                        "start": "09:00:00",
+                        "end": "20:00:00"
+                      },
+                      "thu": {
+                        "start": "09:00:00",
+                        "end": "20:00:00"
+                      },
+                      "fri": {
+                        "start": "09:00:00",
+                        "end": "20:00:00"
+                      },
+                      "sat": {
+                        "start": "10:00:00",
+                        "end": "18:00:00"
+                      },
+                      "holidayDefault": {
+                        "start": "06:09:15.2400000",
+                        "end": "06:09:15.2400000"
+                      },
+                      "exceptions": []
+                    },
+                    "deliOrdering": {
+                      "sun": {
+                        "start": "09:00:00",
+                        "end": "21:00:00"
+                      },
+                      "mon": {
+                        "start": "09:00:00",
+                        "end": "21:00:00"
+                      },
+                      "tue": {
+                        "start": "09:00:00",
+                        "end": "21:00:00"
+                      },
+                      "wed": {
+                        "start": "09:00:00",
+                        "end": "21:00:00"
+                      },
+                      "thu": {
+                        "start": "09:00:00",
+                        "end": "21:00:00"
+                      },
+                      "fri": {
+                        "start": "09:00:00",
+                        "end": "21:00:00"
+                      },
+                      "sat": {
+                        "start": "09:00:00",
+                        "end": "21:00:00"
+                      },
+                      "holidayDefault": {
+                        "start": null,
+                        "end": null
+                      },
+                      "exceptions": []
+                    },
+                    "preOrder": {
+                      "sun": {
+                        "start": "07:00:00",
+                        "end": "20:00:00"
+                      },
+                      "mon": {
+                        "start": "07:00:00",
+                        "end": "20:00:00"
+                      },
+                      "tue": {
+                        "start": "07:00:00",
+                        "end": "20:00:00"
+                      },
+                      "wed": {
+                        "start": "07:00:00",
+                        "end": "20:00:00"
+                      },
+                      "thu": {
+                        "start": "07:00:00",
+                        "end": "20:00:00"
+                      },
+                      "fri": {
+                        "start": "07:00:00",
+                        "end": "20:00:00"
+                      },
+                      "sat": {
+                        "start": "07:00:00",
+                        "end": "20:00:00"
+                      },
+                      "holidayDefault": {
+                        "start": null,
+                        "end": null
+                      },
+                      "exceptions": []
+                    },
+                    "holiday": [],
+                    "delivery": {
+                      "sun": {
+                        "start": "07:00:00",
+                        "end": "23:00:00"
+                      },
+                      "mon": {
+                        "start": "07:00:00",
+                        "end": "23:00:00"
+                      },
+                      "tue": {
+                        "start": "07:00:00",
+                        "end": "23:00:00"
+                      },
+                      "wed": {
+                        "start": "07:00:00",
+                        "end": "23:00:00"
+                      },
+                      "thu": {
+                        "start": "07:00:00",
+                        "end": "23:00:00"
+                      },
+                      "fri": {
+                        "start": "07:00:00",
+                        "end": "23:00:00"
+                      },
+                      "sat": {
+                        "start": "07:00:00",
+                        "end": "23:00:00"
+                      },
+                      "holidayDefault": {
+                        "start": null,
+                        "end": null
+                      },
+                      "exceptions": []
+                    },
+                    "curbside": {
+                      "sun": {
+                        "start": "11:00:00",
+                        "end": "20:00:00"
+                      },
+                      "mon": {
+                        "start": "11:00:00",
+                        "end": "20:00:00"
+                      },
+                      "tue": {
+                        "start": "11:00:00",
+                        "end": "20:00:00"
+                      },
+                      "wed": {
+                        "start": "11:00:00",
+                        "end": "20:00:00"
+                      },
+                      "thu": {
+                        "start": "11:00:00",
+                        "end": "20:00:00"
+                      },
+                      "fri": {
+                        "start": "11:00:00",
+                        "end": "20:00:00"
+                      },
+                      "sat": {
+                        "start": "11:00:00",
+                        "end": "20:00:00"
+                      },
+                      "holidayDefault": {
+                        "start": null,
+                        "end": null
+                      },
+                      "exceptions": []
+                    },
+                    "alcoholPickup": {
+                      "sun": {
+                        "start": null,
+                        "end": "09:00:00"
+                      },
+                      "mon": {
+                        "start": null,
+                        "end": "07:00:00"
+                      },
+                      "tue": {
+                        "start": null,
+                        "end": "07:00:00"
+                      },
+                      "wed": {
+                        "start": null,
+                        "end": "07:00:00"
+                      },
+                      "thu": {
+                        "start": null,
+                        "end": "07:00:00"
+                      },
+                      "fri": {
+                        "start": null,
+                        "end": "07:00:00"
+                      },
+                      "sat": {
+                        "start": null,
+                        "end": "07:00:00"
+                      },
+                      "holidayDefault": {
+                        "start": null,
+                        "end": null
+                      },
+                      "exceptions": []
+                    },
+                    "bottleRoom": {
+                      "sun": {
+                        "start": "00:00:00",
+                        "end": "00:00:00"
+                      },
+                      "mon": {
+                        "start": "00:00:00",
+                        "end": "00:00:00"
+                      },
+                      "tue": {
+                        "start": "00:00:00",
+                        "end": "00:00:00"
+                      },
+                      "wed": {
+                        "start": "00:00:00",
+                        "end": "00:00:00"
+                      },
+                      "thu": {
+                        "start": "00:00:00",
+                        "end": "00:00:00"
+                      },
+                      "fri": {
+                        "start": "00:00:00",
+                        "end": "00:00:00"
+                      },
+                      "sat": {
+                        "start": "00:00:00",
+                        "end": "00:00:00"
+                      },
+                      "holidayDefault": {
+                        "start": null,
+                        "end": null
+                      },
+                      "exceptions": []
+                    }
+                  },
+                  "features": [
+                    {
+                      "storeId": 265,
+                      "storeFeatureType": "Tenants",
+                      "name": "Stylz & Trendz Barber Shop",
+                      "description": "",
+                      "action": null,
+                      "openTime": "",
+                      "closeTime": ""
+                    },
+                    {
+                      "storeId": 265,
+                      "storeFeatureType": "Tenants",
+                      "name": "U.S. Bank",
+                      "description": "",
+                      "action": null,
+                      "openTime": "",
+                      "closeTime": ""
+                    }
+                  ],
+                  "fuel": {
+                    "mFuelAvailable": false,
+                    "schedulePk": "",
+                    "amenities": [
+                      {
+                        "auxiliaryUnitId": 3265,
+                        "groupType": "Station",
+                        "type": "Atm",
+                        "unitId": 265
+                      },
+                      {
+                        "auxiliaryUnitId": 3265,
+                        "groupType": "Station",
+                        "type": "Lotto",
+                        "unitId": 265
+                      },
+                      "… 4 more"
+                    ],
+                    "prices": [
+                      {
+                        "fuelType": "UNL-Regular Unleaded",
+                        "price": 4.499,
+                        "effectiveDate": "2026-10-28T14:11:40.367Z"
+                      },
+                      {
+                        "fuelType": "MID-Medium Unleaded",
+                        "price": 5.099,
+                        "effectiveDate": "2026-10-28T14:11:40.367Z"
+                      },
+                      "… 3 more"
+                    ]
+                  },
+                  "service_details": {
+                    "wic": null,
+                    "alcoholRestriction": {
+                      "available": true,
+                      "hasSchedule": true,
+                      "bannedZipCodes": []
+                    },
+                    "alcoholPickup": {
+                      "available": true,
+                      "hasSchedule": true
+                    },
+                    "alcoholDelivery": {
+                      "available": true,
+                      "hasSchedule": true
+                    },
+                    "bottleRoom": {
+                      "available": false,
+                      "information": "",
+                      "hasSchedule": true
+                    },
+                    "delivery": {
+                      "available": true,
+                      "phone": "+1 555 010 0000",
+                      "allowStage": false,
+                      "description": "",
+                      "hasSchedule": true
+                    },
+                    "pharmacy": {
+                      "available": false,
+                      "hasSchedule": true,
+                      "timezone": "C",
+                      "phone": "+1 555 010 0000"
+                    },
+                    "pharmacyDriveThru": {
+                      "available": false,
+                      "hasSchedule": true
+                    },
+                    "curbside": {
+                      "availableDriveThrough": false,
+                      "hasSchedule": true,
+                      "phone": "+1 555 010 0000",
+                      "availableInStore": false,
+                      "pickupLocation": null
+                    },
+                    "deliOrdering": {
+                      "available": true,
+                      "hasSchedule": true,
+                      "isOpen24hrs": false
+                    },
+                    "preorder": {
+                      "availableDriveThrough": false,
+                      "availableInStore": true,
+                      "phone": "+1 555 010 0000",
+                      "hasSchedule": true
+                    },
+                    "clinic": {
+                      "available": false
+                    },
+                    "mobileShopping": {
+                      "available": true
+                    },
+                    "mobilePayment": {
+                      "available": false
+                    },
+                    "store": null,
+                    "deliOrder": {
+                      "available": true,
+                      "hasSchedule": true,
+                      "phone": "+1 555 010 0000",
+                      "description": "",
+                      "allowStage": false
+                    },
+                    "frontEndServices": {
+                      "available": true,
+                      "hasSchedule": false
+                    },
+                    "chargingStations": {
+                      "available": true,
+                      "hasSchedule": false
+                    },
+                    "fulfillment": [
+                      {
+                        "storeId": 265,
+                        "fulfillmentTypeName": "PICKUP",
+                        "fulfillmentTypeId": 1,
+                        "fulfillmentPartnerName": "MEIJER",
+                        "fulfillmentPartnerId": 1,
+                        "isEnabled": false,
+                        "effectiveDate": 0
+                      },
+                      {
+                        "storeId": 265,
+                        "fulfillmentTypeName": "PICKUP",
+                        "fulfillmentTypeId": 1,
+                        "fulfillmentPartnerName": "SHIPT",
+                        "fulfillmentPartnerId": 2,
+                        "isEnabled": false,
+                        "effectiveDate": 0
+                      },
+                      "… 12 more"
+                    ]
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/meijer/v1/stores": {
+      "get": {
+        "operationId": "meijerStores",
+        "summary": "Meijer store locator",
+        "description": "Meijer stores near a ZIP code or \"city, state\": store number, name, address, phone, coordinates, distance in miles, type, format, time zone and services (pickup, delivery and so on).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/meijer-stores",
+        "tags": [
+          "Meijer"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "description": "ZIP code or \"city, state\".",
+            "schema": {
+              "type": "string"
+            },
+            "example": "49503"
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Radius in miles (default 50).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Stores (default 10, max 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Store type code, as the shop uses it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "location": "49503",
+                  "radius_miles": 50,
+                  "count": 10,
+                  "stores": [
+                    {
+                      "store_id": 466,
+                      "name": "Meijer Pharmacy at Corewell Blodgett",
+                      "address": "1840 Wealthy St SE",
+                      "city": "Grand Rapids",
+                      "state": "MI",
+                      "zip": "49506",
+                      "phone": null,
+                      "latitude": 42.95334,
+                      "longitude": -85.6229,
+                      "distance_miles": null,
+                      "type": "MP",
+                      "format": null,
+                      "time_zone": "E",
+                      "services": []
+                    },
+                    {
+                      "store_id": 465,
+                      "name": "Meijer Pharmacy at Spectrum GR",
+                      "address": "100 Michigan St. N.E. Suite 1830",
+                      "city": "Grand Rapids",
+                      "state": "MI",
+                      "zip": "49503",
+                      "phone": null,
+                      "latitude": 42.96944,
+                      "longitude": -85.66451,
+                      "distance_miles": null,
+                      "type": "MP",
+                      "format": null,
+                      "time_zone": "E",
+                      "services": [
+                        "PICKUP"
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

@@ -1,0 +1,1104 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: DHL",
+    "version": "1.0.0",
+    "description": "The DHL API from API.SH: public DHL data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "DHL",
+      "description": "2 endpoints (jobs & b2b)",
+      "x-slug": "dhl",
+      "x-domains": [
+        "dhl.de"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dhl/v1/service-points": {
+      "get": {
+        "operationId": "dhlServicePoints",
+        "summary": "DHL service points",
+        "description": "DHL drop-off and pick-up points near an address, postcode or coordinates: name, kind (service point, locker, ...), address, coordinates, distance, opening hours and closed dates, services (drop-off, collection, international, label printing, packaging, payment, parking, access), size and weight limits, phone and website.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/dhl-service-points",
+        "tags": [
+          "DHL"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "description": "Two-letter country code.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "DE"
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "required": false,
+            "description": "A postcode, city or street address. address or lat and lng is required.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10115 Berlin"
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Latitude, instead of address (with lng).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "description": "Longitude, instead of address (with lat).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "capability",
+            "in": "query",
+            "required": false,
+            "description": "Only points that take parcels (drop_off) or hold them for collection (collect).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "drop_off",
+                "collect"
+              ]
+            },
+            "example": "drop_off"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "How many (1-50).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "10"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "search": "10115 Berlin",
+                  "country": "DE",
+                  "location": {
+                    "latitude": 52.532614,
+                    "longitude": 13.3777035
+                  },
+                  "count": 10,
+                  "service_points": [
+                    {
+                      "id": "BER1ST",
+                      "name": "DHL Packstation 507",
+                      "kind": "DHL Service Point Locker",
+                      "type": "TWENTYFOURSEVEN",
+                      "facility_type": "EC",
+                      "address": {
+                        "line1": "Schwartzkopffstr. 7c",
+                        "line2": null,
+                        "district": "Mitte",
+                        "city": "BERLIN",
+                        "postcode": "10115",
+                        "state": "Berlin",
+                        "country": "DE"
+                      },
+                      "latitude": 52.534909,
+                      "longitude": 13.381382,
+                      "distance": "0.36 km",
+                      "shipping_cutoff": null,
+                      "opening_hours": [
+                        {
+                          "day": "monday",
+                          "opens": "00:00",
+                          "closes": "23:59"
+                        },
+                        {
+                          "day": "tuesday",
+                          "opens": "00:00",
+                          "closes": "23:59"
+                        },
+                        "… 6 more"
+                      ],
+                      "closed_dates": [
+                        {
+                          "from": "+1 555 010 0000",
+                          "to": "+1 555 010 0000"
+                        }
+                      ],
+                      "services": {
+                        "drop_off": false,
+                        "collection": true,
+                        "international": false,
+                        "domestic": false,
+                        "label_printing": false,
+                        "packaging": false,
+                        "cash": false,
+                        "card": false,
+                        "parking": false,
+                        "accessible": false
+                      },
+                      "limits": {
+                        "piece_weight": 30,
+                        "weight_unit": "KG",
+                        "dimensions": {
+                          "L": 60,
+                          "W": 40,
+                          "H": 35
+                        },
+                        "dimensions_unit": "CM"
+                      },
+                      "phone": "+1 555 010 0000",
+                      "website": "www.dhl.de/packstation"
+                    },
+                    {
+                      "id": "BER0BO",
+                      "name": "DHL Packstation 522",
+                      "kind": "DHL Service Point Locker",
+                      "type": "TWENTYFOURSEVEN",
+                      "facility_type": "EC",
+                      "address": {
+                        "line1": "Chausseestr. 118",
+                        "line2": null,
+                        "district": "Mitte",
+                        "city": "BERLIN",
+                        "postcode": "10115",
+                        "state": "Berlin",
+                        "country": "DE"
+                      },
+                      "latitude": 52.529608,
+                      "longitude": 13.383917,
+                      "distance": "0.54 km",
+                      "shipping_cutoff": null,
+                      "opening_hours": [
+                        {
+                          "day": "monday",
+                          "opens": "00:00",
+                          "closes": "23:59"
+                        },
+                        {
+                          "day": "tuesday",
+                          "opens": "00:00",
+                          "closes": "23:59"
+                        },
+                        "… 6 more"
+                      ],
+                      "closed_dates": [
+                        {
+                          "from": "+1 555 010 0000",
+                          "to": "+1 555 010 0000"
+                        }
+                      ],
+                      "services": {
+                        "drop_off": false,
+                        "collection": true,
+                        "international": false,
+                        "domestic": false,
+                        "label_printing": false,
+                        "packaging": false,
+                        "cash": false,
+                        "card": false,
+                        "parking": false,
+                        "accessible": false
+                      },
+                      "limits": {
+                        "piece_weight": 30,
+                        "weight_unit": "KG",
+                        "dimensions": {
+                          "L": 60,
+                          "W": 40,
+                          "H": 35
+                        },
+                        "dimensions_unit": "CM"
+                      },
+                      "phone": "+1 555 010 0000",
+                      "website": "www.dhl.de/packstation"
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/dhl/v1/tracking": {
+      "get": {
+        "operationId": "dhlTracking",
+        "summary": "DHL shipment tracking",
+        "description": "Pass tracking_numbers (up to 10, comma separated) to track several shipments in one call: the answer is count, found and items (one per number: tracking_number, found, error and result in the single-number shape). A number with no shipment, or one that fails this time, is reported in its own item instead of failing the call.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 2 credits per successful call. Docs: https://api.sh/docs/dhl-tracking",
+        "tags": [
+          "DHL"
+        ],
+        "x-credits": 2,
+        "parameters": [
+          {
+            "name": "tracking_number",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "LBAA19526"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Alias of tracking_number.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tracking_numbers",
+            "in": "query",
+            "required": false,
+            "description": "Up to 10 tracking numbers, comma separated, tracked in one call (used instead of tracking_number). Each number is billed as one tracking.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "tracking_number": "LBAA19526",
+                  "service": "dgf",
+                  "status": "delivered",
+                  "status_description": "Document Handover (if no POD)",
+                  "status_time": "2026-08-25T09:00:00+08:00",
+                  "status_location": "CNSGH",
+                  "estimated_delivery": null,
+                  "origin": "London, GB",
+                  "destination": "Shanghai, CN",
+                  "details": {
+                    "product": {
+                      "productName": "Less than Container Load"
+                    },
+                    "carrier": {
+                      "@type": "Organization",
+                      "organizationName": "OCEAN"
+                    },
+                    "proofOfDeliverySignedAvailable": false,
+                    "totalNumberOfPieces": 1,
+                    "weight": {
+                      "unitText": "KGM",
+                      "value": 946.4
+                    },
+                    "volume": {
+                      "unitText": "MTQ",
+                      "value": 1.409
+                    },
+                    "references": [
+                      {
+                        "number": "LBAA19526",
+                        "type": "housebill"
+                      },
+                      {
+                        "number": "OOCU6540440",
+                        "type": "container-number"
+                      },
+                      "… 1 more"
+                    ],
+                    "dgf:routes": [
+                      {
+                        "dgf:vesselName": "OOCL ABU DHABI",
+                        "dgf:vesselNumber": "9922524",
+                        "dgf:voyageFlightNumber": "008E",
+                        "dgf:estimatedDepartureDate": "2026-06-27T04:00:00+01:00",
+                        "dgf:estimatedArrivalDate": "2026-08-23T00:00:00+08:00",
+                        "dgf:placeOfAcceptance": {
+                          "dgf:locationName": "London"
+                        },
+                        "dgf:portOfLoading": {
+                          "dgf:locationName": "Port of Felixstowe"
+                        },
+                        "dgf:portOfUnloading": {
+                          "dgf:locationName": "Shanghai"
+                        },
+                        "dgf:placeOfDelivery": {
+                          "dgf:locationName": "Shanghai"
+                        }
+                      }
+                    ]
+                  },
+                  "events": [
+                    {
+                      "timestamp": "2026-08-27T17:05:00+08:00",
+                      "status": "unknown",
+                      "description": "Actual Arrival at Destination CFS/CY",
+                      "location": "Shanghai, CN",
+                      "status_detail": null,
+                      "remark": null,
+                      "next_steps": null,
+                      "piece_ids": null,
+                      "location_full": {
+                        "address": {
+                          "addressLocality": "Shanghai",
+                          "countryCode": "CN"
+                        }
+                      }
+                    },
+                    {
+                      "timestamp": "2026-08-25T09:00:00+08:00",
+                      "status": "delivered",
+                      "description": "Document Handover (if no POD)",
+                      "location": "Shanghai, CN",
+                      "status_detail": null,
+                      "remark": null,
+                      "next_steps": null,
+                      "piece_ids": null,
+                      "location_full": {
+                        "address": {
+                          "addressLocality": "Shanghai",
+                          "countryCode": "CN"
+                        }
+                      }
+                    },
+                    "… 13 more"
+                  ],
+                  "status_remark": null,
+                  "status_next_steps": null,
+                  "product": "Less than Container Load",
+                  "pieces": 1,
+                  "piece_ids": null,
+                  "weight": {
+                    "unitText": "KGM",
+                    "value": 946.4
+                  },
+                  "proof_of_delivery": null,
+                  "origin_full": {
+                    "address": {
+                      "addressLocality": "London",
+                      "countryCode": "GB"
+                    }
+                  },
+                  "destination_full": {
+                    "address": {
+                      "addressLocality": "Shanghai",
+                      "countryCode": "CN"
+                    }
+                  },
+                  "shipment": {
+                    "id": "LBAA19526",
+                    "service": "dgf",
+                    "origin": {
+                      "address": {
+                        "addressLocality": "London",
+                        "countryCode": "GB"
+                      }
+                    },
+                    "destination": {
+                      "address": {
+                        "addressLocality": "Shanghai",
+                        "countryCode": "CN"
+                      }
+                    },
+                    "status": {
+                      "timestamp": "2026-08-25T09:00:00+08:00",
+                      "location": {
+                        "address": {
+                          "addressLocality": "CNSGH"
+                        }
+                      },
+                      "statusCode": "delivered",
+                      "description": "Document Handover (if no POD)"
+                    },
+                    "returnFlag": false,
+                    "details": {
+                      "product": {
+                        "productName": "Less than Container Load"
+                      },
+                      "carrier": {
+                        "@type": "Organization",
+                        "organizationName": "OCEAN"
+                      },
+                      "proofOfDeliverySignedAvailable": false,
+                      "totalNumberOfPieces": 1,
+                      "weight": {
+                        "unitText": "KGM",
+                        "value": 946.4
+                      },
+                      "volume": {
+                        "unitText": "MTQ",
+                        "value": 1.409
+                      },
+                      "references": [
+                        {
+                          "number": "LBAA19526",
+                          "type": "housebill"
+                        },
+                        {
+                          "number": "OOCU6540440",
+                          "type": "container-number"
+                        },
+                        "… 1 more"
+                      ],
+                      "dgf:routes": [
+                        {
+                          "dgf:vesselName": "OOCL ABU DHABI",
+                          "dgf:vesselNumber": "9922524",
+                          "dgf:voyageFlightNumber": "008E",
+                          "dgf:estimatedDepartureDate": "2026-06-27T04:00:00+01:00",
+                          "dgf:estimatedArrivalDate": "2026-08-23T00:00:00+08:00",
+                          "dgf:placeOfAcceptance": {
+                            "…": "1 fields"
+                          },
+                          "dgf:portOfLoading": {
+                            "…": "1 fields"
+                          },
+                          "dgf:portOfUnloading": {
+                            "…": "1 fields"
+                          },
+                          "dgf:placeOfDelivery": {
+                            "…": "1 fields"
+                          }
+                        }
+                      ]
+                    },
+                    "events": [
+                      {
+                        "timestamp": "2026-08-27T17:05:00+08:00",
+                        "location": {
+                          "address": {
+                            "…": "2 fields"
+                          }
+                        },
+                        "statusCode": "unknown",
+                        "description": "Actual Arrival at Destination CFS/CY"
+                      },
+                      {
+                        "timestamp": "2026-08-25T09:00:00+08:00",
+                        "location": {
+                          "address": {
+                            "…": "2 fields"
+                          }
+                        },
+                        "statusCode": "delivered",
+                        "description": "Document Handover (if no POD)"
+                      },
+                      "… 13 more"
+                    ]
+                  },
+                  "credits_used": 3,
+                  "cached": false
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

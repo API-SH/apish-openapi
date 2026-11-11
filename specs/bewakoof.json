@@ -1,0 +1,1033 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Bewakoof",
+    "version": "1.0.0",
+    "description": "The Bewakoof API from API.SH: public Bewakoof data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Bewakoof",
+      "description": "2 endpoints (e-commerce)",
+      "x-slug": "bewakoof",
+      "x-domains": [
+        "bewakoof.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bewakoof/v1/product": {
+      "get": {
+        "operationId": "bewakoofProduct",
+        "summary": "Bewakoof product",
+        "description": "One Bewakoof product: price, MRP, member price, best price, sizes with stock, colour, rating, images, description and attributes.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bewakoof-product",
+        "tags": [
+          "Bewakoof"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words; the first matching product is returned (use instead of url or handle).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "shoes"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Bewakoof product link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "handle",
+            "in": "query",
+            "required": false,
+            "description": "Bewakoof product handle.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 1007349,
+                  "name": "Men's Rippers Classico Espresso Suede Leather Sneakers",
+                  "url": "https://www.bewakoof.com/p/mens-rippers-classico-espresso-color-block-suede-leather-sneakers",
+                  "gender": "Men",
+                  "brand": "Bewakoof®",
+                  "price": 2599,
+                  "mrp": 6999,
+                  "discount": "62% OFF",
+                  "member_price": 2419,
+                  "member_discount": "65% OFF",
+                  "best_price": 2275,
+                  "best_price_offer": "MAD500",
+                  "in_stock": true,
+                  "rating": 4.6,
+                  "ratings_count": 351,
+                  "color": null,
+                  "category": "Casual Shoes",
+                  "sleeve": "",
+                  "fabric": "",
+                  "sizes": [
+                    {
+                      "name": "UK 6",
+                      "in_stock": true,
+                      "garment": {
+                        "Foot Length (in Inch)": "10.1",
+                        "Euro (in Inch)": "40"
+                      }
+                    },
+                    {
+                      "name": "UK 7",
+                      "in_stock": true,
+                      "garment": {
+                        "Foot Length (in Inch)": "10.4",
+                        "Euro (in Inch)": "41"
+                      }
+                    },
+                    "… 4 more"
+                  ],
+                  "tags": [],
+                  "attributes": {
+                    "occasion": "Smart Casual",
+                    "sole_material": "TPR",
+                    "fastening": "Lace-Ups",
+                    "type": "Sneakers",
+                    "insole": "EVA or Rubber",
+                    "ankle_height": "Low-Top",
+                    "toe_shape": "Round Toe",
+                    "pack_of": "1",
+                    "sleeve": "",
+                    "material": "Suede",
+                    "fit": "",
+                    "design": "Color Block",
+                    "fit_tag": "",
+                    "fabric_tag": "",
+                    "fabric": "",
+                    "highlight": "",
+                    "exclusivity": "",
+                    "merchandise_partner": "Bewakoof",
+                    "color": "Brown"
+                  },
+                  "description": [
+                    {
+                      "title": "Product Description",
+                      "text": "The Men's Rippers Classico Espresso Suede Leather Sneakers bring a deeper, moodier take to the terrace-inspired classic. Rich brown tones, s…"
+                    },
+                    {
+                      "title": "15 Days Returns & Exchange",
+                      "text": "Easy returns upto 15 days of delivery. Exchange available on select pincodes"
+                    }
+                  ],
+                  "images": [
+                    "https://images.bewakoof.com/t640/1007349_2026-09-22t10-33-50_1.jpg"
+                  ],
+                  "breadcrumbs": [
+                    "Footwear",
+                    "Casual Shoes"
+                  ],
+                  "updated_at": "4 Nov 2026",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/bewakoof/v1/search": {
+      "get": {
+        "operationId": "bewakoofSearch",
+        "summary": "Bewakoof search",
+        "description": "Bewakoof search or collection listing (India): id, name, link, price, MRP, discount, member price, rating, colour and image, with gender, category, colour, size, design, fit, sleeve, neck, brand, rating and discount filters, every sort and paging, plus the filter lists with counts.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bewakoof-search",
+        "tags": [
+          "Bewakoof"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words (or use collection).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "shoes"
+          },
+          {
+            "name": "collection",
+            "in": "query",
+            "required": false,
+            "description": "Collection handle, e.g. men-t-shirts.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "popular",
+                "new",
+                "price_asc",
+                "price_desc"
+              ]
+            },
+            "example": "price_asc"
+          },
+          {
+            "name": "gender",
+            "in": "query",
+            "required": false,
+            "description": "Gender values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "required": false,
+            "description": "Color values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sizes",
+            "in": "query",
+            "required": false,
+            "description": "Sizes values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "design",
+            "in": "query",
+            "required": false,
+            "description": "Design values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fit",
+            "in": "query",
+            "required": false,
+            "description": "Fit values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sleeve",
+            "in": "query",
+            "required": false,
+            "description": "Sleeve values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "neck",
+            "in": "query",
+            "required": false,
+            "description": "Neck values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Brand values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ratings",
+            "in": "query",
+            "required": false,
+            "description": "Ratings values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "discount",
+            "in": "query",
+            "required": false,
+            "description": "Discount values from the filters, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "t-shirt",
+                  "collection": null,
+                  "sort": "popular",
+                  "title": "t-shirt",
+                  "page": 1,
+                  "total": 3819,
+                  "total_pages": 191,
+                  "next_page": 2,
+                  "count": 20,
+                  "available_sorts": [
+                    "popular",
+                    "new",
+                    "… 2 more"
+                  ],
+                  "products": [
+                    {
+                      "id": "1008189",
+                      "name": "Men's Green Doom Ringer Typography T-Shirt",
+                      "custom_name": "Men's Green Doom Ringer Typography T-Shirt",
+                      "url": "https://www.bewakoof.com/p/mens-green-doom-ringer-typography-tshirt",
+                      "brand": "Bewakoof®",
+                      "designer": "Bewakoof X Marvel",
+                      "gender": "Men",
+                      "category": "T-Shirt",
+                      "price": 699,
+                      "mrp": 899,
+                      "discount": "22% OFF",
+                      "member_price": 819,
+                      "rating": 4.6,
+                      "ratings_count": 542,
+                      "in_stock": true,
+                      "bestseller": false,
+                      "fit": "Regular Fit",
+                      "fabric": "Cotton",
+                      "colors": [
+                        "Green"
+                      ],
+                      "sizes": [
+                        "XL",
+                        "3XL",
+                        "… 4 more"
+                      ],
+                      "tags": [
+                        "100% COTTON"
+                      ],
+                      "image": "https://images.bewakoof.com/t640/1008189_2026-09-24t05-24-35_1.jpg",
+                      "images": [
+                        "https://images.bewakoof.com/t640/1008189_2026-09-24t05-24-35_1.jpg",
+                        "https://images.bewakoof.com/t640/1008189_2026-09-24t05-24-36_2.jpg",
+                        "… 3 more"
+                      ]
+                    },
+                    {
+                      "id": "1008190",
+                      "name": "Men's Green Avengers Dooms Day Typography T-Shirt",
+                      "custom_name": "Men's Green Avengers Dooms Day Typography T-Shirt",
+                      "url": "https://www.bewakoof.com/p/mens-green-avengers-dooms-day-typography-tshirt",
+                      "brand": "Bewakoof®",
+                      "designer": "Bewakoof X Marvel",
+                      "gender": "Men",
+                      "category": "T-Shirt",
+                      "price": 899,
+                      "mrp": 899,
+                      "discount": "0% OFF",
+                      "member_price": 819,
+                      "rating": 4.6,
+                      "ratings_count": 424,
+                      "in_stock": true,
+                      "bestseller": false,
+                      "fit": "Regular Fit",
+                      "fabric": "Cotton",
+                      "colors": [
+                        "Green"
+                      ],
+                      "sizes": [
+                        "L",
+                        "2XL",
+                        "… 4 more"
+                      ],
+                      "tags": [
+                        "100% COTTON"
+                      ],
+                      "image": "https://images.bewakoof.com/t640/1008190_2026-09-21t10-55-15_1.jpg",
+                      "images": [
+                        "https://images.bewakoof.com/t640/1008190_2026-09-21t10-55-15_1.jpg",
+                        "https://images.bewakoof.com/t640/1008190_2026-09-21t10-55-15_2.jpg",
+                        "… 3 more"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "filters": [
+                    {
+                      "name": "gender",
+                      "values": [
+                        {
+                          "value": "Men",
+                          "count": 2524
+                        },
+                        {
+                          "value": "Women",
+                          "count": 1286
+                        },
+                        "… 1 more"
+                      ]
+                    },
+                    {
+                      "name": "category",
+                      "values": [
+                        {
+                          "value": "T-Shirt",
+                          "count": 2368
+                        },
+                        {
+                          "value": "Shirt",
+                          "count": 480
+                        },
+                        "… 9 more"
+                      ]
+                    },
+                    "… 10 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

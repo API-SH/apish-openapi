@@ -1,0 +1,1035 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Personio",
+    "version": "1.0.0",
+    "description": "The Personio API from API.SH: public Personio data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Personio",
+      "description": "2 endpoints (jobs & b2b)",
+      "x-slug": "personio",
+      "x-domains": [
+        "personio.de"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/personio/v1/job": {
+      "get": {
+        "operationId": "personioJob",
+        "summary": "Personio job",
+        "description": "One open position on a Personio career page with every field of /personio/v1/jobs, the description sections (HTML and text), a joined plain-text `description` and the apply link. Give `company` and `id`, or the job `url`, or `company` and `q` to open the newest matching job.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/personio-job",
+        "tags": [
+          "Personio"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "description": "The company's board slug or URL (with id or q).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1komma5grad"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Job id (the number in /job/<id>).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Job URL, e.g. https://1komma5grad.jobs.personio.de/job/2800938.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Instead of id: a keyword; the newest matching job is opened.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "engineer"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of the texts (default en).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "de",
+                "fr",
+                "es",
+                "it",
+                "nl",
+                "pt",
+                "pl",
+                "sv",
+                "da",
+                "fi",
+                "no",
+                "cs"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company": "1komma5grad",
+                  "board_url": "https://1komma5grad.jobs.personio.de/?language=en",
+                  "language": "en",
+                  "id": 2869700,
+                  "title": "Software Engineer - Edge & Cloud (m/f/d)",
+                  "url": "https://1komma5grad.jobs.personio.de/job/2869700?language=en",
+                  "subcompany": "1KOMMA5° Commercial Solutions GmbH",
+                  "office": "Remote",
+                  "offices": [
+                    "Remote",
+                    "Berlin",
+                    "… 2 more"
+                  ],
+                  "department": "Tech",
+                  "recruiting_category": "1K5° Holding Tech",
+                  "employment_type": "permanent",
+                  "seniority": "experienced",
+                  "schedule": "full-time",
+                  "years_of_experience": null,
+                  "occupation": "software_and_web_development",
+                  "occupation_category": "it_software",
+                  "keywords": [
+                    "join",
+                    "Golang (Go)",
+                    "… 8 more"
+                  ],
+                  "salary": null,
+                  "created_at": "2026-10-30T15:26:21+00:00",
+                  "description_sections": [
+                    {
+                      "name": "1KOMMA5°",
+                      "html": "At <strong>1KOMMA5°</strong>, we pursue a clear vision: <strong>Living on wind and sunlight forever for free</strong>. To make this a realit…",
+                      "text": "At 1KOMMA5°, we pursue a clear vision: Living on wind and sunlight forever for free. To make this a reality, we are building the energy syst…"
+                    },
+                    {
+                      "name": "Your mission",
+                      "html": "<ul><li><p>Full-Stack Development (Edge to Cloud): You develop the core components for our energy management system Heartbeat AI Enterprise …",
+                      "text": "• Full-Stack Development (Edge to Cloud): You develop the core components for our energy management system Heartbeat AI Enterprise – both lo…"
+                    },
+                    "… 2 more"
+                  ],
+                  "apply_url": "https://1komma5grad.jobs.personio.de/job/2869700?language=en#apply",
+                  "description": "1KOMMA5°\nAt 1KOMMA5°, we pursue a clear vision: Living on wind and sunlight forever for free. To make this a reality, we are building the en…",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/personio/v1/jobs": {
+      "get": {
+        "operationId": "personioJobs",
+        "summary": "Personio company jobs",
+        "description": "Every open position on a company's Personio career page (<company>.jobs.personio.de or .com), newest first, with filters and paging. Each job has the id, title, link, legal entity, offices, department, recruiting category, employment type, seniority, schedule, years of experience, occupation, keywords, salary range when published, and creation date; `descriptions=1` adds the description sections. `facets` counts the board's jobs per department, office, employment type, seniority, schedule and legal entity, and `total_on_board` is the board's whole count.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/personio-jobs",
+        "tags": [
+          "Personio"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": true,
+            "description": "The company's board: its slug (the part before .jobs.personio.de) or the board URL.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1komma5grad"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keyword matched in the title, keywords and department.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "department",
+            "in": "query",
+            "required": false,
+            "description": "Department (part of the name, e.g. Tech, Sales).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "office",
+            "in": "query",
+            "required": false,
+            "description": "Office or city (part of the name, e.g. Berlin, Remote).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "employment_type",
+            "in": "query",
+            "required": false,
+            "description": "Employment type as the board names it: permanent, intern, trainee, freelance, temporary, working_student.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seniority",
+            "in": "query",
+            "required": false,
+            "description": "Seniority: entry-level, experienced, executive, student.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schedule",
+            "in": "query",
+            "required": false,
+            "description": "Schedule: full-time, part-time, full-or-part-time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subcompany",
+            "in": "query",
+            "required": false,
+            "description": "Legal entity of a group (part of the name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Recruiting or occupation category (part of the name).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of the texts (default en; boards fall back to their own language).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "de",
+                "fr",
+                "es",
+                "it",
+                "nl",
+                "pt",
+                "pl",
+                "sv",
+                "da",
+                "fi",
+                "no",
+                "cs"
+              ]
+            }
+          },
+          {
+            "name": "descriptions",
+            "in": "query",
+            "required": false,
+            "description": "1 adds each job's description sections (larger answers).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Results page (1-based). Pass next_page back; it is null on the last page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Jobs per page, 1 to 100 (default 50).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company": "1komma5grad",
+                  "board_url": "https://1komma5grad.jobs.personio.de/?language=en",
+                  "language": "en",
+                  "applied_filters": {},
+                  "total": 321,
+                  "total_on_board": 321,
+                  "page": 1,
+                  "per_page": 50,
+                  "next_page": 2,
+                  "count": 50,
+                  "jobs": [
+                    {
+                      "id": 2871876,
+                      "title": "Initiativbewerbung - Commercial– Bauleiter für PV-Großanlagen, Batteriespeicher und Ladesysteme (m/w/d) – Deutschlandweit",
+                      "url": "https://1komma5grad.jobs.personio.de/job/2871876?language=en",
+                      "subcompany": "1KOMMA5° GmbH",
+                      "office": "Remote",
+                      "offices": [
+                        "Remote",
+                        "Hamburg",
+                        "… 263 more"
+                      ],
+                      "department": "Elektronik & Technik",
+                      "recruiting_category": "1K5° Ops Standorte",
+                      "employment_type": "permanent",
+                      "seniority": "experienced",
+                      "schedule": "full-or-part-time",
+                      "years_of_experience": null,
+                      "occupation": "site_superintendent",
+                      "occupation_category": "building_construction_and_skilled_trades",
+                      "keywords": [
+                        "Anlagenmechaniker",
+                        "SHK",
+                        "… 18 more"
+                      ],
+                      "salary": null,
+                      "created_at": "2026-11-02T16:31:33+00:00",
+                      "apply_url": "https://1komma5grad.jobs.personio.de/job/2871876?language=en#apply"
+                    },
+                    {
+                      "id": 2871785,
+                      "title": "Leitung Recht und Claim-Management (m/w/d) – Baurecht für B2C und B2B - 1KOMMA5° Braunschweig, Hildesheim oder Göttingen",
+                      "url": "https://1komma5grad.jobs.personio.de/job/2871785?language=en",
+                      "subcompany": "1KOMMA5° Göttingen GmbH",
+                      "office": "Göttingen",
+                      "offices": [
+                        "Göttingen",
+                        "Hildesheim",
+                        "… 1 more"
+                      ],
+                      "department": "Legal",
+                      "recruiting_category": "1K5° Göttingen",
+                      "employment_type": "permanent",
+                      "seniority": "experienced",
+                      "schedule": "full-time",
+                      "years_of_experience": "2-5",
+                      "occupation": "general_and_other_legal",
+                      "occupation_category": "legal",
+                      "keywords": [],
+                      "salary": null,
+                      "created_at": "2026-11-02T15:57:05+00:00",
+                      "apply_url": "https://1komma5grad.jobs.personio.de/job/2871785?language=en#apply"
+                    },
+                    "… 48 more"
+                  ],
+                  "facets": {
+                    "department": [
+                      {
+                        "value": "Anlagenmechanik & Wärmepumpen",
+                        "count": 64
+                      },
+                      {
+                        "value": "Elektronik & Technik",
+                        "count": 55
+                      },
+                      "… 26 more"
+                    ],
+                    "office": [
+                      {
+                        "value": "Berlin",
+                        "count": 94
+                      },
+                      {
+                        "value": "Remote",
+                        "count": 73
+                      },
+                      "… 263 more"
+                    ],
+                    "employment_type": [
+                      {
+                        "value": "permanent",
+                        "count": 267
+                      },
+                      {
+                        "value": "intern",
+                        "count": 22
+                      },
+                      "… 2 more"
+                    ],
+                    "seniority": [
+                      {
+                        "value": "experienced",
+                        "count": 218
+                      },
+                      {
+                        "value": "entry-level",
+                        "count": 77
+                      },
+                      "… 1 more"
+                    ],
+                    "schedule": [
+                      {
+                        "value": "full-time",
+                        "count": 284
+                      },
+                      {
+                        "value": "part-time",
+                        "count": 25
+                      },
+                      "… 1 more"
+                    ],
+                    "subcompany": [
+                      {
+                        "value": "1KOMMA5° Handwerk GmbH",
+                        "count": 43
+                      },
+                      {
+                        "value": "1KOMMA5° GmbH",
+                        "count": 40
+                      },
+                      "… 30 more"
+                    ]
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

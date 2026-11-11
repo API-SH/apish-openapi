@@ -1,0 +1,1074 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: OpenRent",
+    "version": "1.0.0",
+    "description": "The OpenRent API from API.SH: public OpenRent data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "OpenRent",
+      "description": "2 endpoints (real estate)",
+      "x-slug": "openrent",
+      "x-domains": [
+        "openrent.co.uk"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openrent/v1/property": {
+      "get": {
+        "operationId": "openrentProperty",
+        "summary": "OpenRent property",
+        "description": "One OpenRent home to rent: title, full description, rent, deposit, bills included, whether housing benefit covers the rent, bedrooms, bathrooms, maximum tenants, tenant preferences (students, families, pets, smokers), availability date, minimum tenancy, online viewings, garden, parking, fireplace, furnishing, EPC rating, let-agreed status, coordinates, nearby stations and schools, and all photos; `sections` keeps every table as the site shows it.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/openrent-property",
+        "tags": [
+          "OpenRent"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Property id (the number at the end of the link, e.g. `2766066`) or the link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2766066"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "2766066",
+                  "url": "https://www.openrent.co.uk/property-to-rent/london/2-bed-flat-marquess-house-nw10/2766066",
+                  "title": "2 Bed Flat, Marquess House., NW10",
+                  "description": "Fully Furnished Accommodation – All Bills Included! 🔑\n\n✔ All bills included (including WiFi)\n✔ Fully furnished – move-in ready!\n✔ Includes: …",
+                  "rent_pcm": 3100,
+                  "deposit": 1000,
+                  "currency": "GBP",
+                  "bills_included": true,
+                  "dss_covers_rent": false,
+                  "bedrooms": 2,
+                  "bathrooms": 2,
+                  "max_tenants": 4,
+                  "students_allowed": true,
+                  "families_allowed": true,
+                  "pets_allowed": false,
+                  "smokers_allowed": false,
+                  "available_from": "05 December, 2026",
+                  "minimum_tenancy": null,
+                  "online_viewings": null,
+                  "garden": true,
+                  "parking": false,
+                  "fireplace": false,
+                  "furnishing": "Furnished",
+                  "epc_rating": "C",
+                  "let_agreed": false,
+                  "latitude": 51.530846,
+                  "longitude": -0.2826587,
+                  "stations": [
+                    {
+                      "type": "Underground",
+                      "name": "Park Royal",
+                      "distance": "~9 min. walk"
+                    },
+                    {
+                      "type": "Underground",
+                      "name": "Hanger Lane",
+                      "distance": "~14 min. walk"
+                    },
+                    "… 2 more"
+                  ],
+                  "schools": [
+                    {
+                      "name": "West Twyford Primary School",
+                      "phases": [
+                        "Nursery",
+                        "Primary"
+                      ],
+                      "distance": "0.4 km, ~6 min. walk"
+                    },
+                    {
+                      "name": "Holy Family Catholic Primary School",
+                      "phases": [
+                        "Nursery",
+                        "Primary"
+                      ],
+                      "distance": "1.0 km, ~16 min. walk"
+                    },
+                    "… 9 more"
+                  ],
+                  "photos": [
+                    "https://imagescdn.openrent.co.uk/listings/2706042/o_1jatbaif31otv1u0o187k181vfqla.JPG",
+                    "http://imagescdn.openrent.co.uk/listings/2706042/o_1jatbaif31otv1u0o187k181vfqla.JPG",
+                    "… 18 more"
+                  ],
+                  "sections": {
+                    "Price & Bills": {
+                      "Deposit": "£1,000.00",
+                      "Rent PCM": "£3,100.00",
+                      "Bills Included": true,
+                      "DSS/LHA Covers Rent": false,
+                      "Broadband": "View Offers"
+                    },
+                    "Tenant Preference": {
+                      "Student Friendly": true,
+                      "Families Allowed": true,
+                      "Pets Allowed": false,
+                      "Smokers Allowed": false
+                    },
+                    "Availability": {
+                      "Available From": "05 December, 2026",
+                      "Preferred Minimum Tenancy": "1 Months"
+                    },
+                    "Features": {
+                      "Garden": true,
+                      "Parking": false,
+                      "Fireplace": false,
+                      "Furnishing": "Furnished",
+                      "EPC Rating": "C"
+                    }
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/openrent/v1/search": {
+      "get": {
+        "operationId": "openrentSearch",
+        "summary": "OpenRent rental search",
+        "description": "UK homes to rent directly from landlords on OpenRent, around any town, area or postcode, with every filter the site's search has: rent, bedrooms, bathrooms, property type (house, flat, room), studio, furnished or unfurnished, bills included, pets, students, families, benefits (DSS), garden, parking, fireplace, video viewings, available by a date, maximum minimum-tenancy, radius in km, and let-agreed homes. Each property has title, summary, rent per month and per week, type, bedrooms, bathrooms, flags, minimum tenancy, availability date, first-listed date, coordinates, distance and photo, plus `raw`. `total_in_area` counts every home the site found for the place; `total` the ones matching the filters. 20 a page; pass `next_page` back as `page` (null on the last page).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/openrent-search",
+        "tags": [
+          "OpenRent"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "description": "A UK town, area or postcode, e.g. `Manchester`, `SW11`, `Leeds LS6`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Manchester"
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum rent per month (GBP).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum rent per month (GBP).",
+            "schema": {
+              "type": "number"
+            },
+            "example": "1200"
+          },
+          {
+            "name": "bedrooms_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum bedrooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "bedrooms_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum bedrooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "bathrooms_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum bathrooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "property_type",
+            "in": "query",
+            "required": false,
+            "description": "house, flat or room (comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studio",
+            "in": "query",
+            "required": false,
+            "description": "`true`: only studios; `false`: no studios.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "furnished",
+            "in": "query",
+            "required": false,
+            "description": "`true`: furnished only; `false`: unfurnished only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "bills_included",
+            "in": "query",
+            "required": false,
+            "description": "`true`: bills included.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "pets_allowed",
+            "in": "query",
+            "required": false,
+            "description": "`true`: pets allowed.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "students_allowed",
+            "in": "query",
+            "required": false,
+            "description": "`true`: students welcome.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "families_allowed",
+            "in": "query",
+            "required": false,
+            "description": "`true`: families welcome.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "dss_accepted",
+            "in": "query",
+            "required": false,
+            "description": "`true`: housing benefit accepted.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "garden",
+            "in": "query",
+            "required": false,
+            "description": "`true`: with a garden.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "parking",
+            "in": "query",
+            "required": false,
+            "description": "`true`: with parking.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "fireplace",
+            "in": "query",
+            "required": false,
+            "description": "`true`: with a fireplace.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "video_viewings",
+            "in": "query",
+            "required": false,
+            "description": "`true`: video viewings accepted.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "available_by",
+            "in": "query",
+            "required": false,
+            "description": "Available on or before this date (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_tenancy_max",
+            "in": "query",
+            "required": false,
+            "description": "Minimum tenancy of at most this many months.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "description": "Within this distance of the place (km).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "include_let_agreed",
+            "in": "query",
+            "required": false,
+            "description": "`true`: also homes already let agreed.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order (default distance).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "distance",
+                "price_asc",
+                "price_desc",
+                "newest"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back as `page`; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "location": "Manchester",
+                  "latitude": 53.48021,
+                  "longitude": -2.244461,
+                  "total_in_area": 640,
+                  "total": 307,
+                  "page": 1,
+                  "total_pages": 16,
+                  "count": 20,
+                  "next_page": 2,
+                  "sort": "distance",
+                  "properties": [
+                    {
+                      "id": "3025864",
+                      "url": "https://www.openrent.co.uk/3025864",
+                      "title": "1 Bed Flat, Withy Grove, M4",
+                      "summary": "One month deposit and first month’s rent are required upfront. We can do the viewing on every Wednesday from 12 Pm to 4:30",
+                      "rent_pcm": 1050,
+                      "rent_pw": 242.31,
+                      "currency": "GBP",
+                      "property_type": "flat",
+                      "studio": false,
+                      "bedrooms": 1,
+                      "bathrooms": 1,
+                      "let_agreed": false,
+                      "furnished": true,
+                      "bills_included": false,
+                      "students_allowed": true,
+                      "families_allowed": true,
+                      "pets_allowed": false,
+                      "dss_accepted": true,
+                      "garden": false,
+                      "parking": true,
+                      "fireplace": false,
+                      "video_viewings": false,
+                      "has_video": false,
+                      "minimum_tenancy_months": 6,
+                      "available_from": "2026-11-04",
+                      "first_listed_at": "2026-09-02T10:47:32.190Z",
+                      "last_updated": "around 15 hours ago",
+                      "latitude": 53.48457,
+                      "longitude": -2.2405574,
+                      "distance_km": 0.55,
+                      "details": [
+                        "1 Bed",
+                        "1 Bath",
+                        "… 1 more"
+                      ],
+                      "image": "https://imagescdn.openrent.co.uk/listings/3025864/o_1k1grhpcg1u33vusq2nokg14ssd.JPG_homepage.JPG"
+                    },
+                    {
+                      "id": "3041697",
+                      "url": "https://www.openrent.co.uk/3041697",
+                      "title": "1 Bed Flat, City Heights, M3",
+                      "summary": "In a prestigious area above Premier Inn Hotel, with the entire city centre at the doorstep,  City Heights, Victoria Bridge",
+                      "rent_pcm": 1100,
+                      "rent_pw": 253.85,
+                      "currency": "GBP",
+                      "property_type": "flat",
+                      "studio": false,
+                      "bedrooms": 1,
+                      "bathrooms": 1,
+                      "let_agreed": false,
+                      "furnished": true,
+                      "bills_included": false,
+                      "students_allowed": true,
+                      "families_allowed": true,
+                      "pets_allowed": false,
+                      "dss_accepted": false,
+                      "garden": false,
+                      "parking": false,
+                      "fireplace": false,
+                      "video_viewings": false,
+                      "has_video": false,
+                      "minimum_tenancy_months": 6,
+                      "available_from": "2026-11-04",
+                      "first_listed_at": "2026-09-15T17:38:27.700Z",
+                      "last_updated": "around 14 hours ago",
+                      "latitude": 53.48503,
+                      "longitude": -2.24664,
+                      "distance_km": 0.56,
+                      "details": [
+                        "1 Bed",
+                        "1 Bath",
+                        "… 1 more"
+                      ],
+                      "image": "https://imagescdn.openrent.co.uk/listings/1031970/o_1eulqt5ghuc1g2f1apm18tu10sub.JPG_homepage.JPG"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

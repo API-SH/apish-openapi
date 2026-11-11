@@ -1,0 +1,1368 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Remote Rocketship",
+    "version": "1.0.0",
+    "description": "The Remote Rocketship API from API.SH: public Remote Rocketship data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Remote Rocketship",
+      "description": "3 endpoints (jobs & b2b)",
+      "x-slug": "remote-rocketship",
+      "x-domains": [
+        "remoterocketship.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/remoterocketship/v1/company": {
+      "get": {
+        "operationId": "remoterocketshipCompany",
+        "summary": "Remote Rocketship company",
+        "description": "A company on Remote Rocketship: name, tagline, website, LinkedIn, careers page, logo, size, LinkedIn headcount, founding year, HQ, industry and industries, funding rounds and total, H1B and UK skilled-worker sponsorship, descriptions (with translations), hiring track record (posting cadence, jobs posted in the last 30 days, median time to fill, jobs closed last year), number of open jobs, new this week, and the first 20 open jobs.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/remoterocketship-company",
+        "tags": [
+          "Remote Rocketship"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "Company slug or a remoterocketship.com/company/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "stripe"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/remoterocketship/v1/job": {
+      "get": {
+        "operationId": "remoterocketshipJob",
+        "summary": "Remote Rocketship job",
+        "description": "One job on Remote Rocketship: everything the search returns plus the full `description`, `requirements` and `benefits`, required experience in months, last check of the posting, ghost-job signals, the company's full profile, translations the site has (pt, fr, de) and five related jobs. `latest=true` returns a company's newest job (default company `stripe`).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/remoterocketship-job",
+        "tags": [
+          "Remote Rocketship"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "description": "Company slug (from `company.slug`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "stripe"
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Job slug. With `company`, required unless `url` or `latest=true`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A remoterocketship.com/company/<company>/jobs/<job> link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`true`: the company's newest job.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "true"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 20708416,
+                  "slug": "data-analyst-sales-strategy-and-operations-united-states-remote",
+                  "title": "Data Analyst – Sales Strategy and Operations",
+                  "url": "https://www.remoterocketship.com/company/stripe/jobs/data-analyst-sales-strategy-and-operations-united-states-remote",
+                  "apply_url": "https://boards.greenhouse.io/stripe/jobs/8354566",
+                  "created_at": "2026-11-06T01:00:08.136+00:00",
+                  "valid_until": null,
+                  "deleted_at": null,
+                  "summary": "Data Analyst driving sales strategy for Stripe’s financial infrastructure platform",
+                  "summary_two_lines": "Data Analyst driving sales strategy and operations for Stripe’s financial infrastructure platform. Building scalable analytics, forecasts, d…",
+                  "job_title_category": "Data Analyst",
+                  "job_function": "Data Analyst",
+                  "seniority": [
+                    "mid",
+                    "senior"
+                  ],
+                  "employment_type": "full-time",
+                  "workplace": "remote",
+                  "location": "United States",
+                  "location_countries": null,
+                  "location_us_states": null,
+                  "location_city": null,
+                  "salary": null,
+                  "tech_stack": [
+                    "SQL",
+                    "Tableau"
+                  ],
+                  "required_languages": [
+                    "en"
+                  ],
+                  "description_language": "en",
+                  "education": null,
+                  "on_linkedin": true,
+                  "promoted": false,
+                  "ghost_score": 10,
+                  "company": {
+                    "id": 1365,
+                    "name": "Stripe",
+                    "slug": "stripe",
+                    "url": "https://www.remoterocketship.com/company/stripe",
+                    "tagline": "Help increase the GDP of the internet.",
+                    "website": "https://stripe.com/jobs",
+                    "linkedin": "https://www.linkedin.com/company/stripe",
+                    "careers_page": null,
+                    "logo": "https://storage.googleapis.com/remote-rocket.appspot.com/Stripe.jpeg?GoogleAccessId=firebase-adminsdk-ptm37%40remote-rocket.iam.gserviceacco…",
+                    "employees": {
+                      "min": 1001,
+                      "max": 5000
+                    },
+                    "employees_on_linkedin": null,
+                    "founded": "2010",
+                    "hq": null,
+                    "industry": null,
+                    "industries": [
+                      "Fintech",
+                      "eCommerce",
+                      "… 1 more"
+                    ],
+                    "specialities": [],
+                    "funding": [
+                      {
+                        "type": "Venture Round",
+                        "amount": null,
+                        "date": "2021-05-31"
+                      },
+                      {
+                        "type": "Series H",
+                        "amount": 600000000,
+                        "date": "2021-03-14"
+                      },
+                      "… 16 more"
+                    ],
+                    "total_funding": null,
+                    "sponsors_h1b": true,
+                    "sponsors_uk_skilled_worker": true,
+                    "description": "Stripe is a global payments processing platform that enables businesses to accept online and in-person payments. It offers a comprehensive s…",
+                    "linkedin_description": "Stripe is a financial infrastructure platform for businesses. Millions of companies—from the world’s largest enterprises to the most ambitio…"
+                  },
+                  "description": "• Execute weekly, monthly and quarterly operating cadences, including forecasting calls and business reviews\n• Develop understanding of the …",
+                  "requirements": "• 3–5 years of work experience in B2B sales strategy and operations and/or business analytics, business strategy/operations, data science, i…",
+                  "benefits": null,
+                  "experience_months": 36,
+                  "experience_in_place_of_education": false,
+                  "linkedin_posted_at": null,
+                  "last_checked_ok_at": "2026-11-06T01:05:34.987+00:00",
+                  "ghost_signals": {
+                    "ratio": 0.015,
+                    "s_age": 0,
+                    "s_fill": 0.021,
+                    "s_ratio": 0,
+                    "age_days": 0,
+                    "s_revive": 0,
+                    "s_salary": 1,
+                    "headcount": 8493,
+                    "open_roles": 127,
+                    "salary_listed": false,
+                    "times_revived": 0,
+                    "closed_jobs_365d": 329,
+                    "slow_close_share": 0.0213,
+                    "expected_fill_days": 47.6
+                  },
+                  "translations": {},
+                  "related_jobs": [
+                    {
+                      "id": 20706601,
+                      "slug": "data-analyst-ii-provider-analytics-united-states-remote",
+                      "title": "Data Analyst II, Provider Analytics",
+                      "url": "https://www.remoterocketship.com/company/centene/jobs/data-analyst-ii-provider-analytics-united-states-remote",
+                      "apply_url": "https://centene.wd5.myworkdayjobs.com/centene_external/job/remote-ca/data-analyst-ii--provider-analytics_1674525-1",
+                      "created_at": "2026-11-05T22:13:40.652+00:00",
+                      "valid_until": null,
+                      "deleted_at": null,
+                      "summary": "Data Analyst supporting Centene’s healthcare provider analytics and network management",
+                      "summary_two_lines": "Data Analyst supporting Centene’s healthcare provider analytics, reporting, and network management. Analyzing claims and provider data for c…",
+                      "job_title_category": "Data Analyst",
+                      "job_function": "Data Analyst",
+                      "seniority": [
+                        "junior",
+                        "mid"
+                      ],
+                      "employment_type": "full-time",
+                      "workplace": "remote",
+                      "location": "United States",
+                      "location_countries": null,
+                      "location_us_states": null,
+                      "location_city": null,
+                      "salary": {
+                        "max": 101000,
+                        "min": 56200,
+                        "salaryType": "per year",
+                        "currencyCode": "USD",
+                        "currencySymbol": "$",
+                        "maxSalaryAsUSD": 101000,
+                        "minSalaryAsUSD": 56200,
+                        "salaryHumanReadableText": "$56,200 - $101,000 per year"
+                      },
+                      "tech_stack": [
+                        "Cloud",
+                        "Snowflake",
+                        "… 1 more"
+                      ],
+                      "required_languages": [
+                        "en"
+                      ],
+                      "description_language": "en",
+                      "education": "bachelor degree",
+                      "on_linkedin": null,
+                      "promoted": false,
+                      "ghost_score": null,
+                      "company": {
+                        "id": 179263,
+                        "name": "Centene Corporation",
+                        "slug": "centene",
+                        "logo": "https://storage.googleapis.com/remote-rocket.appspot.com/Centene%20Corporation.jpeg?GoogleAccessId=firebase-adminsdk-ptm37%40remote-rocket.i…",
+                        "employees": {
+                          "min": 10001,
+                          "max": null
+                        },
+                        "industries": [
+                          "Insurance",
+                          "Consulting",
+                          "… 1 more"
+                        ],
+                        "website": "https://www.centene.com",
+                        "sponsors_h1b": false
+                      }
+                    },
+                    {
+                      "id": 20705827,
+                      "slug": "healthcare-data-analytics-manager-wisconsin-remote",
+                      "title": "Healthcare Data Analytics Manager",
+                      "url": "https://www.remoterocketship.com/company/milliman/jobs/healthcare-data-analytics-manager-wisconsin-remote",
+                      "apply_url": "https://recruiting2.ultipro.com/MIL1017/JobBoard/f54234e9-dfde-b183-fd20-4fbdb19cba7a/OpportunityDetail?opportunityId=2291a178-36a5-46fb-b5c…",
+                      "created_at": "2026-11-05T21:11:18.099+00:00",
+                      "valid_until": null,
+                      "deleted_at": null,
+                      "summary": "Healthcare Data Analytics Manager delivering healthcare analytics for Milliman consulting clients",
+                      "summary_two_lines": "Healthcare Data Analytics Manager leading healthcare data pipelines, models, and consulting projects at Milliman. Mentoring analysts and del…",
+                      "job_title_category": "Data Analyst",
+                      "job_function": "Data Analyst",
+                      "seniority": [
+                        "senior",
+                        "expert"
+                      ],
+                      "employment_type": "full-time",
+                      "workplace": "remote",
+                      "location": "United States",
+                      "location_countries": null,
+                      "location_us_states": null,
+                      "location_city": null,
+                      "salary": {
+                        "max": 227445,
+                        "min": 119850,
+                        "salaryType": "per year",
+                        "currencyCode": "USD",
+                        "currencySymbol": "$",
+                        "maxSalaryAsUSD": 227445,
+                        "minSalaryAsUSD": 119850,
+                        "salaryHumanReadableText": "$119,850 - $227,445 per year"
+                      },
+                      "tech_stack": [
+                        "Amazon Redshift",
+                        "AWS",
+                        "… 7 more"
+                      ],
+                      "required_languages": [
+                        "en"
+                      ],
+                      "description_language": "en",
+                      "education": "bachelor degree",
+                      "on_linkedin": null,
+                      "promoted": false,
+                      "ghost_score": null,
+                      "company": {
+                        "id": 695288,
+                        "name": "Milliman",
+                        "slug": "milliman",
+                        "logo": "https://storage.googleapis.com/remote-rocket.appspot.com/Milliman.jpeg?GoogleAccessId=firebase-adminsdk-ptm37%40remote-rocket.iam.gserviceac…",
+                        "employees": {
+                          "min": 1001,
+                          "max": 5000
+                        },
+                        "industries": [
+                          "Healthcare",
+                          "Insurance",
+                          "… 1 more"
+                        ],
+                        "website": "http://careers.milliman.com/",
+                        "sponsors_h1b": true
+                      }
+                    },
+                    "… 3 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/remoterocketship/v1/search": {
+      "get": {
+        "operationId": "remoterocketshipSearch",
+        "summary": "Remote Rocketship job search",
+        "description": "Jobs on Remote Rocketship, collected from company career pages, with every filter of the site's board: keywords (and excluded keywords), job titles, seniority, location (countries, regions such as Europe or Worldwide, and US states), cities, remote/hybrid/on-site, tech stack, required languages, company size, employment type, visa sponsorship, minimum salary, degree requirement, LinkedIn listing, ghost-job filter, industries (and excluded industries), one company, sorted by newest or highest salary. Each job: `id`, `slug`, `title`, `url`, `apply_url`, `created_at`, summaries, job title category and function, `seniority`, `employment_type`, `workplace`, location fields, `salary`, `tech_stack`, `required_languages`, `education`, `ghost_score` and the company (id, name, slug, logo, size, industries, website, H1B sponsor), plus `raw`. `total` is the number of matching jobs. Logged out the site answers the first 20 jobs of a search, so this returns the newest (or best-paid) 20; `next_page` is always null.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/remoterocketship-search",
+        "tags": [
+          "Remote Rocketship"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords, comma separated.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python"
+          },
+          {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "description": "Keywords to leave out, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "job_title",
+            "in": "query",
+            "required": false,
+            "description": "Job titles, comma separated (e.g. `Software Engineer,Data Scientist`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Software Engineer"
+          },
+          {
+            "name": "seniority",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated: `entry-level`, `junior`, `mid`, `senior`, `expert`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Countries, regions (`Worldwide`, `Europe`, `North America`, `Latin America`, `Asia`, `Africa`, `Oceania`, `Middle East`) or US states, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "Cities, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workplace",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated: `remote` (default), `hybrid`, `onsite`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tech_stack",
+            "in": "query",
+            "required": false,
+            "description": "Technologies, comma separated (e.g. `Python,AWS`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Required languages as two-letter codes, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exclude_language",
+            "in": "query",
+            "required": false,
+            "description": "Leave out jobs that require these languages (two-letter codes, comma separated).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "company_size",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated: `1-10`, `11-50`, `51-200`, `201-500`, `501-1000`, `1001-5000`, `5001-10000`, `10001+`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "employment_type",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated: `full-time`, `part-time`, `contract`, `internship`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "visa",
+            "in": "query",
+            "required": false,
+            "description": "Companies that sponsor this visa.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "h1b",
+                "uk-skilled-worker"
+              ]
+            }
+          },
+          {
+            "name": "min_salary",
+            "in": "query",
+            "required": false,
+            "description": "Minimum yearly salary (USD).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "include_no_salary",
+            "in": "query",
+            "required": false,
+            "description": "`true`: with `min_salary`, also keep jobs without a listed salary.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "degree_required",
+            "in": "query",
+            "required": false,
+            "description": "`true` or `false`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "on_linkedin",
+            "in": "query",
+            "required": false,
+            "description": "`true` or `false`: whether the job is also listed on LinkedIn.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hide_ghost_jobs",
+            "in": "query",
+            "required": false,
+            "description": "`true`: leave out jobs that look like ghost jobs.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "industry",
+            "in": "query",
+            "required": false,
+            "description": "Industries, comma separated (e.g. `Fintech`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exclude_industry",
+            "in": "query",
+            "required": false,
+            "description": "Industries to leave out, comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "company_id",
+            "in": "query",
+            "required": false,
+            "description": "Only this company's jobs (`company.id` from results).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Newest first (default) or highest salary first.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "salary"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "applied_filters": {
+                    "q": [
+                      "python"
+                    ],
+                    "job_title": [
+                      "Software Engineer"
+                    ],
+                    "workplace": [
+                      "remote"
+                    ],
+                    "sort": "newest"
+                  },
+                  "total": 4175,
+                  "page": 1,
+                  "count": 20,
+                  "next_page": null,
+                  "page_limit_note": "first 20 results per search",
+                  "items": [
+                    {
+                      "id": 20709749,
+                      "slug": "software-engineer-united-states-remote",
+                      "title": "Software Engineer",
+                      "url": "https://www.remoterocketship.com/company/turing/jobs/software-engineer-united-states-remote",
+                      "apply_url": "https://boards.greenhouse.io/turing/jobs/6241649004",
+                      "created_at": "2026-11-06T06:07:45.551+00:00",
+                      "valid_until": null,
+                      "deleted_at": null,
+                      "summary": "Software Engineer building evaluation infrastructure for Turing’s frontier AI labs",
+                      "summary_two_lines": "Software Engineer building benchmark, agent-evaluation, and quality-check infrastructure for Turing’s frontier AI labs. Owning production ba…",
+                      "job_title_category": "Software Engineer",
+                      "job_function": "Software Engineer",
+                      "seniority": [
+                        "mid",
+                        "senior"
+                      ],
+                      "employment_type": "full-time",
+                      "workplace": "remote",
+                      "location": "United States",
+                      "location_countries": null,
+                      "location_us_states": null,
+                      "location_city": null,
+                      "salary": null,
+                      "tech_stack": [
+                        "Django",
+                        "Docker",
+                        "… 5 more"
+                      ],
+                      "required_languages": [
+                        "en"
+                      ],
+                      "description_language": "en",
+                      "education": "bachelor degree",
+                      "on_linkedin": true,
+                      "promoted": false,
+                      "ghost_score": 10,
+                      "company": {
+                        "id": 12184,
+                        "name": "Turing",
+                        "slug": "turing",
+                        "logo": "https://storage.googleapis.com/remote-rocket.appspot.com/Turing.jpeg?GoogleAccessId=firebase-adminsdk-ptm37%40remote-rocket.iam.gserviceacco…",
+                        "employees": {
+                          "min": 1001,
+                          "max": 5000
+                        },
+                        "industries": [
+                          "Consulting",
+                          "Logistics",
+                          "… 1 more"
+                        ],
+                        "website": "https://turing.com/s/wY0xCJ",
+                        "sponsors_h1b": true
+                      }
+                    },
+                    {
+                      "id": 20709610,
+                      "slug": "software-technical-leader-canada-remote-5",
+                      "title": "Software Technical Leader",
+                      "url": "https://www.remoterocketship.com/company/cisco/jobs/software-technical-leader-canada-remote-5",
+                      "apply_url": "https://cisco.wd5.myworkdayjobs.com/cisco_careers/job/calgary-alberta-canada/software-technical-leader--remote--canada_2029552-1",
+                      "created_at": "2026-11-06T05:39:25.639+00:00",
+                      "valid_until": "2026-12-29",
+                      "deleted_at": null,
+                      "summary": "Software Technical Leader building scalable Cisco Meraki networking platform solutions",
+                      "summary_two_lines": "Software Technical Leader building scalable full-stack solutions for Cisco Meraki’s networking platform. Owning architecture, reliability, a…",
+                      "job_title_category": "Full-stack Engineer",
+                      "job_function": "Software Engineer",
+                      "seniority": [
+                        "senior"
+                      ],
+                      "employment_type": "full-time",
+                      "workplace": "remote",
+                      "location": "Canada",
+                      "location_countries": null,
+                      "location_us_states": null,
+                      "location_city": null,
+                      "salary": {
+                        "max": 234800,
+                        "min": 162300,
+                        "salaryType": "per year",
+                        "currencyCode": "USD",
+                        "currencySymbol": "$",
+                        "maxSalaryAsUSD": 234800,
+                        "minSalaryAsUSD": 162300,
+                        "salaryHumanReadableText": "$162,300 - $234,800 per year"
+                      },
+                      "tech_stack": [
+                        "Python",
+                        "Ruby",
+                        "… 2 more"
+                      ],
+                      "required_languages": [
+                        "en"
+                      ],
+                      "description_language": "en",
+                      "education": "bachelor degree",
+                      "on_linkedin": true,
+                      "promoted": false,
+                      "ghost_score": 0,
+                      "company": {
+                        "id": 697494,
+                        "name": "Cisco",
+                        "slug": "cisco",
+                        "logo": "https://storage.googleapis.com/remote-rocket.appspot.com/Cisco.jpeg?GoogleAccessId=firebase-adminsdk-ptm37%40remote-rocket.iam.gserviceaccou…",
+                        "employees": {
+                          "min": 10001,
+                          "max": null
+                        },
+                        "industries": [
+                          "Hardware",
+                          "Security",
+                          "… 1 more"
+                        ],
+                        "website": "http://www.cisco.com/",
+                        "sponsors_h1b": true
+                      }
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

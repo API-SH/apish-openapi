@@ -1,0 +1,1062 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Whatnot",
+    "version": "1.0.0",
+    "description": "The Whatnot API from API.SH: public Whatnot data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Whatnot",
+      "description": "3 endpoints (e-commerce)",
+      "x-slug": "whatnot",
+      "x-domains": [
+        "whatnot.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/whatnot/v1/categories": {
+      "get": {
+        "operationId": "whatnotCategories",
+        "summary": "Whatnot categories",
+        "description": "The categories on Whatnot's browse page, busiest first: name (use it as category on /whatnot/v1/live), label, how many people are watching now and image. Pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/whatnot-categories",
+        "tags": [
+          "Whatnot"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Categories per page (max 100).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "50"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Paging cursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 33,
+                  "categories": [
+                    {
+                      "name": "food",
+                      "label": "Food & Drink",
+                      "viewers": 819,
+                      "image": "https://images.whatnot.com/eyJidWNrZXQiOiAid2hhdG5vdC1pbWFnZXMiLCAia2V5IjogInRhZ3MvZm9vZC0tYjMxYTQ0MDQtYTkzMS00NTRjLTg0MzEtMjFiM2U5Y2E1ZDQwL…",
+                      "url": "https://www.whatnot.com/category/food",
+                      "id": "TGl2ZXN0cmVhbVRhZ05vZGU6MTgyMzk="
+                    },
+                    {
+                      "name": "vintage_virtual_category",
+                      "label": "Vintage",
+                      "viewers": 2780,
+                      "image": "https://images.whatnot.com/eyJidWNrZXQiOiAid2hhdG5vdC1pbWFnZXMiLCAia2V5IjogInRhZ3MvdmludGFnZV92aXJ0dWFsX2NhdGVnb3J5LS05NjFhYTdkMi1hNjBhLTRhM…",
+                      "url": "https://www.whatnot.com/category/vintage_virtual_category",
+                      "id": "TGl2ZXN0cmVhbVRhZ05vZGU6MzYyMDE="
+                    },
+                    "… 31 more"
+                  ],
+                  "next_cursor": "YXJyYXljb25uZWN0aW9uOjQ5",
+                  "note": "pass a category name as category= to /whatnot/v1/live",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/whatnot/v1/live": {
+      "get": {
+        "operationId": "whatnotLive",
+        "summary": "Whatnot live shows by category",
+        "description": "The live and upcoming Whatnot shows of a category, as on its category page: title, status, start time, viewers, watchlist count, categories, tags, thumbnail and the seller (username, image, premier shop, badges), the page's highlighted sections, the category's filter facets with counts (sub-categories, show format, tags, seller rating, shipped from) and sort names. The first page of the category (about 24 shows); `has_more` says whether the site has more. `status` and `sort` work on the shows the page lists; when given the answer has `applied_filters`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/whatnot-live",
+        "tags": [
+          "Whatnot"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category slug (the part after /category/ in a whatnot.com link), e.g. pokemon_cards, sports_cards, sneakers, trading_card_games, comics, coins_and_money.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "pokemon_cards"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Only live shows or only upcoming ones (applied to the shows listed, the sections included).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "live",
+                "upcoming"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order of the shows listed: recommended (the site's order, default), viewers (most first) or start_time (soonest first).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recommended",
+                "viewers",
+                "start_time"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": "pokemon_cards",
+                  "title": "Pokémon Cards",
+                  "url": "https://www.whatnot.com/category/pokemon_cards",
+                  "count": 24,
+                  "has_more": true,
+                  "shows": [
+                    {
+                      "id": "37b38883-21c1-41b9-8710-f3a3545ee9da",
+                      "url": "https://www.whatnot.com/live/37b38883-21c1-41b9-8710-f3a3545ee9da",
+                      "title": "🇺🇸 ⚡️🐻GINORMOUS VINTAGE NIGHT🏎️⚡️",
+                      "status": "PLAYING",
+                      "start_time": "2026-11-03T23:00:28.806Z",
+                      "viewers": 1309,
+                      "watchlist_users": 107,
+                      "categories": [
+                        {
+                          "label": "Pokémon Cards",
+                          "slug": "pokemon_cards"
+                        }
+                      ],
+                      "tags": [
+                        "Vintage",
+                        "Graded Cards"
+                      ],
+                      "labels": [],
+                      "thumbnail": "https://images.whatnot.com/eyJidWNrZXQiOiAid2hhdG5vdC1pbWFnZXMiLCAia2V5IjogImxpdmVzdHJlYW1fdGh1bWJuYWlscy9jZTdmMzA0Yi1mMWI2LTRlZTMtYWI1Mi03Y…",
+                      "trailer": null,
+                      "sponsored": false,
+                      "seller": {
+                        "username": "spacenarwhalz",
+                        "id": "1957346",
+                        "url": "https://www.whatnot.com/user/spacenarwhalz",
+                        "image": "https://images.whatnot.com/eyJidWNrZXQiOiAid2hhdG5vdC1pbWFnZXMiLCAia2V5IjogInVzZXJzLzE5NTczNDYvNmM1YjBkMzctYjliNy00NDY2LTljOTktOGNlZGRkZmIwN…",
+                        "premier_shop": true,
+                        "badges": []
+                      }
+                    },
+                    {
+                      "id": "145ce6ad-2ed8-41e9-b827-1d465765b1a7",
+                      "url": "https://www.whatnot.com/live/145ce6ad-2ed8-41e9-b827-1d465765b1a7",
+                      "title": "🇺🇸 🔥FREE PHANTASMAL CHARIZARD & RAPID FIRE SLABS 🔥",
+                      "status": "PLAYING",
+                      "start_time": "2026-11-04T04:03:24.704Z",
+                      "viewers": 1772,
+                      "watchlist_users": 94,
+                      "categories": [
+                        {
+                          "label": "Pokémon Cards",
+                          "slug": "pokemon_cards"
+                        }
+                      ],
+                      "tags": [
+                        "$1 Starts",
+                        "Sudden Death",
+                        "… 1 more"
+                      ],
+                      "labels": [],
+                      "thumbnail": "https://images.whatnot.com/eyJidWNrZXQiOiAid2hhdG5vdC1pbWFnZXMiLCAia2V5IjogImxpdmVzdHJlYW1fdGh1bWJuYWlscy9hODdhZjUzNy02MmVhLTRkNTctYWU2Zi00Y…",
+                      "trailer": null,
+                      "sponsored": false,
+                      "seller": {
+                        "username": "novatcg",
+                        "id": "1113397",
+                        "url": "https://www.whatnot.com/user/novatcg",
+                        "image": "https://images.whatnot.com/eyJidWNrZXQiOiAid2hhdG5vdC1pbWFnZXMiLCAia2V5IjogInVzZXJzLzExMTMzOTcvMjgzMjg0OTYtN2Q1OS00ODViLTk1NDUtMjlmYTVhYzc4Y…",
+                        "premier_shop": true,
+                        "badges": []
+                      }
+                    },
+                    "… 22 more"
+                  ],
+                  "sections": [],
+                  "facets": {
+                    "Time of Show": [
+                      {
+                        "label": "Live",
+                        "value": "PLAYING",
+                        "count": 406
+                      },
+                      {
+                        "label": "Upcoming",
+                        "value": "CREATED",
+                        "count": 94477
+                      }
+                    ],
+                    "Show Format": [
+                      {
+                        "label": "Breaks",
+                        "value": "primary_show_format_breaks",
+                        "count": 19896
+                      },
+                      {
+                        "label": "Graded",
+                        "value": "primary_show_format_graded",
+                        "count": 1
+                      },
+                      "… 2 more"
+                    ],
+                    "Tag": [
+                      {
+                        "label": "Pokémon",
+                        "value": "97",
+                        "count": 42068
+                      },
+                      {
+                        "label": "$1 Starts",
+                        "value": "2290",
+                        "count": 40265
+                      },
+                      "… 73 more"
+                    ],
+                    "Seller Rating": [
+                      {
+                        "label": "5 stars",
+                        "value": "5.0",
+                        "count": 58729
+                      },
+                      {
+                        "label": "4.5 & Up",
+                        "value": "4.5",
+                        "count": 86397
+                      },
+                      "… 1 more"
+                    ],
+                    "Premier Shop": [
+                      {
+                        "label": "Premier Shop",
+                        "value": "true",
+                        "count": 13100
+                      }
+                    ],
+                    "Shipped From": [
+                      {
+                        "label": "United States",
+                        "value": "US",
+                        "count": 63020
+                      },
+                      {
+                        "label": "United Kingdom",
+                        "value": "GB",
+                        "count": 16123
+                      },
+                      "… 8 more"
+                    ]
+                  },
+                  "sorts": [
+                    "Recommended",
+                    "Viewers: high to low",
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/whatnot/v1/user": {
+      "get": {
+        "operationId": "whatnotUser",
+        "summary": "Whatnot seller",
+        "description": "A Whatnot seller's public shop profile: display name, bio, profile and store images, rating, review count, items sold, followers, following, average ship days, live now, verified and business seller, premier shop, badges, and the seller's shows (live, upcoming and recent). Accounts that do not sell answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/whatnot-user",
+        "tags": [
+          "Whatnot"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "description": "Seller username (the part after /user/ in a whatnot.com link).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "blazing_cards"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Instead of username: a whatnot.com/user/... link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "username": "blazing_cards",
+                  "display_name": "Blazing Cards",
+                  "url": "https://www.whatnot.com/user/blazing_cards",
+                  "bio": "Fresh Vintage Boxes, Blisters, Packs, and Slabs\n\nMake sure to follow on Instagram: @blazingcards & @blazingchristian\n\nMONDAY-FRIDAY 4AM-12PM…",
+                  "image": "https://images.whatnot.com/eyJidWNrZXQiOiAid2hhdG5vdC1pbWFnZXMiLCAia2V5IjogInVzZXJzLzg4OTk1Mi9hZjljYmY2MS1hOGJlLTRlOWItODQ5NS04MTRmYjZhMWNiN…",
+                  "store_image": "https://images.whatnot.com/eyJidWNrZXQiOiAid2hhdG5vdC1pbWFnZXMiLCAia2V5IjogInVzZXJzLzg4OTk1Mi9zdG9yZS81YTc1ZGJlOS04ODJiLTQ3YTEtODg0Yy04MmM4M…",
+                  "rating": 4.9,
+                  "reviews": 4168,
+                  "sold": 21381,
+                  "followers": 28969,
+                  "following": 74,
+                  "average_ship_days": 3,
+                  "live_now": true,
+                  "verified_seller": false,
+                  "business_seller": null,
+                  "premier_shop": false,
+                  "badges": [],
+                  "default_tab": "SHOWS",
+                  "show_count": 4,
+                  "shows": [
+                    {
+                      "id": "6e32142b-d014-4409-b840-9d685a27c026",
+                      "url": "https://www.whatnot.com/live/6e32142b-d014-4409-b840-9d685a27c026",
+                      "title": "🇺🇸 HEAVY PACKS & Modern Rips 👀 w/ @BLAZINGCHRISTIAN",
+                      "status": "PLAYING",
+                      "start_time": "2026-11-03T23:42:26.579Z",
+                      "viewers": 11,
+                      "watchlist_users": 13,
+                      "categories": [
+                        {
+                          "label": "Pokémon Cards",
+                          "slug": "pokemon_cards"
+                        }
+                      ],
+                      "tags": [
+                        "Vintage",
+                        "Pokemon 151",
+                        "… 1 more"
+                      ],
+                      "labels": [],
+                      "thumbnail": "https://images.whatnot.com/eyJidWNrZXQiOiAid2hhdG5vdC1pbWFnZXMiLCAia2V5IjogImxpdmVzdHJlYW1fdGh1bWJuYWlscy8zNDcyZGJjOS00OTE1LTQwMDYtODMyMi1kZ…",
+                      "trailer": null,
+                      "sponsored": false
+                    },
+                    {
+                      "id": "fe85904f-66a2-4ee3-8141-0b17844a1dde",
+                      "url": "https://www.whatnot.com/live/fe85904f-66a2-4ee3-8141-0b17844a1dde",
+                      "title": "🇺🇸 VINTAGE MODERN RIPS W/ @BLAZINGCHRISTIAN",
+                      "status": "CREATED",
+                      "start_time": "2026-11-04T23:40:00.000Z",
+                      "viewers": 0,
+                      "watchlist_users": 16,
+                      "categories": [
+                        {
+                          "label": "Pokémon Cards",
+                          "slug": "pokemon_cards"
+                        }
+                      ],
+                      "tags": [
+                        "Vintage",
+                        "Pokemon 151",
+                        "… 1 more"
+                      ],
+                      "labels": [],
+                      "thumbnail": "https://images.whatnot.com/eyJidWNrZXQiOiAid2hhdG5vdC1pbWFnZXMiLCAia2V5IjogImxpdmVzdHJlYW1fdGh1bWJuYWlscy8xODEwMTFlMS1lNWZmLTQ3YzUtODQ2MS04N…",
+                      "trailer": null,
+                      "sponsored": false
+                    },
+                    "… 2 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

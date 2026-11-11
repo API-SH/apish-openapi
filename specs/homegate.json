@@ -1,0 +1,1403 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Homegate",
+    "version": "1.0.0",
+    "description": "The Homegate API from API.SH: public Homegate data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Homegate",
+      "description": "3 endpoints (real estate)",
+      "x-slug": "homegate",
+      "x-domains": [
+        "homegate.ch"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/homegate/v1/locations": {
+      "get": {
+        "operationId": "homegateLocations",
+        "summary": "Homegate location autocomplete",
+        "description": "The Swiss places Homegate suggests for what was typed: cantons, regions, districts, cities, ZIP codes and quarters, each with its id, type, name in every language, the slug the search endpoint takes as location, coordinates and ready-made rent and buy search links.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/homegate-locations",
+        "tags": [
+          "Homegate"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "A place name or ZIP code.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "zuri"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language of the names (default en).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated place types to keep, e.g. place,zipcode,canton.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "description": "How many (default 10, max 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "zurich",
+                  "lang": "en",
+                  "total": 75,
+                  "count": 10,
+                  "results": [
+                    {
+                      "id": "geo-city-zurich",
+                      "type": "place",
+                      "name": "Zurich",
+                      "names": {
+                        "de": [
+                          "Zürich"
+                        ],
+                        "fr": [
+                          "Zurich"
+                        ],
+                        "it": [
+                          "Zurigo"
+                        ],
+                        "en": [
+                          "Zurich"
+                        ]
+                      },
+                      "slug": "city-zurich",
+                      "url_names": {
+                        "en": "city-zurich",
+                        "de": "ort-zuerich",
+                        "fr": "lieu-zurich",
+                        "it": "luogo-zurigo"
+                      },
+                      "latitude": 47.377194615088676,
+                      "longitude": 8.539285808314094,
+                      "parents": [
+                        [
+                          "geo-canton-zurich",
+                          "geo-country-switzerland"
+                        ]
+                      ],
+                      "children_count": 36,
+                      "rent_search_url": "https://www.homegate.ch/rent/real-estate/city-zurich/matching-list",
+                      "buy_search_url": "https://www.homegate.ch/buy/real-estate/city-zurich/matching-list"
+                    },
+                    {
+                      "id": "geo-canton-zurich",
+                      "type": "canton",
+                      "name": "Zurich",
+                      "names": {
+                        "de": [
+                          "Zürich"
+                        ],
+                        "fr": [
+                          "Zurich"
+                        ],
+                        "it": [
+                          "Zurigo"
+                        ],
+                        "en": [
+                          "Zurich"
+                        ]
+                      },
+                      "slug": "canton-zurich",
+                      "url_names": {
+                        "de": "kanton-zuerich",
+                        "en": "canton-zurich",
+                        "fr": "canton-zurich",
+                        "it": "cantone-zurigo"
+                      },
+                      "latitude": 47.41936545165778,
+                      "longitude": 8.666361227913432,
+                      "parents": [
+                        [
+                          "geo-country-switzerland"
+                        ]
+                      ],
+                      "children_count": 12,
+                      "rent_search_url": "https://www.homegate.ch/rent/real-estate/canton-zurich/matching-list",
+                      "buy_search_url": "https://www.homegate.ch/buy/real-estate/canton-zurich/matching-list"
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/homegate/v1/property": {
+      "get": {
+        "operationId": "homegateProperty",
+        "summary": "One Homegate listing",
+        "description": "Every response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/homegate-property",
+        "tags": [
+          "Homegate"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.homegate.ch/rent/4002086198"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "categories": [
+                    "APARTMENT",
+                    "FLAT"
+                  ],
+                  "id": "4002086198",
+                  "lister": {
+                    "address": {
+                      "postalCode": "8048",
+                      "locality": "Zürich",
+                      "region": "ZH",
+                      "country": "CH",
+                      "street": "Bernerstrasse Süd 169"
+                    },
+                    "legalName": "City Pop AG",
+                    "id": "e335city",
+                    "contacts": {
+                      "viewing": {},
+                      "inquiry": {}
+                    },
+                    "logoUrl": "https://media2.homegate.ch/t_customer_logo/logos/l_e335city_v2.png",
+                    "website": {
+                      "value": "https://citypop.com/"
+                    }
+                  },
+                  "address": {
+                    "region": "ZH",
+                    "street": "Militärstrasse 106",
+                    "geoCoordinates": {
+                      "accuracy": "HIGH",
+                      "latitude": 47.375904840748,
+                      "longitude": 8.518080652441
+                    },
+                    "geoTags": [
+                      "geo-cityregion-kreis-4",
+                      "geo-city-zurich",
+                      "… 4 more"
+                    ],
+                    "locality": "Zürich",
+                    "postalCode": "8004",
+                    "country": "CH"
+                  },
+                  "meta": {
+                    "createdAt": "2025-04-07T14:53:38.768Z",
+                    "updatedAt": "2026-10-07T17:39:31.879Z",
+                    "source": "BUSINESS_INSERTION_FUNNEL"
+                  },
+                  "externalIds": {
+                    "propertyReferenceId": "e335city#455hk.wwzdh##",
+                    "internalReferenceId": "e335city#455hk.wwzdh##",
+                    "displayPropertyReferenceId": "455hk.wwzdh",
+                    "refObject": "455hk.wwzdh"
+                  },
+                  "valueAddedServices": {},
+                  "availableFrom": "2025-03-20",
+                  "localization": {
+                    "primary": "de",
+                    "de": {
+                      "text": {
+                        "description": "<p>Wir bieten zentral gelegene Apartments im Gebäude <strong>City Pop Zurich City</strong> an der <strong>Militarstrasse 106, 8004 Zürich</s…",
+                        "title": "City Pop - Cosy Studio Apartments just next to HB Zürich"
+                      },
+                      "urls": [
+                        {
+                          "value": "http://www.citypop.com",
+                          "title": "City Pop Website",
+                          "type": "LINK"
+                        },
+                        {
+                          "value": "https://www.youtube.com/watch?v=Os47nMrjw_Y",
+                          "type": "YOUTUBE"
+                        },
+                        "… 1 more"
+                      ],
+                      "attachments": [
+                        {
+                          "metadata": {
+                            "…": "4 fields"
+                          },
+                          "alt": null,
+                          "url": "https://media2.homegate.ch/listings/v2/e335city/4002086198/image/92c334cb2a581eeda57f107e6b2d3fd3.jpg",
+                          "file": "08958df437.jpg",
+                          "type": "IMAGE"
+                        },
+                        {
+                          "file": "e5c0f25f1a.jpg",
+                          "type": "IMAGE",
+                          "url": "https://media2.homegate.ch/listings/v2/e335city/4002086198/image/3143df81db38e91fc26d2bbb3e2fe694.jpg",
+                          "metadata": {
+                            "…": "4 fields"
+                          },
+                          "alt": null
+                        },
+                        "… 18 more"
+                      ]
+                    }
+                  },
+                  "legacy": {
+                    "personId": 2132617,
+                    "publishingGroupId": 1153,
+                    "deliveryGroupId": 0
+                  },
+                  "platforms": [
+                    "homegate",
+                    "immoscout24",
+                    "… 5 more"
+                  ],
+                  "characteristics": {
+                    "hasCableTv": true,
+                    "isQuiet": true,
+                    "numberOfBathrooms": 1,
+                    "isGroundFloorRaised": true,
+                    "hasElevator": true,
+                    "numberOfRooms": 1.5,
+                    "livingSpace": 24,
+                    "hasParking": true,
+                    "yearBuilt": 2025,
+                    "yearLastRenovated": 2025,
+                    "hasGarage": true,
+                    "hasNiceView": true,
+                    "hasDishwasher": true
+                  },
+                  "contactForm": {
+                    "deliveryFormat": "NORMAL",
+                    "size": "NO_ADDRESS"
+                  },
+                  "offerType": "RENT",
+                  "prices": {
+                    "buy": {},
+                    "currency": "CHF",
+                    "rent": {
+                      "gross": 2257,
+                      "interval": "MONTH"
+                    }
+                  },
+                  "bfs": {
+                    "egid": "2366595",
+                    "egrid": "CH627899999132",
+                    "ewidCandidates": []
+                  },
+                  "credits_used": 6,
+                  "cached": false
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/homegate/v1/search": {
+      "get": {
+        "operationId": "homegateSearch",
+        "summary": "Homegate search",
+        "description": "Homegate (CH) listings, 20 per page, with every filter the site offers. Give `url` (a Homegate search URL) or `location` (Homegate geo slug such as city-zurich, zip-8004, canton-geneva; comma-separated for several) with `offer` and `category`. Homegate's own URL codes (ac, ag, ah, ak, aw, ax, be, o, ...) are also accepted as-is.\n\nPass `next_page` back as `page`; `next_page` is null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/homegate-search",
+        "tags": [
+          "Homegate"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A Homegate search URL. Optional when `location` is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.homegate.ch/rent/real-estate/city-zurich/matching-list"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Homegate geo slug(s): city-zurich, zip-8004, canton-geneva, ...",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offer",
+            "in": "query",
+            "required": false,
+            "description": "rent (default) or buy.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "rent",
+                "buy"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "real-estate (default), apartment, house, parking-space, commercial-property, plot, ...",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Minimum rent or price, CHF.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Maximum rent or price, CHF.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_rooms",
+            "in": "query",
+            "required": false,
+            "description": "Minimum rooms.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_rooms",
+            "in": "query",
+            "required": false,
+            "description": "Maximum rooms.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_area",
+            "in": "query",
+            "required": false,
+            "description": "Minimum living space, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_area",
+            "in": "query",
+            "required": false,
+            "description": "Maximum living space, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_usable_area",
+            "in": "query",
+            "required": false,
+            "description": "Minimum usable area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_usable_area",
+            "in": "query",
+            "required": false,
+            "description": "Maximum usable area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_plot_area",
+            "in": "query",
+            "required": false,
+            "description": "Minimum plot area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_plot_area",
+            "in": "query",
+            "required": false,
+            "description": "Maximum plot area, m².",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_year_built",
+            "in": "query",
+            "required": false,
+            "description": "Built from (year).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_year_built",
+            "in": "query",
+            "required": false,
+            "description": "Built until (year).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "description": "Radius around the location, km.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "floor",
+            "in": "query",
+            "required": false,
+            "description": "ground or not_ground.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ground",
+                "not_ground"
+              ]
+            }
+          },
+          {
+            "name": "available_from",
+            "in": "query",
+            "required": false,
+            "description": "Available from (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "features",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: balcony, elevator, garage, parking, pets_allowed, wheelchair_access, new_building, old_building, minergie_certified, minergie_built.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), newest, oldest, price_asc, price_desc, rooms_asc, rooms_desc, place_asc, place_desc, exclusive.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.homegate.ch/rent/real-estate/city-zurich/matching-list",
+                  "page": 1,
+                  "total_results": 1303,
+                  "total_pages": 50,
+                  "next_page": 2,
+                  "search": {
+                    "sortType": "topListing",
+                    "sortDirection": "desc",
+                    "chooseType": "rentflat",
+                    "offerType": "rent",
+                    "locations": [
+                      "geo-city-zurich"
+                    ],
+                    "page": 1,
+                    "pageSize": 20,
+                    "facilitiesRequired": [],
+                    "objectTypes": []
+                  },
+                  "count": 20,
+                  "listings": [
+                    {
+                      "id": "4002086198",
+                      "title": "City Pop - Cosy Studio Apartments just next to HB Zürich",
+                      "description": "Wir bieten zentral gelegene Apartments im Gebäude City Pop Zurich City an der Militarstrasse 106, 8004 Zürich an, die zwischen 19 und 46 Qua…",
+                      "price": 2257,
+                      "currency": "CHF",
+                      "rooms": 1.5,
+                      "area": 24,
+                      "street": "Militärstrasse 106",
+                      "postal_code": "8004",
+                      "city": "Zürich",
+                      "offer_type": "RENT",
+                      "categories": [
+                        "APARTMENT",
+                        "FLAT"
+                      ],
+                      "image": "https://media2.homegate.ch/listings/v2/e335city/4002086198/image/92c334cb2a581eeda57f107e6b2d3fd3.jpg",
+                      "url": "https://www.homegate.ch/rent/4002086198",
+                      "images": [
+                        "https://media2.homegate.ch/listings/v2/e335city/4002086198/image/92c334cb2a581eeda57f107e6b2d3fd3.jpg",
+                        "https://media2.homegate.ch/listings/v2/e335city/4002086198/image/3143df81db38e91fc26d2bbb3e2fe694.jpg",
+                        "… 18 more"
+                      ],
+                      "characteristics": {
+                        "hasCableTv": true,
+                        "isQuiet": true,
+                        "numberOfBathrooms": 1,
+                        "isGroundFloorRaised": true,
+                        "hasElevator": true,
+                        "numberOfRooms": 1.5,
+                        "livingSpace": 24,
+                        "hasParking": true,
+                        "yearBuilt": 2025,
+                        "yearLastRenovated": 2025,
+                        "hasGarage": true,
+                        "hasNiceView": true,
+                        "hasDishwasher": true
+                      },
+                      "prices": {
+                        "buy": {},
+                        "currency": "CHF",
+                        "rent": {
+                          "gross": 2257,
+                          "interval": "MONTH"
+                        }
+                      },
+                      "address": {
+                        "geoCoordinates": {
+                          "accuracy": "HIGH",
+                          "latitude": 47.375904311641,
+                          "longitude": 8.518084894764
+                        },
+                        "geoTags": [
+                          "geo-cityregion-kreis-4",
+                          "geo-city-zurich",
+                          "… 4 more"
+                        ],
+                        "locality": "Zürich",
+                        "postalCode": "8004",
+                        "street": "Militärstrasse 106",
+                        "region": "ZH"
+                      },
+                      "latitude": 47.375904311641,
+                      "longitude": 8.518084894764,
+                      "lister": {
+                        "logoUrl": "https://media2.homegate.ch/t_customer_logo/logos/l_e335city_v2.png",
+                        "isQualityPartner": false,
+                        "subscriptionType": "Gold",
+                        "isPremiumBranding": false,
+                        "basePackage": "RE_GOLD"
+                      },
+                      "listing_type": "PREMIUM",
+                      "rent_net": null,
+                      "rent_extra": null,
+                      "rent_interval": "MONTH",
+                      "available_from": null,
+                      "languages": [
+                        "de"
+                      ]
+                    },
+                    {
+                      "id": "4002086141",
+                      "title": "City Pop - Cosy Studio Apartments close to Zürich center",
+                      "description": "Wir bieten zentral gelegene Apartments im Gebäude City Pop Zurich Urban an der Rotbuchstrasse 9, 8006 Zürich an, die zwischen 17 und 34 Quad…",
+                      "price": 2042,
+                      "currency": "CHF",
+                      "rooms": 1,
+                      "area": 17,
+                      "street": "Rotbuchstrasse 9",
+                      "postal_code": "8006",
+                      "city": "Zürich",
+                      "offer_type": "RENT",
+                      "categories": [
+                        "APARTMENT",
+                        "FLAT"
+                      ],
+                      "image": "https://media2.homegate.ch/listings/v2/e335city/4002086141/image/32f7fec47e219108533d0224d2c46963.jpg",
+                      "url": "https://www.homegate.ch/rent/4002086141",
+                      "images": [
+                        "https://media2.homegate.ch/listings/v2/e335city/4002086141/image/32f7fec47e219108533d0224d2c46963.jpg",
+                        "https://media2.homegate.ch/listings/v2/e335city/4002086141/image/ad1bc8f5d17ab7b8eee1f9ea08b74a99.jpg",
+                        "… 17 more"
+                      ],
+                      "characteristics": {
+                        "hasDishwasher": true,
+                        "hasParking": true,
+                        "isGroundFloorRaised": true,
+                        "hasGarage": true,
+                        "numberOfRooms": 1,
+                        "livingSpace": 17,
+                        "isQuiet": true,
+                        "numberOfBathrooms": 1,
+                        "hasElevator": true,
+                        "yearBuilt": 2025,
+                        "yearLastRenovated": 2025
+                      },
+                      "prices": {
+                        "buy": {},
+                        "currency": "CHF",
+                        "rent": {
+                          "interval": "MONTH",
+                          "gross": 2042
+                        }
+                      },
+                      "address": {
+                        "geoCoordinates": {
+                          "longitude": 8.548503897068,
+                          "accuracy": "HIGH",
+                          "latitude": 47.386584311646
+                        },
+                        "geoTags": [
+                          "geo-cityregion-kreis-6",
+                          "geo-city-zurich",
+                          "… 4 more"
+                        ],
+                        "locality": "Zürich",
+                        "postalCode": "8006",
+                        "street": "Rotbuchstrasse 9",
+                        "region": "ZH"
+                      },
+                      "latitude": 47.386584311646,
+                      "longitude": 8.548503897068,
+                      "lister": {
+                        "logoUrl": "https://media2.homegate.ch/t_customer_logo/logos/l_e335city_v2.png",
+                        "isQualityPartner": false,
+                        "subscriptionType": "Gold",
+                        "isPremiumBranding": false,
+                        "basePackage": "RE_GOLD"
+                      },
+                      "listing_type": "PREMIUM",
+                      "rent_net": null,
+                      "rent_extra": null,
+                      "rent_interval": "MONTH",
+                      "available_from": null,
+                      "languages": [
+                        "de"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

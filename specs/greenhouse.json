@@ -1,0 +1,1528 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Greenhouse",
+    "version": "1.0.0",
+    "description": "The Greenhouse API from API.SH: public Greenhouse data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Greenhouse",
+      "description": "6 endpoints (jobs & b2b)",
+      "x-slug": "greenhouse",
+      "x-domains": [
+        "greenhouse.io"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/greenhouse/v1/company": {
+      "get": {
+        "operationId": "greenhouseCompany",
+        "summary": "Greenhouse company board",
+        "description": "A Greenhouse board's company name and intro text, its departments and offices (with parent/child ids) and the number of open jobs in each.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greenhouse-company",
+        "tags": [
+          "Greenhouse"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": true,
+            "description": "The company's Greenhouse board name (the part after the host in its job board URL), or that URL.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "airbnb"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company": "airbnb",
+                  "name": "Airbnb",
+                  "board_url": "https://job-boards.greenhouse.io/airbnb",
+                  "intro_html": null,
+                  "intro": null,
+                  "total_jobs": 0,
+                  "departments": [
+                    {
+                      "id": 60966,
+                      "name": "1. Technical",
+                      "parent_id": null,
+                      "child_ids": [
+                        85549,
+                        73701,
+                        "… 9 more"
+                      ],
+                      "job_count": 0
+                    },
+                    {
+                      "id": 60666,
+                      "name": "2. Business",
+                      "parent_id": null,
+                      "child_ids": [
+                        85346,
+                        73682,
+                        "… 31 more"
+                      ],
+                      "job_count": 0
+                    },
+                    "… 59 more"
+                  ],
+                  "offices": [
+                    {
+                      "id": 17515,
+                      "name": "AMER",
+                      "location": null,
+                      "parent_id": null,
+                      "child_ids": [
+                        64283,
+                        63868,
+                        "… 43 more"
+                      ],
+                      "job_count": 0
+                    },
+                    {
+                      "id": 7425,
+                      "name": "Amsterdam, Netherlands",
+                      "location": "Amsterdam, Netherlands",
+                      "parent_id": 64285,
+                      "child_ids": [],
+                      "job_count": 0
+                    },
+                    "… 129 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greenhouse/v1/departments": {
+      "get": {
+        "operationId": "greenhouseDepartments",
+        "summary": "Departments and their jobs",
+        "description": "Every department of a Greenhouse job board with its sub-departments and the jobs in it and below it (id, title, location, updated date, link).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greenhouse-departments",
+        "tags": [
+          "Greenhouse"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": true,
+            "description": "Board name, or a Greenhouse board or job link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "airbnb"
+          },
+          {
+            "name": "with_jobs",
+            "in": "query",
+            "required": false,
+            "description": "Only departments that have jobs.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company": "airbnb",
+                  "board_url": "https://job-boards.greenhouse.io/airbnb",
+                  "count": 61,
+                  "total_jobs": 213,
+                  "departments": [
+                    {
+                      "id": 60966,
+                      "name": "1. Technical",
+                      "parent_id": null,
+                      "child_ids": [
+                        85549,
+                        73701,
+                        "… 9 more"
+                      ],
+                      "job_count": 87,
+                      "own_job_count": 0,
+                      "jobs": [
+                        {
+                          "id": 7107054,
+                          "title": "Senior Staff Data Scientist, Guest & Host Marketplace AI",
+                          "location": "Remote",
+                          "updated_at": "2026-09-29T20:00:54-04:00",
+                          "url": "https://careers.airbnb.com/positions/7107054?gh_jid=7107054",
+                          "requisition_id": "ONE"
+                        },
+                        {
+                          "id": 7662244,
+                          "title": "Senior Data Scientist, Guest & Host",
+                          "location": "Remote",
+                          "updated_at": "2026-10-28T09:43:20-04:00",
+                          "url": "https://careers.airbnb.com/positions/7662244?gh_jid=7662244",
+                          "requisition_id": "MULTIPLE"
+                        },
+                        "… 85 more"
+                      ]
+                    },
+                    {
+                      "id": 60666,
+                      "name": "2. Business",
+                      "parent_id": null,
+                      "child_ids": [
+                        85346,
+                        73682,
+                        "… 31 more"
+                      ],
+                      "job_count": 125,
+                      "own_job_count": 0,
+                      "jobs": [
+                        {
+                          "id": 8023118,
+                          "title": "Lead Advanced Analytics, Community Support",
+                          "location": "Bengaluru, India",
+                          "updated_at": "2026-10-09T04:22:51-04:00",
+                          "url": "https://careers.airbnb.com/positions/8023118?gh_jid=8023118",
+                          "requisition_id": "ONE"
+                        },
+                        {
+                          "id": 8081180,
+                          "title": "Senior Analyst, Advanced Analytics - Gurugram",
+                          "location": "Gurugram, India",
+                          "updated_at": "2026-10-27T10:19:21-04:00",
+                          "url": "https://careers.airbnb.com/positions/8081180?gh_jid=8081180",
+                          "requisition_id": "ONE"
+                        },
+                        "… 123 more"
+                      ]
+                    },
+                    "… 59 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greenhouse/v1/education": {
+      "get": {
+        "operationId": "greenhouseEducation",
+        "summary": "Education lists",
+        "description": "The school, degree and discipline lists a board's application form offers, with their ids; schools can be searched by name. Pass `next_page` back as `page`, null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greenhouse-education",
+        "tags": [
+          "Greenhouse"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": true,
+            "description": "Board name, or a Greenhouse board or job link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "airbnb"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Which list (default schools).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "schools",
+                "degrees",
+                "disciplines"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search text (schools).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "stanford"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company": "airbnb",
+                  "type": "schools",
+                  "q": null,
+                  "page": 1,
+                  "total": 2492,
+                  "count": 100,
+                  "next_page": 2,
+                  "items": [
+                    {
+                      "id": 3714939,
+                      "name": "Aalborg University"
+                    },
+                    {
+                      "id": 3712673,
+                      "name": "Aalto University"
+                    },
+                    "… 98 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greenhouse/v1/job": {
+      "get": {
+        "operationId": "greenhouseJob",
+        "summary": "Greenhouse job posting",
+        "description": "One posting from a Greenhouse board with its full description, departments, offices, pay ranges, application questions (labels, types, options, required), location questions and compliance questions. Use an `id` from `/greenhouse/v1/jobs`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greenhouse-job",
+        "tags": [
+          "Greenhouse"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": true,
+            "description": "The company's Greenhouse board name (the part after the host in its job board URL), or that URL.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "stripe"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Job id from `/greenhouse/v1/jobs`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "5416444"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company": "stripe",
+                  "id": "5416444",
+                  "title": "Data Analyst",
+                  "department": "7112 Data Science",
+                  "team": null,
+                  "location": "Canada",
+                  "locations": [
+                    "Canada",
+                    "Canada Locations"
+                  ],
+                  "workplace_type": null,
+                  "remote": false,
+                  "employment_type": null,
+                  "compensation": null,
+                  "posted_at": "2023-11-01T17:50:50.000Z",
+                  "updated_at": "2026-10-29T14:42:09.000Z",
+                  "description_html": "<h2>Who we are</h2>\n<h3>About Stripe</h3>\n<p>Stripe is a financial infrastructure platform for businesses. Millions of companies—from the wo…",
+                  "description": "Who we are\n\nAbout Stripe\n\nStripe is a financial infrastructure platform for businesses. Millions of companies—from the world's largest enter…",
+                  "apply_url": "https://stripe.com/jobs/search?gh_jid=5416444",
+                  "url": "https://stripe.com/jobs/search?gh_jid=5416444",
+                  "departments": [
+                    {
+                      "id": 84354,
+                      "name": "7112 Data Science",
+                      "parent_id": 78812
+                    }
+                  ],
+                  "offices": [
+                    {
+                      "id": 87006,
+                      "name": "Canada Locations",
+                      "location": null,
+                      "parent_id": 673
+                    }
+                  ],
+                  "pay_ranges": [],
+                  "questions": [
+                    {
+                      "label": "First Name",
+                      "required": true,
+                      "description": null,
+                      "fields": [
+                        {
+                          "name": "first_name",
+                          "type": "input_text",
+                          "options": []
+                        }
+                      ]
+                    },
+                    {
+                      "label": "Last Name",
+                      "required": true,
+                      "description": null,
+                      "fields": [
+                        {
+                          "name": "last_name",
+                          "type": "input_text",
+                          "options": []
+                        }
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "location_questions": [
+                    {
+                      "label": "Longitude",
+                      "required": true,
+                      "description": null,
+                      "fields": [
+                        {
+                          "name": "longitude",
+                          "type": "input_hidden",
+                          "options": []
+                        }
+                      ]
+                    },
+                    {
+                      "label": "Latitude",
+                      "required": true,
+                      "description": null,
+                      "fields": [
+                        {
+                          "name": "latitude",
+                          "type": "input_hidden",
+                          "options": []
+                        }
+                      ]
+                    },
+                    "… 1 more"
+                  ],
+                  "compliance": null,
+                  "demographic_questions": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greenhouse/v1/jobs": {
+      "get": {
+        "operationId": "greenhouseJobs",
+        "summary": "Greenhouse job board",
+        "description": "Every open job on a company's Greenhouse job board (thousands of company career sites run on it). Without `content`, a light list with departments; `content=true` adds the full description, offices and pay metadata (much larger for big boards). `total` counts the jobs after the filters; pages are `per_page` jobs; pass `next_page` back as `page`, null on the last page. Each job: `id`, `title`, `department`, `team`, `location`, `locations`, `workplace_type`, `remote`, `employment_type`, `compensation` (summary, min, max, currency, interval) when the company publishes it, `posted_at`, `updated_at`, `description_html` and `description` (plain text) when included, `apply_url`, `url` and `raw` (the board's own record). The same shape on every job board endpoint. Filter by last update or first-publish date with `updated_after` / `posted_after`, and order with `sort`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greenhouse-jobs",
+        "tags": [
+          "Greenhouse"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": true,
+            "description": "The company's Greenhouse board name (the part after the host in its job board URL), or that URL.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "gitlab"
+          },
+          {
+            "name": "content",
+            "in": "query",
+            "required": false,
+            "description": "`true`: include each job's full description, departments and offices.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs whose title contains all these words.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "department",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs whose department or team contains this text.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs whose location (or workplace type, e.g. `remote`) contains this text.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Jobs per page (default 100, max 500).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "updated_after",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs updated after this date (YYYY-MM-DD or ISO timestamp).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "posted_after",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs first published after this date (YYYY-MM-DD or ISO timestamp).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order: `updated` or `posted` (newest first), `title` or `location` (A-Z). Default: the board's own order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "updated",
+                "posted",
+                "title",
+                "location"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company": "airbnb",
+                  "board_url": "https://job-boards.greenhouse.io/airbnb",
+                  "total": 211,
+                  "count": 100,
+                  "page": 1,
+                  "per_page": 100,
+                  "next_page": 2,
+                  "content": false,
+                  "applied_filters": {},
+                  "jobs": [
+                    {
+                      "id": "8345532",
+                      "title": "AirCover Specialist, Claims Experience",
+                      "department": "Community Support",
+                      "team": null,
+                      "location": "Japan",
+                      "locations": [
+                        "Japan"
+                      ],
+                      "workplace_type": "Remote",
+                      "remote": true,
+                      "employment_type": null,
+                      "compensation": null,
+                      "posted_at": "2026-11-02T08:52:24.000Z",
+                      "updated_at": "2026-11-03T03:52:56.000Z",
+                      "description_html": null,
+                      "description": null,
+                      "apply_url": "https://careers.airbnb.com/positions/8345532?gh_jid=8345532",
+                      "url": "https://careers.airbnb.com/positions/8345532?gh_jid=8345532"
+                    },
+                    {
+                      "id": "8306554",
+                      "title": "AirCover Specialist, Claims Experience",
+                      "department": "Community Support",
+                      "team": null,
+                      "location": "Canada",
+                      "locations": [
+                        "Canada"
+                      ],
+                      "workplace_type": "Remote",
+                      "remote": true,
+                      "employment_type": null,
+                      "compensation": null,
+                      "posted_at": "2026-10-28T14:52:05.000Z",
+                      "updated_at": "2026-10-28T14:52:05.000Z",
+                      "description_html": null,
+                      "description": null,
+                      "apply_url": "https://careers.airbnb.com/positions/8306554?gh_jid=8306554",
+                      "url": "https://careers.airbnb.com/positions/8306554?gh_jid=8306554"
+                    },
+                    "… 98 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greenhouse/v1/offices": {
+      "get": {
+        "operationId": "greenhouseOffices",
+        "summary": "Offices and their jobs",
+        "description": "Every office / location of a Greenhouse job board with its sub-offices and the jobs in it (id, title, location, updated date, link).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greenhouse-offices",
+        "tags": [
+          "Greenhouse"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": true,
+            "description": "Board name, or a Greenhouse board or job link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "airbnb"
+          },
+          {
+            "name": "with_jobs",
+            "in": "query",
+            "required": false,
+            "description": "Only offices that have jobs.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "company": "airbnb",
+                  "board_url": "https://job-boards.greenhouse.io/airbnb",
+                  "count": 131,
+                  "offices": [
+                    {
+                      "id": 17515,
+                      "name": "AMER",
+                      "location": null,
+                      "parent_id": null,
+                      "child_ids": [
+                        64283,
+                        63868,
+                        "… 43 more"
+                      ],
+                      "job_count": 0,
+                      "own_job_count": 0,
+                      "jobs": []
+                    },
+                    {
+                      "id": 7425,
+                      "name": "Amsterdam, Netherlands",
+                      "location": "Amsterdam, Netherlands",
+                      "parent_id": 64285,
+                      "child_ids": [],
+                      "job_count": 0,
+                      "own_job_count": 0,
+                      "jobs": []
+                    },
+                    "… 129 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

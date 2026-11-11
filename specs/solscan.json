@@ -1,0 +1,2829 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Solscan",
+    "version": "1.0.0",
+    "description": "The Solscan API from API.SH: public Solscan data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Solscan",
+      "description": "13 endpoints (finance & crypto)",
+      "x-slug": "solscan",
+      "x-domains": [
+        "solscan.io"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/solscan/v1/account": {
+      "get": {
+        "operationId": "solscanAccount",
+        "summary": "Solscan account overview",
+        "description": "A Solana account as Solscan shows it: type, SOL balance and lamports, owner program, executable flag, size, public label and tags, notices, and the token info and metadata when the account is a token mint.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-account",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "A Solana address or a solscan.io account link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+                  "url": "https://solscan.io/account/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+                  "type": "system_account",
+                  "account_type": "account_main",
+                  "balance_sol": 9300003.228029948,
+                  "lamports": "9300003228029947",
+                  "owner_program": "11111111111111111111111111111111",
+                  "executable": false,
+                  "space": 0,
+                  "label": "Binance 3",
+                  "tags": [
+                    "binance",
+                    "exchange_wallet"
+                  ],
+                  "notice": null,
+                  "token": null,
+                  "metadata": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/account-tokens": {
+      "get": {
+        "operationId": "solscanAccountTokens",
+        "summary": "Solscan account token holdings",
+        "description": "The tokens an account holds, largest value first: token mint, token account, name, symbol, icon, balance, decimals, USD price and value, with the count. `type=nft` lists NFTs instead.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-account-tokens",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "A Solana address or a solscan.io account link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "`token` (default) or `nft`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "token",
+                "nft"
+              ]
+            }
+          },
+          {
+            "name": "hide_zero",
+            "in": "query",
+            "required": false,
+            "description": "Hide zero balances (default true).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Holdings returned (1-500, default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+                  "type": "token",
+                  "total": 2958,
+                  "count": 100,
+                  "tokens": [
+                    {
+                      "token_address": "BDVEzpVVGt7zAx9AoVQ1SdSo6qHJ1e4hLnitjexBGnhW",
+                      "token_account": "84qCSpCuwu676FNueRzYGe74tvwXD7taNxpZKUjyKXsQ",
+                      "name": "CATRUMP",
+                      "symbol": "MAGACAT",
+                      "icon": "https://ipfs.io/ipfs/QmNtEigC5mgTw24v1he2wvGabUTtkibvn8X6tiEBNF5ZYL",
+                      "balance": 20000000,
+                      "amount_raw": "20000000000000000",
+                      "decimals": 9,
+                      "price_usd": 499968381.52191126,
+                      "value_usd": 9999367630438226,
+                      "type": "token"
+                    },
+                    {
+                      "token_address": "2WJkWMQFfviB1eo2X8Nnc1zXMYvVvgEuDC2E32j69HmK",
+                      "token_account": "AAG9iagpA3QZfrQ3EfAAkQD4Cftk56mAztdCsLpMHEB3",
+                      "name": "PainPain",
+                      "symbol": "PainPain",
+                      "icon": "https://gateway.irys.xyz/5Y-VXRhZI7wRD2JVE6U6n9661Gpo0wUQLdalTp2K2LA",
+                      "balance": 300000,
+                      "amount_raw": "300000000000000",
+                      "decimals": 9,
+                      "price_usd": 12434327.35017127,
+                      "value_usd": 3730298205051.381,
+                      "type": "token"
+                    },
+                    "… 98 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/account-transactions": {
+      "get": {
+        "operationId": "solscanAccountTransactions",
+        "summary": "Solscan account transactions",
+        "description": "The transactions of an account, newest first: signature, slot, time, status, fee, signers, tags, parsed instructions (type, program), SOL value and programs called. Pass `next_before` back as `before` for the next page; it is null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-account-transactions",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "A Solana address or a solscan.io account link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "10, 20 (default), 30 or 40.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Signature to page from (the `next_before` of the previous page).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+                  "count": 20,
+                  "next_before": "2LHmHwZk8VVhD2FSwfK13EYQ6gginsSnTWHYDMquNovL67xFrK9bQKdbB8cSkTyj1dozk24mBcuCyZbPEXK16rcs",
+                  "transactions": [
+                    {
+                      "signature": "2o7kZmuSaSsDSyMeVuXkTYiwQhi7KXGA6CxvbZQxK7sPJP2ubC1UNp2oFMgwvNCVLgsVBzxZB6kADmruHKHN6MGw",
+                      "slot": 465593628,
+                      "time": "2026-11-05T05:51:03.000Z",
+                      "status": "Success",
+                      "fee_lamports": 5000,
+                      "signers": [
+                        "4Ty5zbNomFjD4aHM68HdQy1YbDUY8vQBPYahyrZ1T2k7"
+                      ],
+                      "tags": [
+                        "transfer"
+                      ],
+                      "instructions": [
+                        {
+                          "type": "transfer",
+                          "program": "spl-token",
+                          "program_id": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+                        }
+                      ],
+                      "sol_value_lamports": "1493440",
+                      "program_ids": [
+                        "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+                        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+                        "… 1 more"
+                      ]
+                    },
+                    {
+                      "signature": "5FHkhj6WXrQwLvZD1v3wyoKptgcxvG5wY4ut2kZirYd2o9UymvsUJkwrMexCA73d967T6ookvdL2SzbeVFxroS2m",
+                      "slot": 465500173,
+                      "time": "2026-11-05T00:18:20.000Z",
+                      "status": "Success",
+                      "fee_lamports": 10000,
+                      "signers": [
+                        "GxVQ1n7DXnb1iU94CvWuxZQFM56Cj5bk5UpWg7T3Xu2d",
+                        "DQr2aysx9iFafyhnoqFP75YiHL1BtKqzTfNYtR8gUspa"
+                      ],
+                      "tags": [
+                        "transfer"
+                      ],
+                      "instructions": [
+                        {
+                          "type": "transfer",
+                          "program": "system",
+                          "program_id": "11111111111111111111111111111111"
+                        }
+                      ],
+                      "sol_value_lamports": "10000",
+                      "program_ids": [
+                        "11111111111111111111111111111111"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/account-transfers": {
+      "get": {
+        "operationId": "solscanAccountTransfers",
+        "summary": "Solscan account transfers",
+        "description": "Token and SOL transfers of an account with the site's filters, newest first: signature, slot, time, activity, from and to (with labels and token accounts), token (mint, name, symbol, icon, price), amount, USD value, flow and programs. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-account-transfers",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "A Solana address or a solscan.io account link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "description": "Only this token mint.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "flow",
+            "in": "query",
+            "required": false,
+            "description": "`in` or `out`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "in",
+                "out"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Only transfers from this address.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Only transfers to this address.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activity",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: transfer, mint, burn, create_account, close_account.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from_time",
+            "in": "query",
+            "required": false,
+            "description": "Start time, unix seconds.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "to_time",
+            "in": "query",
+            "required": false,
+            "description": "End time, unix seconds.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_amount",
+            "in": "query",
+            "required": false,
+            "description": "Minimum token amount.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_amount",
+            "in": "query",
+            "required": false,
+            "description": "Maximum token amount.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "remove_spam",
+            "in": "query",
+            "required": false,
+            "description": "Hide spam tokens (default true).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "exclude_zero",
+            "in": "query",
+            "required": false,
+            "description": "Hide zero-amount transfers (default true).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-500).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Results per page: 10, 20, 30, 40, 60 or 100 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+                  "page": 1,
+                  "page_size": 20,
+                  "applied_filters": {
+                    "remove_spam": true,
+                    "exclude_amount_zero": true
+                  },
+                  "count": 20,
+                  "next_page": 2,
+                  "transfers": [
+                    {
+                      "signature": "5ensjCrdiPW17kf1xpTNNQqvvpbG4ACNmijPD1m68BFXMwAcrXVyXGUok9BD6NQtrzX81MGcKpmnArQ5XbHo61Dn",
+                      "slot": 465813259,
+                      "time": "2026-11-05T18:52:28.000Z",
+                      "activity": "ACTIVITY_SPL_TRANSFER",
+                      "from": "DRU4cftu37pTaJYM5pfcXo8qQd68wypRjg5ZSYsz4XmC",
+                      "from_label": null,
+                      "from_token_account": "J5UVxQaYxQtidaPMWuHTyZESogWDm1zVmfry8DMs35zu",
+                      "to": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+                      "to_label": "Binance 3",
+                      "to_token_account": "3set8wvJEkjGQhkcEnCwM354bpPLdv4sa1K3ehHWxcuc",
+                      "token_address": "83eAEViwWvrwBxXNQUN5pLaYMc1i5eurMzkwEs9zURB",
+                      "token": {
+                        "name": "NotInEmploymentEducationTraining",
+                        "symbol": "neet",
+                        "icon": null,
+                        "decimals": 6,
+                        "price_usd": 0.04031103749482385
+                      },
+                      "amount": 4848.461018,
+                      "amount_raw": 4848461018,
+                      "decimals": 6,
+                      "value_usd": 195.4465060350387,
+                      "flow": "in",
+                      "programs": [
+                        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+                      ]
+                    },
+                    {
+                      "signature": "3Q1NQerkztrXfaTeedq9raTQjiRQd6hz98wm7Qu9cWGL9vFVp2sVWhVjHCGaajSxxAbTQ4CQa4k2RqhzHuj7oZSD",
+                      "slot": 465793788,
+                      "time": "2026-11-05T17:42:54.000Z",
+                      "activity": "ACTIVITY_SPL_TRANSFER",
+                      "from": "D3BZaaN6hMykaVB4o956dq4bcg5dynMdPngGt9bkqiwZ",
+                      "from_label": null,
+                      "from_token_account": "3reD9PBUmBFv6ssa4AtTyVLmoBWRKDZbdSkZdJmqD15A",
+                      "to": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+                      "to_label": "Binance 3",
+                      "to_token_account": "6ipWq7EgWndQet6KqQJV6Uj1FyN5XxUfBZ6sPgSPKWsP",
+                      "token_address": "YmJRNSd3uoDqNRVQZnrATphqH3sf2NofzevBBVcsEaW",
+                      "token": {
+                        "name": "Wendy's Co",
+                        "symbol": "",
+                        "icon": "https://gateway.irys.xyz/DT6thcdAty4ASx2b7F8FZUPKvLkab78YuxDu2w9GkGpr",
+                        "decimals": 6,
+                        "price_usd": 0.0006509137363022973
+                      },
+                      "amount": 240242.91767,
+                      "amount_raw": 240242917670,
+                      "decimals": 6,
+                      "value_usd": 156.37741845152095,
+                      "flow": "in",
+                      "programs": [
+                        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/block": {
+      "get": {
+        "operationId": "solscanBlock",
+        "summary": "Solscan block details",
+        "description": "One block (slot): time, block hash and previous hash, parent slot, block height, epoch, validator, fee rewards and transaction count; `transactions=true` adds the block's transaction list.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-block",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slot",
+            "in": "query",
+            "required": true,
+            "description": "Slot number.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "465593628"
+          },
+          {
+            "name": "transactions",
+            "in": "query",
+            "required": false,
+            "description": "Also list the block's transactions (default false).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slot": 465593628,
+                  "url": "https://solscan.io/block/465593628",
+                  "time": "2026-11-05T05:51:03.000Z",
+                  "previousBlockhash": "5C8J8XQmq9DxyeVTfMZd8CXo8pBCqbbLDpbZW2ByWSq8",
+                  "blockhash": "BU4EK3oPDEvrwvfo8gFkSE3VVVvuQcRw3WfJiUmQEisw",
+                  "parentSlot": 465593627,
+                  "blockTime": 1793857863,
+                  "blockHeight": 443613861,
+                  "fee_rewards": 2762245,
+                  "validator": "5Cchr1XGEg7dbBXByV5NY2ad8jfxAM7HA3x8D56rq9Ux",
+                  "transactions_count": 318,
+                  "epoch": 1077,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/chain": {
+      "get": {
+        "operationId": "solscanChain",
+        "summary": "Solscan chain stats",
+        "description": "Current Solana chain information (slot, block height, epoch and its progress, transaction counts, TPS) and SOL market data (price, 24h change, market cap and rank, fees).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-chain",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/search": {
+      "get": {
+        "operationId": "solscanSearch",
+        "summary": "Solscan search",
+        "description": "What the explorer's search finds for a keyword, grouped by kind (tokens, accounts, programs, NFT collections, domains): address, name, symbol, icon, holders, volume, FDV, verified flag and socials for tokens.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-search",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Keyword, symbol, address or domain.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "bonk"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "bonk",
+                  "tokens": [
+                    {
+                      "address": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+                      "holder": 1027367,
+                      "updatedAt": 1793956537,
+                      "reputation": "ok",
+                      "extensions": {
+                        "coingeckoId": "bonk",
+                        "discord": "https://discord.gg/ubqvDDFUhf",
+                        "medium": "",
+                        "telegram": "",
+                        "twitter": "https://twitter.com/bonk_inu",
+                        "website": "https://www.bonkcoin.com/",
+                        "description": "The Official Bonk Inu token",
+                        "coinMarketcapId": "bonk1"
+                      },
+                      "priority": 107,
+                      "decimals": 5,
+                      "enableNameSearch": true,
+                      "volume24h": 1302662,
+                      "fdv": 253575351,
+                      "is_verified": true,
+                      "name": "Bonk",
+                      "symbol": "Bonk",
+                      "icon": "https://arweave.net/hQiPZOsRZXGXBJd_82PhVdlM_hACsT_q6wqwf5cSY7I"
+                    },
+                    {
+                      "address": "BonK1YhkXEGLZzwtcvRTip3gAL9nCeQD7ppZBLXhtTs",
+                      "holder": 6665,
+                      "updatedAt": 1793956033.615,
+                      "reputation": "neutral",
+                      "extensions": {
+                        "coingeckoId": "bonk-staked-sol",
+                        "discord": "",
+                        "medium": "",
+                        "telegram": "",
+                        "twitter": "",
+                        "website": "",
+                        "description": "BONK liquid staking token",
+                        "coinMarketcapId": ""
+                      },
+                      "priority": 94,
+                      "decimals": 9,
+                      "enableNameSearch": true,
+                      "volume24h": 453,
+                      "fdv": 6558485,
+                      "is_verified": true,
+                      "name": "bonkSOL",
+                      "symbol": "bonkSOL",
+                      "icon": "https://arweave.net/ms-FdIyJ8TxEJOb2SAYhfyrLop7TDrCEjD-I-oIl5u4"
+                    },
+                    "… 4 more"
+                  ],
+                  "address": [
+                    {
+                      "type": "address",
+                      "address": "DBR2ZUvjZTcgy6R9US64t96pBEZMyr9DPW6G2scrctQK",
+                      "label": "Bonk MultiSig Wallet",
+                      "priority": 90,
+                      "status": 1,
+                      "tags": [],
+                      "enableNameSearch": true,
+                      "updatedAt": "2024-11-07T16:11:36.110Z"
+                    },
+                    {
+                      "type": "address",
+                      "address": "2yNEHLvUzhqd4v39tDNJEPxsvz5HkTTTR5mfq22PjHyc",
+                      "icon": "",
+                      "label": "Wasabi $BONK LP Vault",
+                      "priority": 90,
+                      "status": 1,
+                      "tags": [],
+                      "enableNameSearch": true,
+                      "updatedAt": "2024-12-18T04:02:00.283Z"
+                    },
+                    "… 18 more"
+                  ],
+                  "program": [
+                    {
+                      "type": "program",
+                      "address": "SVBzw5fZRY9iNRwy5JczFYni2X9aDqur6HhAP1CXX7T",
+                      "label": "Silicon Valley BONK",
+                      "priority": 90,
+                      "status": 1,
+                      "tags": [],
+                      "enableNameSearch": true,
+                      "updatedAt": "2024-05-17T04:08:17.455Z",
+                      "name": "Silicon Valley BONK"
+                    },
+                    {
+                      "type": "program",
+                      "address": "FiRESpaNzgYUiba5vkb44CZJLZjrux1AUECdfwPRsNkg",
+                      "label": "Bonk Fire",
+                      "priority": 90,
+                      "status": 1,
+                      "tags": [],
+                      "enableNameSearch": true,
+                      "updatedAt": "2024-05-17T04:08:17.455Z",
+                      "name": "Bonk Fire"
+                    },
+                    "… 9 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/token": {
+      "get": {
+        "operationId": "solscanToken",
+        "summary": "Solscan token overview",
+        "description": "A token mint: name, symbol, icon, decimals, supply, mint and freeze authority, owner program, creator, creation and first mint time and transactions, website and socials, CoinGecko and CoinMarketCap ids, token scores, status flags, the last days of daily USD prices and the metadata account.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-token",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "Token mint address or a solscan.io token link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                  "url": "https://solscan.io/token/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                  "name": "USDC",
+                  "symbol": "USDC",
+                  "icon": "https://cdn.rwa.xyz/images/asset-icons/128/color/usdc.png",
+                  "decimals": 6,
+                  "supply": 8812863413.633196,
+                  "supply_raw": "8812863413633196",
+                  "mint_authority": "BJE5MMbqXjVwjAF7oxwPYXnTXDyspzZyt4vwenNw5ruG",
+                  "freeze_authority": "7dGbd2QZcCKcTndnHcTL8q7SMVXAkp688NTQYwrRCrar",
+                  "owner_program": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+                  "creator": "5TYZChz7APFopR5QirD5of4rQj1p9AXxeSAg6JndBdGj",
+                  "created_at": "2020-10-13T17:37:53.000Z",
+                  "created_tx": "3J3ijbvsdedojbptNNm57mfB9gMeH6y5vF73bx5seGT8CS54fVUgRhvhZALfxXWuj6hRt3JXNP73caJVkTzVFPV5",
+                  "first_mint_at": "2024-07-19T22:20:41.000Z",
+                  "first_mint_tx": "5bLgbFhs1tugs4YHFHxmoBWdanG8N7sqjAYT9FWPkXpmPhtr2haifoLg65uLBLzdc1sh4FuEfRG6VZ82T1u2xvLX",
+                  "website": null,
+                  "twitter": "https://circle.com/",
+                  "telegram": null,
+                  "discord": null,
+                  "description": null,
+                  "coingecko_id": "usd-coin",
+                  "coinmarketcap_id": "usd-coin",
+                  "scores": {
+                    "lifetimeScore": 5,
+                    "engagementScore": 5,
+                    "volatilityScore": 5,
+                    "liquidityScore": 5,
+                    "tokenScore": 10,
+                    "updatedTime": 1790815549
+                  },
+                  "status": [
+                    {
+                      "name": "Primary Market",
+                      "value": 0,
+                      "type": "primarySaleHappened"
+                    },
+                    {
+                      "name": "Mutable",
+                      "value": 1,
+                      "type": "primarySaleHappened"
+                    }
+                  ],
+                  "price_history": [
+                    {
+                      "date": "2026-10-30",
+                      "price_usd": 1
+                    },
+                    {
+                      "date": "2026-10-31",
+                      "price_usd": 1
+                    },
+                    "… 6 more"
+                  ],
+                  "metadata": {
+                    "key": 4,
+                    "updateAuthority": "2wmVCSfPxGPjrnMMn7rchp4uaeoTqN39mXFC2zhPdri9",
+                    "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                    "data": {
+                      "name": "USD Coin",
+                      "symbol": "USDC",
+                      "uri": "",
+                      "sellerFeeBasisPoints": 0
+                    },
+                    "primarySaleHappened": 0,
+                    "isMutable": 1,
+                    "editionNonce": 252
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/token-holders": {
+      "get": {
+        "operationId": "solscanTokenHolders",
+        "summary": "Solscan token holders",
+        "description": "The holders of a token, largest first: rank, owner and its label, token account, amount, decimals and holder tags (whale, exchange ...), with the total number of holders. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-token-holders",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "Token mint address.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-500).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Results per page: 10, 20, 30, 40, 60 or 100 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                  "page": 1,
+                  "page_size": 20,
+                  "total_holders": 9611928,
+                  "count": 20,
+                  "next_page": 2,
+                  "holders": [
+                    {
+                      "rank": 1,
+                      "owner": "7VHUFJHWu2CuExkJcJrzhQPJ2oygupTWkL2A2For4BmE",
+                      "owner_label": "Circle",
+                      "token_account": "3emsAVdmGKERbHjmGfQ6oZ1e35dkf5iYcS6U4CPKFVaa",
+                      "amount": 1788652822.730304,
+                      "amount_raw": "1788652822730304",
+                      "decimals": 6,
+                      "tags": [
+                        "Active Whale Transfer",
+                        "Whale",
+                        "… 1 more"
+                      ]
+                    },
+                    {
+                      "rank": 2,
+                      "owner": "H8BgJgae6qhMtf7BM2JtddywSQt11WdxHHxkGLNX5hss",
+                      "owner_label": "Binance Cold Wallet (H8BgJ)",
+                      "token_account": "DT78gNBH7enTRrAFcag4PAuQbSeemstmtj888w8pkvdf",
+                      "amount": 1074180015.024,
+                      "amount_raw": "1074180015024000",
+                      "decimals": 6,
+                      "tags": [
+                        "Silent Whale Transfer",
+                        "Whale"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/token-price": {
+      "get": {
+        "operationId": "solscanTokenPrice",
+        "summary": "Solscan token price history",
+        "description": "Daily USD prices of a token for a date range (the explorer's price history; default the last 30 days).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-token-price",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "Token mint address.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "First day, YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Last day, YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                  "from": "2026-10-07",
+                  "to": "2026-11-06",
+                  "count": 31,
+                  "prices": [
+                    {
+                      "date": "2026-10-07",
+                      "price_usd": 1
+                    },
+                    {
+                      "date": "2026-10-08",
+                      "price_usd": 1
+                    },
+                    "… 29 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/token-transfers": {
+      "get": {
+        "operationId": "solscanTokenTransfers",
+        "summary": "Solscan token transfers",
+        "description": "Transfers of a token, newest first, with the same fields and filters as account-transfers. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-token-transfers",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "Token mint address.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Only transfers from this address.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Only transfers to this address.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activity",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: transfer, mint, burn, create_account, close_account.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from_time",
+            "in": "query",
+            "required": false,
+            "description": "Start time, unix seconds.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "to_time",
+            "in": "query",
+            "required": false,
+            "description": "End time, unix seconds.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "min_amount",
+            "in": "query",
+            "required": false,
+            "description": "Minimum token amount.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_amount",
+            "in": "query",
+            "required": false,
+            "description": "Maximum token amount.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "remove_spam",
+            "in": "query",
+            "required": false,
+            "description": "Hide spam tokens (default true).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "exclude_zero",
+            "in": "query",
+            "required": false,
+            "description": "Hide zero-amount transfers (default true).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-500).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Results per page: 10, 20, 30, 40, 60 or 100 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                  "page": 1,
+                  "page_size": 20,
+                  "applied_filters": {
+                    "remove_spam": true,
+                    "exclude_amount_zero": true
+                  },
+                  "count": 20,
+                  "next_page": 2,
+                  "transfers": [
+                    {
+                      "signature": "3JQQ3fzNHP8ZoZ5gTnRE4wXimEKstnUmZp58sYEasDps8mhpJMkA4LNu4ee1BHNuoQdNwub41N35cJLYc5b1fV2j",
+                      "slot": 466056279,
+                      "time": "2026-11-06T09:18:35.000Z",
+                      "activity": "ACTIVITY_SPL_TRANSFER",
+                      "from": "Bvg6QYGoRFihvntWNwhgcK9vYq7jPNwekBDVU97f9tU3",
+                      "from_label": null,
+                      "from_token_account": "AFhgH7m78Vw7Mbdxzr7VdJmmQC6qZKMYC1gfPuGbSBgX",
+                      "to": "2kg6LevxnMVhCUViF35CUwta8u4NdAoUKbeqrqYfy1Ge",
+                      "to_label": "Manifest (STRCx-USDC) Pool 2",
+                      "to_token_account": "2kg6LevxnMVhCUViF35CUwta8u4NdAoUKbeqrqYfy1Ge",
+                      "token_address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                      "token": {
+                        "name": "USDC",
+                        "symbol": "USDC",
+                        "icon": "https://cdn.rwa.xyz/images/asset-icons/128/color/usdc.png",
+                        "decimals": 6,
+                        "price_usd": 1
+                      },
+                      "amount": 536.375325,
+                      "amount_raw": 536375325,
+                      "decimals": 6,
+                      "value_usd": 536.375325,
+                      "flow": null,
+                      "programs": [
+                        "MNFSTqtC93rEfYHB6hF82sKdZpUDFWkViLByLd1k1Ms",
+                        "HHDh9z1FXpDKdaeCPDC6bF4EPU2wssY7E3aZAoM63sEL"
+                      ]
+                    },
+                    {
+                      "signature": "3JQQ3fzNHP8ZoZ5gTnRE4wXimEKstnUmZp58sYEasDps8mhpJMkA4LNu4ee1BHNuoQdNwub41N35cJLYc5b1fV2j",
+                      "slot": 466056279,
+                      "time": "2026-11-06T09:18:35.000Z",
+                      "activity": "ACTIVITY_SPL_TRANSFER",
+                      "from": "J9kojboD4meGvrdMAGhE1VZpCyJivNHyGr1zCbBchcjz",
+                      "from_label": "Manifest (STRCx-USDC) Pool 2",
+                      "from_token_account": "J9kojboD4meGvrdMAGhE1VZpCyJivNHyGr1zCbBchcjz",
+                      "to": "Bvg6QYGoRFihvntWNwhgcK9vYq7jPNwekBDVU97f9tU3",
+                      "to_label": null,
+                      "to_token_account": "AFhgH7m78Vw7Mbdxzr7VdJmmQC6qZKMYC1gfPuGbSBgX",
+                      "token_address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                      "token": {
+                        "name": "USDC",
+                        "symbol": "USDC",
+                        "icon": "https://cdn.rwa.xyz/images/asset-icons/128/color/usdc.png",
+                        "decimals": 6,
+                        "price_usd": 1
+                      },
+                      "amount": 536.375325,
+                      "amount_raw": 536375325,
+                      "decimals": 6,
+                      "value_usd": 536.375325,
+                      "flow": null,
+                      "programs": [
+                        "MNFSTqtC93rEfYHB6hF82sKdZpUDFWkViLByLd1k1Ms",
+                        "HHDh9z1FXpDKdaeCPDC6bF4EPU2wssY7E3aZAoM63sEL"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/tokens": {
+      "get": {
+        "operationId": "solscanTokens",
+        "summary": "Solscan token lists",
+        "description": "The explorer's trending or newly listed tokens: mint, name, symbol, icon, price, and buy/sell volume, trade and trader counts with their change for 1h, 4h and 24h windows. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-tokens",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "`trending` (default) or `new`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "trending",
+                "new"
+              ]
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "description": "Ranking window (default 24h).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1h",
+                "4h",
+                "24h"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort field, e.g. `volume_24h`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "`desc` or `asc`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "desc",
+                "asc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Results per page: 10, 20, 30, 40, 60 or 100 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "type": "trending",
+                  "window": "24h",
+                  "sort": null,
+                  "page": 1,
+                  "page_size": 20,
+                  "total": 296,
+                  "count": 20,
+                  "next_page": 2,
+                  "tokens": [
+                    {
+                      "name": "higher.fun",
+                      "symbol": "HIGH",
+                      "icon": "https://tan-hilarious-tarantula-475.mypinata.cloud/ipfs/bafkreie42pmhi2ivtvop33obxryu6dfxxxd62lr7gmv3rriqzv3a2lj5ke",
+                      "decimals": 6,
+                      "price_usd": 0.003437127440994441,
+                      "token_address": "7ymF66Z6VhgNiwadtVhjTtT6U7iQRpSxeiRrhfufhigh",
+                      "volume_30m": 112417.94525345115,
+                      "volume_30m_change_pct": -22.171843503928166,
+                      "volume_1h": 256861.74337826623,
+                      "volume_1h_change_pct": 3.2864536468726375,
+                      "volume_4h": 735419.996779673,
+                      "volume_4h_change_pct": 86.44080170839638,
+                      "volume_24h": 8781956.853468858,
+                      "volume_24h_change_pct": 1355.8961778022458,
+                      "buy_volume_30m": 55396.31179910176,
+                      "buy_volume_30m_change_pct": -19.834245077456718,
+                      "buy_volume_1h": 124498.5261456467,
+                      "buy_volume_1h_change_pct": -1.7124651449040234,
+                      "buy_volume_4h": 369173.4171004267,
+                      "buy_volume_4h_change_pct": 64.41557011627617,
+                      "buy_volume_24h": 4366299.247703285,
+                      "buy_volume_24h_change_pct": 1300.0204500262164,
+                      "sell_volume_30m": 57021.63345434939,
+                      "sell_volume_30m_change_pct": -24.31585507657533,
+                      "sell_volume_1h": 132363.21723261953,
+                      "sell_volume_1h_change_pct": 8.475733970503544,
+                      "sell_volume_4h": 366246.57967924635,
+                      "sell_volume_4h_change_pct": 115.5462936608568,
+                      "sell_volume_24h": 4415657.605765572,
+                      "sell_volume_24h_change_pct": 1415.7130800674536,
+                      "num_trade_30m": 1439,
+                      "num_trade_30m_change_pct": -34.08153916628493,
+                      "num_trade_1h": 3622,
+                      "num_trade_1h_change_pct": -9.154752947078002,
+                      "num_trade_4h": 10804,
+                      "num_trade_4h_change_pct": 86.95275999307839,
+                      "num_trade_24h": 87492,
+                      "num_trade_24h_change_pct": 833.8456612231829,
+                      "num_buy_trade_30m": 753,
+                      "num_buy_trade_30m_change_pct": -26.96411251212415,
+                      "…": "52 more fields"
+                    },
+                    {
+                      "name": "Philcoin",
+                      "symbol": "PHILCOIN",
+                      "icon": "https://tan-hilarious-tarantula-475.mypinata.cloud/ipfs/bafkreidr3vwz67cwycd6475l6rfxcpmpsduwmhrtjplg3cnrmkqyosrfim",
+                      "decimals": 6,
+                      "price_usd": 0.00019712074597623202,
+                      "token_address": "Ea5dBrJZN58yV1nm1Q4DybJNYKeTvwpb2GEkXyW64bUH",
+                      "volume_30m": 34352.97168872694,
+                      "volume_30m_change_pct": 5.078984931021379,
+                      "volume_1h": 67045.49504273327,
+                      "volume_1h_change_pct": 264.8972972582142,
+                      "volume_4h": 109183.65345911027,
+                      "volume_4h_change_pct": 638.0089757956544,
+                      "volume_24h": 527341.94053291,
+                      "volume_24h_change_pct": -69.26398320263768,
+                      "buy_volume_30m": 17382.479106754065,
+                      "buy_volume_30m_change_pct": -8.458370751191236,
+                      "buy_volume_1h": 36371.084891242295,
+                      "buy_volume_1h_change_pct": 265.5778227216106,
+                      "buy_volume_4h": 59164.56751769533,
+                      "buy_volume_4h_change_pct": 618.3772566154008,
+                      "buy_volume_24h": 273437.73215363466,
+                      "buy_volume_24h_change_pct": -67.28726782108903,
+                      "sell_volume_30m": 16970.492581972874,
+                      "sell_volume_30m_change_pct": 23.83679700263738,
+                      "sell_volume_1h": 30674.410151490963,
+                      "sell_volume_1h_change_pct": 264.09366438227914,
+                      "sell_volume_4h": 50019.08594141494,
+                      "sell_volume_4h_change_pct": 662.6616250237096,
+                      "sell_volume_24h": 253904.20837927537,
+                      "sell_volume_24h_change_pct": -71.32795752747523,
+                      "num_trade_30m": 362,
+                      "num_trade_30m_change_pct": -18.099547511312217,
+                      "num_trade_1h": 804,
+                      "num_trade_1h_change_pct": 179.16666666666669,
+                      "num_trade_4h": 1477,
+                      "num_trade_4h_change_pct": 533.9055793991416,
+                      "num_trade_24h": 7604,
+                      "num_trade_24h_change_pct": -70.98744485917882,
+                      "num_buy_trade_30m": 214,
+                      "num_buy_trade_30m_change_pct": -18.3206106870229,
+                      "…": "52 more fields"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/solscan/v1/transaction": {
+      "get": {
+        "operationId": "solscanTransaction",
+        "summary": "Solscan transaction details",
+        "description": "One Solana transaction: slot, time, status, fee, signers, compute units, priority fee, error, SOL and token balance changes, instructions and inner instructions as the explorer parses them (in `raw`), with token metadata.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/solscan-transaction",
+        "tags": [
+          "Solscan"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "signature",
+            "in": "query",
+            "required": true,
+            "description": "Transaction signature or a solscan.io/tx link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2o7kZmuSaSsDSyMeVuXkTYiwQhi7KXGA6CxvbZQxK7sPJP2ubC1UNp2oFMgwvNCVLgsVBzxZB6kADmruHKHN6MGw"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "signature": "2o7kZmuSaSsDSyMeVuXkTYiwQhi7KXGA6CxvbZQxK7sPJP2ubC1UNp2oFMgwvNCVLgsVBzxZB6kADmruHKHN6MGw",
+                  "url": "https://solscan.io/tx/2o7kZmuSaSsDSyMeVuXkTYiwQhi7KXGA6CxvbZQxK7sPJP2ubC1UNp2oFMgwvNCVLgsVBzxZB6kADmruHKHN6MGw",
+                  "slot": 465593628,
+                  "time": "2026-11-05T05:51:03.000Z",
+                  "status": 1,
+                  "fee_lamports": 5000,
+                  "signers": [
+                    "4Ty5zbNomFjD4aHM68HdQy1YbDUY8vQBPYahyrZ1T2k7"
+                  ],
+                  "compute_units": 13556,
+                  "priority_fee": 0,
+                  "error": null,
+                  "metadata": {
+                    "tokens": {
+                      "E6LwzUpR2NsdUzAiGzZb1K5PbffkXANagXHt1R4BTRiX": {
+                        "token_address": "E6LwzUpR2NsdUzAiGzZb1K5PbffkXANagXHt1R4BTRiX",
+                        "token_name": "Shocker",
+                        "token_symbol": "SHOCKER",
+                        "token_icon": "https://gateway.pinata.cloud/ipfs/bafkreieot46nfskcyscy5ks2coyhrwovktw3m6s6tnwbtn3voh2vt7grpi",
+                        "token_decimals": 6,
+                        "token_type": "token",
+                        "price_usdt": 0.00003389126177812802,
+                        "is_show_value": false,
+                        "is_calculate_on_portfolio": false,
+                        "is_show_icon": false,
+                        "d_source": "r",
+                        "token_icon_alternative": null,
+                        "token_label": {
+                          "token_address": "E6LwzUpR2NsdUzAiGzZb1K5PbffkXANagXHt1R4BTRiX",
+                          "token_name": "",
+                          "token_symbol": "",
+                          "token_icon": ""
+                        }
+                      },
+                      "So11111111111111111111111111111111111111112": {
+                        "token_address": "So11111111111111111111111111111111111111112",
+                        "token_name": "Wrapped SOL",
+                        "token_symbol": "WSOL",
+                        "token_icon": "https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png",
+                        "token_decimals": 9,
+                        "token_type": "token",
+                        "price_usdt": 96.31027731477029,
+                        "reputation": "ok",
+                        "is_show_value": true,
+                        "is_calculate_on_portfolio": true,
+                        "is_show_icon": true,
+                        "d_source": "r",
+                        "token_icon_alternative": null
+                      },
+                      "So11111111111111111111111111111111111111111": {
+                        "token_address": "So11111111111111111111111111111111111111111",
+                        "token_decimals": 9,
+                        "token_name": "SOL",
+                        "token_symbol": "SOL",
+                        "token_type": "token",
+                        "token_icon": "https://statics.solscan.io/solscan-img/solana_icon.svg",
+                        "price_usdt": 96.31027731477029,
+                        "reputation": "ok",
+                        "is_show_value": true,
+                        "is_calculate_on_portfolio": true,
+                        "is_show_icon": true
+                      }
+                    },
+                    "accounts": {
+                      "4Ty5zbNomFjD4aHM68HdQy1YbDUY8vQBPYahyrZ1T2k7": {
+                        "account_address": "4Ty5zbNomFjD4aHM68HdQy1YbDUY8vQBPYahyrZ1T2k7",
+                        "account_tags": [
+                          "token_creator",
+                          "raydium_launchpad"
+                        ],
+                        "account_type": "address"
+                      },
+                      "11111111111111111111111111111111": {
+                        "account_address": "11111111111111111111111111111111",
+                        "account_label": "System Program",
+                        "account_icon": "https://statics.solscan.io/solscan-img/solana_icon.svg",
+                        "account_tags": [
+                          "infrastructure"
+                        ],
+                        "account_type": "program"
+                      },
+                      "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM": {
+                        "account_address": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+                        "account_label": "Binance 3",
+                        "account_tags": [
+                          "binance",
+                          "exchange_wallet"
+                        ],
+                        "account_type": "address"
+                      },
+                      "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL": {
+                        "account_address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+                        "account_label": "Associated Token Program",
+                        "account_icon": "https://statics.solscan.io/solscan-img/solana_icon.svg",
+                        "account_tags": [
+                          "infrastructure"
+                        ],
+                        "account_type": "program"
+                      },
+                      "E6LwzUpR2NsdUzAiGzZb1K5PbffkXANagXHt1R4BTRiX": {
+                        "account_address": "E6LwzUpR2NsdUzAiGzZb1K5PbffkXANagXHt1R4BTRiX",
+                        "account_tags": [
+                          "memecoin",
+                          "raydium_launchpad"
+                        ],
+                        "account_type": "token"
+                      },
+                      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA": {
+                        "account_address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+                        "account_label": "Token Program",
+                        "account_icon": "https://statics.solscan.io/solscan-img/solana_icon.svg",
+                        "account_tags": [
+                          "infrastructure"
+                        ],
+                        "account_type": "program"
+                      }
+                    },
+                    "tags": {
+                      "token_creator": {
+                        "tag_id": "token_creator",
+                        "tag_name": "Token Creator",
+                        "tag_type": 1,
+                        "tag_metadata": {
+                          "icon": "https://statics.solscan.io/solscan-img/token_creator_icon.svg",
+                          "events": [
+                            {
+                              "…": "5 fields"
+                            }
+                          ]
+                        }
+                      },
+                      "raydium_launchpad": {
+                        "tag_id": "raydium_launchpad",
+                        "tag_name": "Raydium Launchpad",
+                        "tag_type": 1,
+                        "tag_metadata": {
+                          "icon": "https://statics.solscan.io/ex-img/5quBtoiQqxF9Jv6KYKctB59NT3gtJD2Y65kdnB1Uev3h.png",
+                          "website": null
+                        }
+                      },
+                      "infrastructure": {
+                        "tag_id": "infrastructure",
+                        "tag_name": "Blockchain Infrastructure",
+                        "tag_type": 1
+                      },
+                      "binance": {
+                        "tag_id": "binance",
+                        "tag_name": "Binance Exchange",
+                        "tag_type": 1,
+                        "tag_metadata": {
+                          "icon": "https://statics.solscan.io/solscan-img/binance.jpg",
+                          "website": null
+                        }
+                      },
+                      "exchange_wallet": {
+                        "tag_id": "exchange_wallet",
+                        "tag_name": "Exchange Wallet",
+                        "tag_type": 1,
+                        "tag_metadata": ""
+                      },
+                      "memecoin": {
+                        "tag_id": "memecoin",
+                        "tag_name": "Memecoin",
+                        "tag_type": 1,
+                        "tag_metadata": {
+                          "icon": "https://statics.solscan.io/solscan-img/meme_coin.png"
+                        }
+                      },
+                      "transfer": {
+                        "tag_id": "transfer",
+                        "tag_name": "Transfer",
+                        "tag_type": 3,
+                        "tag_metadata": {
+                          "icon": "https://statics.solscan.io/solscan-img/ins_tag_transfer_icon_3.svg"
+                        }
+                      }
+                    },
+                    "programs": {},
+                    "nftCollections": {},
+                    "nftMarketplaces": {}
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

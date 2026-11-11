@@ -1,0 +1,1404 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Clutch",
+    "version": "1.0.0",
+    "description": "The Clutch API from API.SH: public Clutch data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Clutch",
+      "description": "5 endpoints (jobs & b2b)",
+      "x-slug": "clutch",
+      "x-domains": [
+        "clutch.co"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clutch/v1/company": {
+      "get": {
+        "operationId": "clutchCompany",
+        "summary": "Clutch company profile",
+        "description": "A company's Clutch profile: name, website, logo, tagline, description, rating and review count, address and phone, minimum project size, average hourly rate, cost rating, most common project size, what clients said, languages, time zones, locations, service lines, awards, clients, the verification summary and the most recent client reviews.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clutch-company",
+        "tags": [
+          "Clutch"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Company slug (the part after clutch.co/profile/), e.g. `vention-0`. Give `slug` or `url`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "vention-0"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Company profile link, e.g. `https://clutch.co/profile/vention-0`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "vention-0",
+                  "name": "Vention",
+                  "url": "https://clutch.co/profile/vention-0",
+                  "website": "https://ventionteams.com/?utm_source=clutch&utm_medium=referral&utm_campaign=profile",
+                  "logo": "https://img.shgstatic.com/clutch-static-prod/image/scale/50x50/s3fs-public/logos/ea3dc39ca0b2f6b5f17abddec1f0e9a4_9645430356a4f7db499e0c.png",
+                  "tagline": "Engineering Peace of Mind",
+                  "description": "As a software development company with 20+ years in the field, Vention provides innovative services to startups and large enterprises. The c…",
+                  "rating": 4.9,
+                  "review_count": 103,
+                  "address": {
+                    "street": "575 Lexington Avenue",
+                    "city": "New York, United States",
+                    "region": "NY",
+                    "postal_code": "10022",
+                    "country": "US"
+                  },
+                  "telephone": "+1 555 010 0000",
+                  "facts": {
+                    "min_project_size": "$50,000+",
+                    "avg_hourly_rate": "$50 - $99 /hr",
+                    "rating_for_cost": "4.7 /5"
+                  },
+                  "rating_breakdown": {},
+                  "min_project_size": "$50,000+",
+                  "hourly_rate": "$50 - $99 /hr",
+                  "cost_rating": 4.7,
+                  "common_project_size": "$50,000 - $199,999 based on 58 reviews",
+                  "clients_said": "Vention offers competitive pricing and good value for cost, often fitting client budgets. Many clients reported satisfaction with the qualit…",
+                  "overview_by": {
+                    "name": "Katsiaryna Musabayeva",
+                    "position": "VP of Marketing & Growth"
+                  },
+                  "languages": [
+                    "English",
+                    "German"
+                  ],
+                  "timezones": [
+                    {
+                      "code": "CST",
+                      "name": "Central Standard Time (CST)"
+                    },
+                    {
+                      "code": "EST",
+                      "name": "Eastern Standard Time (EST)"
+                    },
+                    "… 3 more"
+                  ],
+                  "locations": [
+                    "New York , NY",
+                    "London , England",
+                    "… 5 more"
+                  ],
+                  "service_lines": [],
+                  "awards": [],
+                  "clients": [],
+                  "verification": "Verification Premier Verified means Clutch independently confirmed Vention is a legally registered business, has had its financial risk stat…",
+                  "recent_reviews": [
+                    {
+                      "id": "featured",
+                      "title": "IT Staff Augmentation for Financial Services Company",
+                      "services": [
+                        "IT Staff Augmentation"
+                      ],
+                      "focus_areas": [],
+                      "project_size": "Confidential",
+                      "project_length": "Sep. 2020 - Ongoing",
+                      "rating": 5,
+                      "ratings": {
+                        "quality": 5,
+                        "schedule": 5,
+                        "cost": 5,
+                        "willing_to_refer": 5
+                      },
+                      "quote": "Vention's project management is very good.",
+                      "date": "Sep 8, 2026",
+                      "reviewer": {
+                        "name": "Anatoly Zotin",
+                        "position": "Executive VP, Software Development, Exinity",
+                        "verified": true,
+                        "industry": "Financial services",
+                        "location": "Dubai, United Arab Emirates",
+                        "company_size": "201-500 Employees",
+                        "review_type": "Online Review"
+                      },
+                      "summary": "Vention provides staff augmentation services for a financial services company. The team works as an extension of the client's internal team …",
+                      "feedback": "Vention has delivered key milestones on time, and the client has received positive feedback from their end customers. The team has very stro…",
+                      "url": "https://clutch.co/go-to-review/e00ebb51-b8b3-47c4-a90b-25bf9c1daf8f/485803"
+                    },
+                    {
+                      "id": "479199",
+                      "title": "Software Dev for Supply Chain, Logistics, & Transport Co",
+                      "services": [
+                        "Custom Software Development",
+                        "Web Development"
+                      ],
+                      "focus_areas": [
+                        "Other app platform"
+                      ],
+                      "project_size": "Confidential",
+                      "project_length": "Feb. 2026 - Ongoing",
+                      "rating": 5,
+                      "ratings": {
+                        "quality": 5,
+                        "schedule": 5,
+                        "cost": 5,
+                        "willing_to_refer": 5
+                      },
+                      "quote": "The entire team has been excellent. We plan on working with them for a long time.",
+                      "date": "Aug 12, 2026",
+                      "reviewer": {
+                        "name": "Anonymous",
+                        "position": "Executive, RUNR APP LLC",
+                        "verified": true,
+                        "industry": "Supply Chain, Logistics, and Transport",
+                        "location": "Minneapolis, Minnesota",
+                        "company_size": "1-10 Employees",
+                        "review_type": "Online Review"
+                      },
+                      "summary": "Vention has optimized the backend of a 'runners on demand' app for a supply chain, logistics, and transport company. The team has also devel…",
+                      "feedback": "Vention has launched the portal, allowing the client to do business with major distributors. As a result, the client has partnered with a ma…",
+                      "url": "https://clutch.co/go-to-review/e00ebb51-b8b3-47c4-a90b-25bf9c1daf8f/479199"
+                    },
+                    "… 9 more"
+                  ],
+                  "review_pages": 12,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clutch/v1/directory": {
+      "get": {
+        "operationId": "clutchDirectory",
+        "summary": "Clutch directory",
+        "description": "Service providers listed on a Clutch directory page for a service and location: id, name, position, listing type (sponsored or organic), profile link, website, logo, rating, review count, verification level, minimum project size, average hourly rate, employees, location, tagline and description. Narrow by `hourly_rate` band, `min_rating` or `min_reviews`, or sort by rating. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clutch-directory",
+        "tags": [
+          "Clutch"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "service",
+            "in": "query",
+            "required": true,
+            "description": "Directory path on clutch.co, e.g. `web-developers`, `it-services`, `agencies/seo`, `agencies/digital-marketing`, `developers/react`, `app-developers`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "web-developers"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Location path, e.g. `new-york`, `uk/london`, `india`, `ca/toronto`. Default: worldwide.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "new-york"
+          },
+          {
+            "name": "hourly_rate",
+            "in": "query",
+            "required": false,
+            "description": "Average hourly rate band in US$, as the site lists them: `25-49`, `50-99`, `100-149`, `150-199`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "`rating`: best-reviewed first (default: the site's ranking).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "rating"
+              ]
+            }
+          },
+          {
+            "name": "min_rating",
+            "in": "query",
+            "required": false,
+            "description": "Keep only providers rated at least this (0-5, e.g. `4.8`). Clutch has no rating filter of its own, so this narrows the providers of the requested page (`page_providers` is the page's size before it); combine with `sort=rating` to get the best-rated first.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_reviews",
+            "in": "query",
+            "required": false,
+            "description": "Keep only providers with at least this many reviews on the requested page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "service": "web-developers",
+                  "location": "new-york",
+                  "title": "Top Web Development Companies in New York City",
+                  "page": 1,
+                  "total": null,
+                  "last_page": 35,
+                  "next_page": 2,
+                  "count": 85,
+                  "providers": [
+                    {
+                      "id": "80203",
+                      "name": "Vention",
+                      "position": 1,
+                      "listing_type": "spotlight",
+                      "profile_url": "https://clutch.co/profile/vention-0",
+                      "website": null,
+                      "logo": "https://img.shgstatic.com/clutch-static-prod/image/scale/50x50/s3fs-public/logos/ea3dc39ca0b2f6b5f17abddec1f0e9a4_9645430356a4f7db499e0c.png",
+                      "rating": 4.9,
+                      "reviews": 103,
+                      "verified": "Premier Verified",
+                      "min_project_size": "$50,000+",
+                      "hourly_rate": "$50 - $99 / hr",
+                      "employees": "1,000 - 9,999",
+                      "location": "New York, NY",
+                      "tagline": null,
+                      "description": "Vention is a full-stack web development company offering Web Application Development, Back-End Development, and Front-End Development servic…",
+                      "services": [
+                        "10% Web Development",
+                        "20% AI Development",
+                        "… 6 more"
+                      ],
+                      "services_text": "Services provided 10% Web Development 20% AI Development 15% Custom Software Development +5 services 15% Enterprise App Modernization 10% Cl…"
+                    },
+                    {
+                      "id": "22072",
+                      "name": "Dotlogics",
+                      "position": 1,
+                      "listing_type": "Sponsor",
+                      "profile_url": "https://clutch.co/profile/dotlogics",
+                      "website": "https://dotlogics.com/CTL/website-design-and-digital-transformation?utm_source=clutch.co&utm_medium=referral&utm_campaign=web-developers-new…",
+                      "logo": "https://img.shgstatic.com/clutch-static-prod/image/scale/50x50/s3fs-public/logos/18f47e72d302e6a57725698e9a22b7bb.png",
+                      "rating": 5,
+                      "reviews": 32,
+                      "verified": "Premier Verified",
+                      "min_project_size": "$25,000+",
+                      "hourly_rate": "$150 - $199 / hr",
+                      "employees": "50 - 249",
+                      "location": "Hicksville, NY",
+                      "tagline": null,
+                      "description": "Dotlogics is a proficient web development company specializing in custom website development, UI/UX design, and web application development.…",
+                      "services": [
+                        "10% Web Development",
+                        "50% Web Design",
+                        "… 3 more"
+                      ],
+                      "services_text": "Services provided 10% Web Development 50% Web Design 20% Branding +2 services 10% AI Agents 10% Custom Software Development"
+                    },
+                    "… 83 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clutch/v1/portfolio": {
+      "get": {
+        "operationId": "clutchPortfolio",
+        "summary": "Clutch company portfolio",
+        "description": "A company's portfolio on Clutch: each project's title, services, image and description, plus the key clients it lists and its awards and recognitions with links.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clutch-portfolio",
+        "tags": [
+          "Clutch"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "Company profile slug or clutch.co/profile/<slug> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "vention-0"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "vention-0",
+                  "url": "https://clutch.co/profile/vention-0#portfolio",
+                  "count": 4,
+                  "portfolio": [
+                    {
+                      "title": "Web and mobile solutions for meeting space startup",
+                      "services": [
+                        "Custom Software Development"
+                      ],
+                      "image": "https://img.shgstatic.com/clutch-projectmania-prod/image/resize/500x350/images/80203/673fdb11-62cf-42df-b0b4-31c4662b4bb4/7ccc685e7e2964d74d…",
+                      "id": null,
+                      "description": null
+                    },
+                    {
+                      "title": "Web and native solutions for a fitness startup",
+                      "services": [
+                        "Web Development"
+                      ],
+                      "image": "https://img.shgstatic.com/clutch-projectmania-prod/image/resize/500x350/images/80203/a7dad200-e2f7-434d-80d5-1527c0ff455c/7bb5a91d1efa71c007…",
+                      "id": null,
+                      "description": null
+                    },
+                    "… 2 more"
+                  ],
+                  "key_clients": [
+                    "IBM",
+                    "PayPal",
+                    "… 14 more"
+                  ],
+                  "awards": [
+                    {
+                      "title": "Computing: DevOps Excellence Awards 2025",
+                      "url": "https://www.computing.co.uk/event/2025/all-the-winners-devops-excellence-awards-2025"
+                    },
+                    {
+                      "title": "2026 IAOP GLOBAL 100",
+                      "url": "https://www.iaop.org/Content/19/165/5912"
+                    },
+                    "… 45 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clutch/v1/reviews": {
+      "get": {
+        "operationId": "clutchReviews",
+        "summary": "Clutch company reviews",
+        "description": "Client reviews of a company on Clutch, 10 per page: id, title, services, focus areas, project size and length, overall rating and ratings for quality, schedule, cost and willingness to refer, quote, date, project summary, feedback, reviewer (name, position, verified, industry, location, company size, review type) and link. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clutch-reviews",
+        "tags": [
+          "Clutch"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Company slug (the part after clutch.co/profile/), e.g. `vention-0`. Give `slug` or `url`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "vention-0"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Company profile link, e.g. `https://clutch.co/profile/vention-0`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "vention-0",
+                  "name": "Vention",
+                  "page": 1,
+                  "review_count": null,
+                  "pages": 12,
+                  "next_page": 2,
+                  "count": 11,
+                  "reviews": [
+                    {
+                      "id": "featured",
+                      "title": "IT Staff Augmentation for Financial Services Company",
+                      "services": [
+                        "IT Staff Augmentation"
+                      ],
+                      "focus_areas": [],
+                      "project_size": "Confidential",
+                      "project_length": "Sep. 2020 - Ongoing",
+                      "rating": 5,
+                      "ratings": {
+                        "quality": 5,
+                        "schedule": 5,
+                        "cost": 5,
+                        "willing_to_refer": 5
+                      },
+                      "quote": "Vention's project management is very good.",
+                      "date": "Sep 8, 2026",
+                      "reviewer": {
+                        "name": "Anatoly Zotin",
+                        "position": "Executive VP, Software Development, Exinity",
+                        "verified": true,
+                        "industry": "Financial services",
+                        "location": "Dubai, United Arab Emirates",
+                        "company_size": "201-500 Employees",
+                        "review_type": "Online Review"
+                      },
+                      "summary": "Vention provides staff augmentation services for a financial services company. The team works as an extension of the client's internal team …",
+                      "feedback": "Vention has delivered key milestones on time, and the client has received positive feedback from their end customers. The team has very stro…",
+                      "url": "https://clutch.co/go-to-review/e00ebb51-b8b3-47c4-a90b-25bf9c1daf8f/485803"
+                    },
+                    {
+                      "id": "479199",
+                      "title": "Software Dev for Supply Chain, Logistics, & Transport Co",
+                      "services": [
+                        "Custom Software Development",
+                        "Web Development"
+                      ],
+                      "focus_areas": [
+                        "Other app platform"
+                      ],
+                      "project_size": "Confidential",
+                      "project_length": "Feb. 2026 - Ongoing",
+                      "rating": 5,
+                      "ratings": {
+                        "quality": 5,
+                        "schedule": 5,
+                        "cost": 5,
+                        "willing_to_refer": 5
+                      },
+                      "quote": "The entire team has been excellent. We plan on working with them for a long time.",
+                      "date": "Aug 12, 2026",
+                      "reviewer": {
+                        "name": "Anonymous",
+                        "position": "Executive, RUNR APP LLC",
+                        "verified": true,
+                        "industry": "Supply Chain, Logistics, and Transport",
+                        "location": "Minneapolis, Minnesota",
+                        "company_size": "1-10 Employees",
+                        "review_type": "Online Review"
+                      },
+                      "summary": "Vention has optimized the backend of a 'runners on demand' app for a supply chain, logistics, and transport company. The team has also devel…",
+                      "feedback": "Vention has launched the portal, allowing the client to do business with major distributors. As a result, the client has partnered with a ma…",
+                      "url": "https://clutch.co/go-to-review/e00ebb51-b8b3-47c4-a90b-25bf9c1daf8f/479199"
+                    },
+                    "… 9 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/clutch/v1/search": {
+      "get": {
+        "operationId": "clutchSearch",
+        "summary": "Clutch provider search",
+        "description": "Clutch's site search for a keyword: matching provider profiles (name, slug for /clutch/v1/company, link, rating, review count, logo), the directory lists that match (e.g. top React developers in a city) and resources. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/clutch-search",
+        "tags": [
+          "Clutch"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search words, e.g. a company name or a skill.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "react"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "react",
+                  "page": 1,
+                  "total": null,
+                  "count": 8,
+                  "providers": [
+                    {
+                      "name": "React",
+                      "slug": "react",
+                      "url": "https://clutch.co/profile/react#reviews",
+                      "rating": null,
+                      "reviews": null,
+                      "logo": "https://img.shgstatic.com/clutch-static-prod/image/scale/60x60/s3fs-public/logos/react.png",
+                      "info": "0.0 (0) Video Production Search Engine Optimization +4 more"
+                    },
+                    {
+                      "name": "React Digi",
+                      "slug": "react-digi",
+                      "url": "https://clutch.co/profile/react-digi#reviews",
+                      "rating": 5,
+                      "reviews": 1,
+                      "logo": "https://img.shgstatic.com/clutch-static-prod/image/scale/60x60/s3fs-public/logos/ea3dc39ca0b2f6b5f17abddec1f0e9a4_996392643686e2d3ea6049.png",
+                      "info": "5.0 (1) Web Development UX/UI Design +3 more"
+                    },
+                    "… 6 more"
+                  ],
+                  "directories": [
+                    {
+                      "name": "Top React Native Development Companies",
+                      "url": "https://clutch.co/developers/react-native"
+                    },
+                    {
+                      "name": "Top React Developers in Chicago",
+                      "url": "https://clutch.co/developers/reactjs/chicago"
+                    },
+                    "… 3 more"
+                  ],
+                  "resources": [
+                    {
+                      "name": "Why Your B2B Outbound Emails Never Reach the Inbox (And What It Costs You)",
+                      "url": "https://clutch.co/resources/b2b-outreach-emails-inbox"
+                    },
+                    {
+                      "name": "Most Popular E-Commerce Apps for Small Businesses",
+                      "url": "https://clutch.co/resources/ecommerce-apps-small-businesses"
+                    },
+                    "… 4 more"
+                  ],
+                  "next_page": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

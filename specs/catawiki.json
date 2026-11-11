@@ -1,0 +1,2362 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Catawiki",
+    "version": "1.0.0",
+    "description": "The Catawiki API from API.SH: public Catawiki data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Catawiki",
+      "description": "10 endpoints (e-commerce)",
+      "x-slug": "catawiki",
+      "x-domains": [
+        "catawiki.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/catawiki/v1/auction": {
+      "get": {
+        "operationId": "catawikiAuction",
+        "summary": "Catawiki auction and its lots",
+        "description": "One Catawiki auction (title, status, start and close times, lot count, image) with its lots, each with its live bid as in search. `latest=true` returns the first open auction instead of an `id`. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/catawiki-auction",
+        "tags": [
+          "Catawiki"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Auction id (e.g. `1296132`) or its catawiki.com/en/a/... link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`true`: the first open auction instead of an `id`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Lot order: `relevance`, `newest`, `closing`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "closing"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back as `page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Lots per page, 1-100 (default 24).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Currency of bids and estimates (default `EUR`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "EUR",
+                "USD",
+                "GBP",
+                "CHF",
+                "DKK",
+                "NOK",
+                "SEK",
+                "PLN",
+                "CZK",
+                "HUF",
+                "RON",
+                "BGN",
+                "AUD",
+                "CAD",
+                "JPY",
+                "CNY",
+                "HKD",
+                "SGD"
+              ]
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of titles and category names (default `en`): en, nl, de, fr, it, es, pt, pl, sv, da, fi, ru, zh, ja, ko, tr, cs, hu, ro, bg, el.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 1285875,
+                  "title": "Bullion Bars Auction",
+                  "url": "https://www.catawiki.com/en/a/1285875-bullion-bars-auction",
+                  "status": "closes_today",
+                  "start_at": "2026-11-04T11:00:00Z",
+                  "close_at": "2026-11-05T10:00:00Z",
+                  "closed_at": null,
+                  "lot_count": 93,
+                  "type_id": 373,
+                  "theme_id": 16319,
+                  "image": "https://assets.catawiki.nl/assets/2022/8/18/2/1/5/2153b6d2-75fb-4968-b11f-fddd3ce88f1a.jpg",
+                  "explicit": false,
+                  "description": null,
+                  "category_id": null,
+                  "currency": "EUR",
+                  "total_lots": 93,
+                  "page": 1,
+                  "per_page": 24,
+                  "count": 24,
+                  "next_page": 2,
+                  "lots": [
+                    {
+                      "id": 108282735,
+                      "title": "20 grams - Gold - ESG",
+                      "subtitle": "Bullion bar",
+                      "url": "https://www.catawiki.com/en/l/108282735-20-grams-gold-esg",
+                      "image": "https://assets.catawiki.nl/assets/2022/8/18/2/1/5/2153b6d2-75fb-4968-b11f-fddd3ce88f1a.jpg",
+                      "thumbnail": "https://assets.catawiki.nl/assets/2022/8/18/2/1/5/thumb2_2153b6d2-75fb-4968-b11f-fddd3ce88f1a.jpg",
+                      "auction_id": 1285875,
+                      "bidding_start_time": null,
+                      "reserve_price_set": true,
+                      "buy_now": null,
+                      "free_shipping": null,
+                      "explicit": false,
+                      "current_bid": 2475,
+                      "current_bid_currency": "EUR",
+                      "current_bid_all": {
+                        "EUR": 2475,
+                        "USD": 2767,
+                        "GBP": 2063
+                      },
+                      "bidding_end_time": "2026-11-05T10:01:00Z",
+                      "closed": false,
+                      "reserve_price_met": true,
+                      "buy_now_available": false,
+                      "favorite_count": 6
+                    },
+                    {
+                      "id": 108280729,
+                      "title": "50 grams - Silver .999 - Albino Moutinho - With certificate  (No reserve price)",
+                      "subtitle": "Bullion bar",
+                      "url": "https://www.catawiki.com/en/l/108280729-50-grams-silver-999-albino-moutinho-with-certificate-no-reserve-price",
+                      "image": "https://assets.catawiki.nl/assets/2026/9/16/c/2/9/c299c4e0-0877-4353-9263-e1d7c3e91027.jpg",
+                      "thumbnail": "https://assets.catawiki.nl/assets/2026/9/16/c/2/9/thumb2_c299c4e0-0877-4353-9263-e1d7c3e91027.jpg",
+                      "auction_id": 1285875,
+                      "bidding_start_time": null,
+                      "reserve_price_set": false,
+                      "buy_now": null,
+                      "free_shipping": null,
+                      "explicit": false,
+                      "current_bid": 104,
+                      "current_bid_currency": "EUR",
+                      "current_bid_all": {
+                        "EUR": 104,
+                        "USD": 116,
+                        "GBP": 87
+                      },
+                      "bidding_end_time": "2026-11-05T10:01:58Z",
+                      "closed": false,
+                      "reserve_price_met": null,
+                      "buy_now_available": false,
+                      "favorite_count": 14
+                    },
+                    "… 22 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/catawiki/v1/auctions": {
+      "get": {
+        "operationId": "catawikiAuctions",
+        "summary": "Catawiki auctions",
+        "description": "Catawiki's open auctions, all or one category's: `id`, `title`, `url`, `status` (e.g. `open_now`, `closes_today`), `start_at`, `close_at`, `lot_count`, type and theme ids, image and `raw`. 25 a page; `total` is the site's count. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/catawiki-auctions",
+        "tags": [
+          "Catawiki"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category id (from `/catawiki/v1/categories`, e.g. `333` watches). Without it: every open auction.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "333"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back as `page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of titles and category names (default `en`): en, nl, de, fr, it, es, pt, pl, sv, da, fi, ru, zh, ja, ko, tr, cs, hu, ro, bg, el.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": 333,
+                  "total": 206,
+                  "page": 1,
+                  "count": 25,
+                  "next_page": 2,
+                  "auctions": [
+                    {
+                      "id": 1298453,
+                      "title": "Zenith Watches Auction",
+                      "url": "https://www.catawiki.com/en/a/1298453-zenith-watches-auction",
+                      "status": "closes_today",
+                      "start_at": "2026-10-30T11:00:00Z",
+                      "close_at": "2026-11-05T17:00:00Z",
+                      "closed_at": null,
+                      "lot_count": 29,
+                      "type_id": 801,
+                      "theme_id": null,
+                      "image": "https://assets.catawiki.nl/assets/2026/9/19/c/9/c/c9cc8111-30d6-40b4-b406-a905c04fb2cb.jpg",
+                      "explicit": false
+                    },
+                    {
+                      "id": 1297016,
+                      "title": "Unused Watches Auction",
+                      "url": "https://www.catawiki.com/en/a/1297016-unused-watches-auction",
+                      "status": "closes_today",
+                      "start_at": "2026-10-29T15:00:00Z",
+                      "close_at": "2026-11-05T17:00:00Z",
+                      "closed_at": null,
+                      "lot_count": 60,
+                      "type_id": 571,
+                      "theme_id": null,
+                      "image": "https://assets.catawiki.nl/assets/2026/10/27/b/a/c/baca2734-7ab0-41db-8d38-3d39bb4a0ec3.jpg",
+                      "explicit": false
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/catawiki/v1/categories": {
+      "get": {
+        "operationId": "catawikiCategories",
+        "summary": "Catawiki categories",
+        "description": "Catawiki's categories: without `id`, the main categories (id, name, url, parent, level, open auctions, image); with `id`, that category (with its ancestors) and its sub-categories. Category ids feed `category` in search and auctions.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/catawiki-categories",
+        "tags": [
+          "Catawiki"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Category id (e.g. `333` watches) for one category and its sub-categories.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of titles and category names (default `en`): en, nl, de, fr, it, es, pt, pl, sv, da, fi, ru, zh, ja, ko, tr, cs, hu, ro, bg, el.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 80,
+                  "categories": [
+                    {
+                      "id": 495,
+                      "name": "African & Tribal Art",
+                      "short_name": "African & Tribal Art",
+                      "url": "https://www.catawiki.com/en/c/495-african-tribal-art",
+                      "parent_id": 925,
+                      "level": 1,
+                      "auction_count": 13,
+                      "image": "https://assets.catawiki.nl/assets/categories/original_495_f353cf70-cca5-4c57-b70d-87e999d3e6bd.jpg"
+                    },
+                    {
+                      "id": 1321,
+                      "name": "Ancient Coins",
+                      "short_name": "Ancient Coins",
+                      "url": "https://www.catawiki.com/en/c/1321-ancient-coins",
+                      "parent_id": 165,
+                      "level": 1,
+                      "auction_count": 11,
+                      "image": "https://assets.catawiki.nl/assets/categories/1321-75c3eba589bdab62860af30862bd8962f04cbc90-original.jpg"
+                    },
+                    "… 78 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/catawiki/v1/lot": {
+      "get": {
+        "operationId": "catawikiLot",
+        "summary": "Catawiki lot",
+        "description": "One Catawiki lot: title, subtitle, full description (original and auto-translated), the site's summary, live `current_bid` and `bidding_end_time`, `closed`, reserve-price status, the expert's estimate (`expert_estimate` min/max), the experts, interest count, category, every specification (brand, model, period, condition, dimensions... with their ids), all images and videos, and the seller (id, name, country, pro/top flags, score, lifetime sales, member since). Closed lots stay available. `latest=true` returns the first lot of a search (`q`) instead of an `id`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/catawiki-lot",
+        "tags": [
+          "Catawiki"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Lot id (e.g. `108112081`) or its catawiki.com/en/l/... link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`true`: the first lot of a search for `q` (default `watch`) instead of an `id`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "With `latest=true`: keywords.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Currency of bids and estimates (default `EUR`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "EUR",
+                "USD",
+                "GBP",
+                "CHF",
+                "DKK",
+                "NOK",
+                "SEK",
+                "PLN",
+                "CZK",
+                "HUF",
+                "RON",
+                "BGN",
+                "AUD",
+                "CAD",
+                "JPY",
+                "CNY",
+                "HKD",
+                "SGD"
+              ]
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of titles and category names (default `en`): en, nl, de, fr, it, es, pt, pl, sv, da, fi, ru, zh, ja, ko, tr, cs, hu, ro, bg, el.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 108202137,
+                  "title": "Intrinsic Precision Terra aqua carbon fibre field & divers watch - Terra Aqua - No reserve price - 0/75 - Men - 2026",
+                  "subtitle": "Automatic - Stainless steel",
+                  "url": "https://www.catawiki.com/en/l/108202137-intrinsic-precision-terra-aqua-carbon-fibre-field-divers-watch-terra-aqua-no-reserve-price-0-75-men-…",
+                  "auction_id": 1296717,
+                  "open": true,
+                  "description": "TERRA AQUA WATCH\n\nSells for £1499 online.\n\nIntrinsic Precision Terra Aqua Diver Field Watch – Limited Edition\n\nBe one of only 75 people worl…",
+                  "description_translated": null,
+                  "summary": "The Intrinsic Precision Terra Aqua is a 42 mm stainless-steel automatic watch with a black dial, reference 0/75, and 300 m water resistance.",
+                  "current_bid": 10,
+                  "current_bid_currency": "EUR",
+                  "current_bid_all": {
+                    "EUR": 10,
+                    "USD": 11,
+                    "GBP": 8
+                  },
+                  "bidding_end_time": "2026-11-07T19:23:45Z",
+                  "closed": false,
+                  "reserve_price_met": null,
+                  "buy_now_available": false,
+                  "favorite_count": 12,
+                  "expert_estimate": null,
+                  "experts": [
+                    {
+                      "id": 587,
+                      "name": "Alfonso Minondo",
+                      "image": "https://images.ctfassets.net/63zu1jme7dht/2qzClfMMxvkzVTiylJB9aB/c71b6cee702bf4ae0e7fa2304e151ad2/587-64x64-_2x.jpg.jpg",
+                      "bio": "Over six years of professional experience in watches with extensive collector network."
+                    }
+                  ],
+                  "interest_count": 12,
+                  "high_interest": false,
+                  "category": {
+                    "id": 759,
+                    "url": "https://www.catawiki.com/en/c/759-unused-watches",
+                    "level": 2
+                  },
+                  "specifications": [
+                    {
+                      "name": "Brand",
+                      "value": "Intrinsic Precision Terra aqua carbon fibre field & divers watch",
+                      "specification_id": 909,
+                      "value_id": null
+                    },
+                    {
+                      "name": "Gender",
+                      "value": "Men",
+                      "specification_id": 926,
+                      "value_id": 60038
+                    },
+                    "… 16 more"
+                  ],
+                  "images": [
+                    {
+                      "url": "https://assets.catawiki.nl/assets/2026/7/27/6/1/6/616b69fe-c8d9-490e-92f5-2b72f2b397a0.jpg",
+                      "thumbnail": "https://assets.catawiki.nl/assets/2026/7/27/6/1/6/thumb5_616b69fe-c8d9-490e-92f5-2b72f2b397a0.jpg",
+                      "width": 560,
+                      "height": 700
+                    },
+                    {
+                      "url": "https://assets.catawiki.nl/assets/2026/7/27/c/2/a/c2a5580f-0734-4912-b104-3e9d0558a126.jpg",
+                      "thumbnail": "https://assets.catawiki.nl/assets/2026/7/27/c/2/a/thumb5_c2a5580f-0734-4912-b104-3e9d0558a126.jpg",
+                      "width": 560,
+                      "height": 700
+                    },
+                    "… 8 more"
+                  ],
+                  "videos": [],
+                  "seller": {
+                    "id": 30735117,
+                    "name": "Second time",
+                    "user_name": "Second time",
+                    "url": "https://www.catawiki.com/en/u/30735117-second-time",
+                    "country": "gb",
+                    "is_pro": true,
+                    "is_top": true,
+                    "score": 100,
+                    "lifetime_sales": 43,
+                    "member_since": "2026-07-22T17:42:14.000Z"
+                  },
+                  "trustpilot": {
+                    "score": 4.4,
+                    "total_reviews": 144581
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/catawiki/v1/lot/bids": {
+      "get": {
+        "operationId": "catawikiLotBids",
+        "summary": "Catawiki lot bid history",
+        "description": "The bid history of a Catawiki lot, newest first: amount and currency, the bidder as the site shows it (a pseudonym such as `Bidder 2995`, country and total bid count), whether the bid was automatic, and the time.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/catawiki-lot-bids",
+        "tags": [
+          "Catawiki"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Lot id (e.g. `108112081`) or its catawiki.com/en/l/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "108112081"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Bids, 1-100 (default 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Currency of bids and estimates (default `EUR`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "EUR",
+                "USD",
+                "GBP",
+                "CHF",
+                "DKK",
+                "NOK",
+                "SEK",
+                "PLN",
+                "CZK",
+                "HUF",
+                "RON",
+                "BGN",
+                "AUD",
+                "CAD",
+                "JPY",
+                "CNY",
+                "HKD",
+                "SGD"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "lot_id": 108112081,
+                  "currency": "EUR",
+                  "count": 50,
+                  "bids": [
+                    {
+                      "id": 624017783,
+                      "amount": 7100,
+                      "currency": "EUR",
+                      "bidder": "Bidder 2995",
+                      "bidder_country": "gb",
+                      "bidder_total_bids": 683,
+                      "automatic": null,
+                      "from_order": false,
+                      "created_at": "2026-11-02T18:30:41Z"
+                    },
+                    {
+                      "id": 623992409,
+                      "amount": 6600,
+                      "currency": "EUR",
+                      "bidder": "Bidder 9308",
+                      "bidder_country": "ch",
+                      "bidder_total_bids": 727,
+                      "automatic": null,
+                      "from_order": false,
+                      "created_at": "2026-11-02T17:31:11Z"
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/catawiki/v1/search": {
+      "get": {
+        "operationId": "catawikiSearch",
+        "summary": "Catawiki lot search",
+        "description": "Lots in Catawiki's open weekly auctions (catawiki.com: watches, art, jewellery, coins, wine, collectables...) for keywords, or all lots of a category, with every filter and sort of the search page. Each lot: `id`, `title`, `subtitle`, `url`, `image`, `auction_id`, `bidding_start_time`, the live `current_bid` (in `currency`, plus `current_bid_all` in EUR/USD/GBP), `bidding_end_time`, `closed`, `reserve_price_set`, `reserve_price_met`, `buy_now_available`, `favorite_count`, `free_shipping` and `raw`. `facets` lists every filter with its values and counts: each facet's `param` is the parameter to pass. `total` is the site's count. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/catawiki-search",
+        "tags": [
+          "Catawiki"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords, e.g. `rolex`, `banksy`, `gold coin`. Optional with a single `category`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "rolex"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category id(s), comma separated (from `facets` or `/catawiki/v1/categories`, e.g. `343` Rolex watches). Without `q`: exactly one id, listing that category's lots.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seller_country",
+            "in": "query",
+            "required": false,
+            "description": "Seller countries, two-letter codes, comma separated (e.g. `nl,de`; `facets` param `seller_country`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reserve_price",
+            "in": "query",
+            "required": false,
+            "description": "`false`: only lots without a reserve price; `true`: only lots with one.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "closing_date",
+            "in": "query",
+            "required": false,
+            "description": "Closing dates `YYYY-MM-DD`, comma separated (`facets` param `closing_date`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest current bid in EUR (whole number).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest current bid in EUR (whole number).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "filter_<id>",
+            "in": "query",
+            "required": false,
+            "description": "Any other filter of `facets` (brand, object, material, period, condition, colour, style, signature, case diameter...): `filter_` + the facet `id` with value ids, comma separated, e.g. `filter_909=60922` (brand Rolex).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "`relevance` (default), `newest` (recently listed), `closing` (closing soon).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "closing"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back as `page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Lots per page, 1-100 (default 24).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Currency of bids and estimates (default `EUR`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "EUR",
+                "USD",
+                "GBP",
+                "CHF",
+                "DKK",
+                "NOK",
+                "SEK",
+                "PLN",
+                "CZK",
+                "HUF",
+                "RON",
+                "BGN",
+                "AUD",
+                "CAD",
+                "JPY",
+                "CNY",
+                "HKD",
+                "SGD"
+              ]
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of titles and category names (default `en`): en, nl, de, fr, it, es, pt, pl, sv, da, fi, ru, zh, ja, ko, tr, cs, hu, ro, bg, el.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "rolex",
+                  "applied_filters": {},
+                  "currency": "EUR",
+                  "total": 825,
+                  "page": 1,
+                  "per_page": 24,
+                  "count": 24,
+                  "next_page": 2,
+                  "facets": [
+                    {
+                      "id": "l2_categories",
+                      "name": "Category",
+                      "slug": "category",
+                      "param": "category",
+                      "values": [
+                        {
+                          "id": "343",
+                          "name": "Rolex Watches",
+                          "count": 454
+                        },
+                        {
+                          "id": "1329",
+                          "name": "Watch Accessories",
+                          "count": 223
+                        },
+                        "… 23 more"
+                      ]
+                    },
+                    {
+                      "id": "reserve_price",
+                      "name": "Reserve price",
+                      "slug": "reserve-price",
+                      "param": "reserve_price",
+                      "values": [
+                        {
+                          "id": "1",
+                          "name": "Reserve price",
+                          "count": 530
+                        },
+                        {
+                          "id": "0",
+                          "name": "No reserve price",
+                          "count": 295
+                        }
+                      ]
+                    },
+                    "… 23 more"
+                  ],
+                  "lots": [
+                    {
+                      "id": 108112081,
+                      "title": "Rolex - Submariner Date - No reserve price - 16613 - Men - 1990-1999",
+                      "subtitle": "Automatic - Gold/Steel",
+                      "url": "https://www.catawiki.com/en/l/108112081-rolex-submariner-date-no-reserve-price-16613-men-1990-1999",
+                      "image": "https://assets.catawiki.nl/assets/2026/10/15/d/3/e/d3ecac6f-0bfe-4019-b1cc-3c5955af7875.jpg",
+                      "thumbnail": "https://assets.catawiki.nl/assets/2026/10/15/d/3/e/thumb2_d3ecac6f-0bfe-4019-b1cc-3c5955af7875.jpg",
+                      "auction_id": 1296132,
+                      "bidding_start_time": "2026-10-30T11:00:00+00:00",
+                      "reserve_price_set": false,
+                      "buy_now": null,
+                      "free_shipping": null,
+                      "explicit": false,
+                      "current_bid": 7100,
+                      "current_bid_currency": "EUR",
+                      "current_bid_all": {
+                        "EUR": 7100,
+                        "USD": 7902,
+                        "GBP": 5934
+                      },
+                      "bidding_end_time": "2026-11-08T19:09:03Z",
+                      "closed": false,
+                      "reserve_price_met": null,
+                      "buy_now_available": false,
+                      "favorite_count": 124
+                    },
+                    {
+                      "id": 108145170,
+                      "title": "Rolex - Day-Date Yellow Gold - No reserve price - 18038 - Men - 1990-1999",
+                      "subtitle": "Automatic - Gold",
+                      "url": "https://www.catawiki.com/en/l/108145170-rolex-day-date-yellow-gold-no-reserve-price-18038-men-1990-1999",
+                      "image": "https://assets.catawiki.nl/assets/2026/2/4/a/3/1/a31b71a6-791a-47e7-b42e-7e6a21013293.jpg",
+                      "thumbnail": "https://assets.catawiki.nl/assets/2026/2/4/a/3/1/thumb2_a31b71a6-791a-47e7-b42e-7e6a21013293.jpg",
+                      "auction_id": 1296132,
+                      "bidding_start_time": "2026-10-30T11:00:00+00:00",
+                      "reserve_price_set": false,
+                      "buy_now": null,
+                      "free_shipping": null,
+                      "explicit": false,
+                      "current_bid": 8500,
+                      "current_bid_currency": "EUR",
+                      "current_bid_all": {
+                        "EUR": 8500,
+                        "USD": 9461,
+                        "GBP": 7104
+                      },
+                      "bidding_end_time": "2026-11-08T19:22:51Z",
+                      "closed": false,
+                      "reserve_price_met": null,
+                      "buy_now_available": false,
+                      "favorite_count": 142
+                    },
+                    "… 22 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/catawiki/v1/seller": {
+      "get": {
+        "operationId": "catawikiSeller",
+        "summary": "Catawiki seller",
+        "description": "A Catawiki seller's profile: name, url, pro and top-seller flags, member since, country and city, review score with positive/neutral/negative counts for the last 12 months and lifetime review count, objects sold, lots in auction now, badges, bio (with the site's translations) and terms link.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/catawiki-seller",
+        "tags": [
+          "Catawiki"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Seller id (`seller.id` of a lot, e.g. `2606741`) or the catawiki.com/en/u/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2606741"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 2606741,
+                  "name": "blackgold",
+                  "user_name": "blackgold",
+                  "url": "https://www.catawiki.com/en/u/2606741-blackgold",
+                  "is_pro": true,
+                  "is_top": true,
+                  "member_since": "2016-08-15T10:39:26Z",
+                  "country": "it",
+                  "country_name": "Italy",
+                  "city": null,
+                  "score": 99.47,
+                  "positive": 559,
+                  "neutral": 61,
+                  "negative": 3,
+                  "lifetime_reviews": 12363,
+                  "review_statistics": {
+                    "ranged": {
+                      "score": 99.47,
+                      "totals": 623,
+                      "positive": 559,
+                      "neutral": 61,
+                      "negative": 3,
+                      "period_in_months": 12
+                    },
+                    "lifetime": {
+                      "totals": 12363
+                    }
+                  },
+                  "objects_sold": 39899,
+                  "lots_in_auction": 22,
+                  "badges": [],
+                  "bio": "“Nothing has changed over the centuries. Whoever holds the gold holds the power. \"\n\nBlack Gold is synonymous with trust and guarantee, prove…",
+                  "bio_source_locale": "it",
+                  "bio_translations": {
+                    "en": "“Nothing has changed over the centuries. Whoever holds the gold holds the power. \"\n\nBlack Gold is synonymous with trust and guarantee, prove…",
+                    "it": "“Nulla è cambiato attraverso i secoli. Chi detiene l'oro detiene il potere.”\n\nBlack Gold è sinonimo di fiducia e garanzia, comprovata dai nu…"
+                  },
+                  "terms_url": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/catawiki/v1/seller/lots": {
+      "get": {
+        "operationId": "catawikiSellerLots",
+        "summary": "Catawiki seller's lots",
+        "description": "The lots a Catawiki seller has in open auctions, each with its live bid as in search. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/catawiki-seller-lots",
+        "tags": [
+          "Catawiki"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Seller id (e.g. `2606741`) or the catawiki.com/en/u/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2606741"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back as `page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Lots per page, 1-100 (default 24).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Currency of bids and estimates (default `EUR`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "EUR",
+                "USD",
+                "GBP",
+                "CHF",
+                "DKK",
+                "NOK",
+                "SEK",
+                "PLN",
+                "CZK",
+                "HUF",
+                "RON",
+                "BGN",
+                "AUD",
+                "CAD",
+                "JPY",
+                "CNY",
+                "HKD",
+                "SGD"
+              ]
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of titles and category names (default `en`): en, nl, de, fr, it, es, pt, pl, sv, da, fi, ru, zh, ja, ko, tr, cs, hu, ro, bg, el.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "seller_id": 2606741,
+                  "currency": "EUR",
+                  "total": 22,
+                  "page": 1,
+                  "per_page": 24,
+                  "count": 22,
+                  "next_page": null,
+                  "lots": [
+                    {
+                      "id": 107823049,
+                      "title": "No reserve price - Earrings - 18 kt. Rose gold Diamond (Natural)  - Emerald",
+                      "subtitle": "Total weight: 1.2 g",
+                      "url": "https://www.catawiki.com/en/l/107823049-no-reserve-price-earrings-18-kt-rose-gold-diamond-natural-emerald",
+                      "image": "https://assets.catawiki.nl/assets/2026/10/19/7/2/f/72fca821-256c-4649-9152-5e44cdbc5c2e.jpg",
+                      "thumbnail": "https://assets.catawiki.nl/assets/2026/10/19/7/2/f/thumb2_72fca821-256c-4649-9152-5e44cdbc5c2e.jpg",
+                      "auction_id": 1295125,
+                      "bidding_start_time": "2026-10-30T15:00:00+00:00",
+                      "reserve_price_set": false,
+                      "buy_now": null,
+                      "free_shipping": false,
+                      "explicit": false,
+                      "current_bid": 84,
+                      "current_bid_currency": "EUR",
+                      "current_bid_all": {
+                        "EUR": 84,
+                        "USD": 93,
+                        "GBP": 70
+                      },
+                      "bidding_end_time": "2026-11-05T18:07:30Z",
+                      "closed": false,
+                      "reserve_price_met": null,
+                      "buy_now_available": false,
+                      "favorite_count": 48
+                    },
+                    {
+                      "id": 107823013,
+                      "title": "No reserve price - Earrings - 18 kt. Rose gold Diamond (Natural)  - Sapphire",
+                      "subtitle": "Total weight: 1.15 g",
+                      "url": "https://www.catawiki.com/en/l/107823013-no-reserve-price-earrings-18-kt-rose-gold-diamond-natural-sapphire",
+                      "image": "https://assets.catawiki.nl/assets/2026/10/19/c/0/0/c003a2ad-d8bf-4515-aeb5-989be4371d2b.jpg",
+                      "thumbnail": "https://assets.catawiki.nl/assets/2026/10/19/c/0/0/thumb2_c003a2ad-d8bf-4515-aeb5-989be4371d2b.jpg",
+                      "auction_id": 1295125,
+                      "bidding_start_time": "2026-10-30T15:00:00+00:00",
+                      "reserve_price_set": false,
+                      "buy_now": null,
+                      "free_shipping": false,
+                      "explicit": false,
+                      "current_bid": 100,
+                      "current_bid_currency": "EUR",
+                      "current_bid_all": {
+                        "EUR": 100,
+                        "USD": 111,
+                        "GBP": 84
+                      },
+                      "bidding_end_time": "2026-11-05T18:08:35Z",
+                      "closed": false,
+                      "reserve_price_met": null,
+                      "buy_now_available": false,
+                      "favorite_count": 47
+                    },
+                    "… 20 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/catawiki/v1/seller/reviews": {
+      "get": {
+        "operationId": "catawikiSellerReviews",
+        "summary": "Catawiki seller reviews",
+        "description": "Buyers' reviews of a Catawiki seller, newest first: `type` (positive, neutral, negative), text and its language, author as the site shows it, reason, the lot ids, the seller's response and date. 25 a page; `total` is the site's count. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/catawiki-seller-reviews",
+        "tags": [
+          "Catawiki"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Seller id (e.g. `2606741`) or the catawiki.com/en/u/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2606741"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1). Pass `next_page` back as `page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "seller_id": 2606741,
+                  "total": 9598,
+                  "page": 1,
+                  "count": 25,
+                  "next_page": 2,
+                  "reviews": [
+                    {
+                      "type": "positive",
+                      "body": "Bellissimo oggetto!! 💕",
+                      "language": "it",
+                      "author": "user-296a094a75a3",
+                      "reason": null,
+                      "lot_ids": [
+                        107720477
+                      ],
+                      "seller_response": null,
+                      "created_at": "2026-11-04T14:59:05Z"
+                    },
+                    {
+                      "type": "neutral",
+                      "body": "As descrive but not as I expected, fast shipping",
+                      "language": "it",
+                      "author": "user-4faf44253a96",
+                      "reason": null,
+                      "lot_ids": [
+                        107721708
+                      ],
+                      "seller_response": null,
+                      "created_at": "2026-11-04T11:08:09Z"
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/catawiki/v1/suggest": {
+      "get": {
+        "operationId": "catawikiSuggest",
+        "summary": "Catawiki search suggestions",
+        "description": "Search suggestions for what was typed, as the Catawiki search box shows them.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/catawiki-suggest",
+        "tags": [
+          "Catawiki"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The text typed so far, e.g. `rol`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "rol"
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of titles and category names (default `en`): en, nl, de, fr, it, es, pt, pl, sv, da, fi, ru, zh, ja, ko, tr, cs, hu, ro, bg, el.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "rol",
+                  "suggestions": [
+                    {
+                      "text": "rolex",
+                      "type": "query_term",
+                      "value": null,
+                      "url": null
+                    },
+                    {
+                      "text": "roller",
+                      "type": "query_term",
+                      "value": null,
+                      "url": null
+                    },
+                    "… 8 more"
+                  ],
+                  "groups": {
+                    "query_terms": [
+                      {
+                        "text": "rolex",
+                        "type": "query_term",
+                        "value": null,
+                        "url": null
+                      },
+                      {
+                        "text": "roller",
+                        "type": "query_term",
+                        "value": null,
+                        "url": null
+                      },
+                      "… 8 more"
+                    ]
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

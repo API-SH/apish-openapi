@@ -1,0 +1,1328 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Vrbo",
+    "version": "1.0.0",
+    "description": "The Vrbo API from API.SH: public Vrbo data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Vrbo",
+      "description": "4 endpoints (travel & events)",
+      "x-slug": "vrbo",
+      "x-domains": [
+        "vrbo.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vrbo/v1/destination": {
+      "get": {
+        "operationId": "vrboDestination",
+        "summary": "Vrbo destination suggestions",
+        "description": "The places Vrbo suggests while typing a destination: cities, neighborhoods, landmarks, airports and regions, each with region id, type, short, full and display names, coordinates, country and a search link. The full name works as /vrbo/v1/search's destination.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/vrbo-destination",
+        "tags": [
+          "Vrbo"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "A place, landmark or airport.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "orlando"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "How many (default 8, max 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "orlando",
+                  "count": 7,
+                  "results": [
+                    {
+                      "id": "2693",
+                      "type": "city",
+                      "name": "Orlando",
+                      "full_name": "Orlando, Florida, United States of America",
+                      "display_name": "Orlando, Florida, United States",
+                      "secondary": "Florida, United States",
+                      "latitude": 28.54129,
+                      "longitude": -81.37904,
+                      "country": "United States",
+                      "country_code": "US",
+                      "airport_code": null,
+                      "search_url": "https://www.vrbo.com/search?regionId=2693&destination=Orlando%2C%20Florida%2C%20United%20States%20of%20America"
+                    },
+                    {
+                      "id": "6049239",
+                      "type": "poi",
+                      "name": "Universal Studios Florida",
+                      "full_name": "Universal Studios Florida, Orlando, Florida, United States of America",
+                      "display_name": "Universal Studios Florida, Orlando, Florida, United States",
+                      "secondary": "Orlando, Florida, United States",
+                      "latitude": 28.47788,
+                      "longitude": -81.470642,
+                      "country": "United States",
+                      "country_code": "US",
+                      "airport_code": null,
+                      "search_url": "https://www.vrbo.com/search?regionId=6049239&destination=Universal%20Studios%20Florida%2C%20Orlando%2C%20Florida%2C%20United%20States%20of%2…"
+                    },
+                    "… 5 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/vrbo/v1/property": {
+      "get": {
+        "operationId": "vrboProperty",
+        "summary": "Vrbo rental details and availability",
+        "description": "One Vrbo vacation rental: name, city, region, country, position, guest rating and review count, sleeps, bedrooms, beds and bathrooms, description, popular amenities and every amenity by category, rooms and beds, spaces, house rules and policies, important information, host, neighborhood with nearby places, every photo with its caption, longer description and room (bedrooms, bathroom, kitchen...), and the availability calendar for the coming year (each day: available, average nightly price, check-in and check-out allowed, minimum and maximum stay). With `check_in` and `check_out`: whether the stay is available, the nightly price, the total with its components (base rate, taxes, fees) and check-in and check-out times. When Vrbo does not answer for availability, prices or host details, the rest is still returned and `unavailable` lists what is missing.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/vrbo-property",
+        "tags": [
+          "Vrbo"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A Vrbo listing number (as in vrbo.com/136165), a property id from a search answer, or a vrbo.com link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "136165"
+          },
+          {
+            "name": "check_in",
+            "in": "query",
+            "required": false,
+            "description": "Check-in date (YYYY-MM-DD) for the stay price.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "check_out",
+            "in": "query",
+            "required": false,
+            "description": "Check-out date (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "description": "Adults (default 2).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "required": false,
+            "description": "Children's ages, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "calendar",
+            "in": "query",
+            "required": false,
+            "description": "Include the availability calendar (default true).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/vrbo/v1/reviews": {
+      "get": {
+        "operationId": "vrboReviews",
+        "summary": "Vrbo rental reviews",
+        "description": "Guest reviews of one Vrbo vacation rental, 50 per page: overall rating, total reviews and the rating for each category (cleanliness, communication, location...), then each review with its rating, title, text, language, date, author, who they travelled with, whether the stay was verified, the topics it mentions, helpful votes, guest photos and the host's response. Sort by newest, highest or lowest rated, or most relevant; `q` finds reviews that mention a word. `next_page` gives the following page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/vrbo-reviews",
+        "tags": [
+          "Vrbo"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A Vrbo listing number (as in vrbo.com/136165), a property id from a search answer, or a vrbo.com link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "136165"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Review order: newest (default), highest, lowest or relevant.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "highest",
+                "lowest",
+                "relevant"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews that mention this word or phrase (up to 100 characters).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "hot tub"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (50 reviews per page, default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "33482898",
+                  "listing_id": "136165",
+                  "url": "https://www.vrbo.com/136165",
+                  "rating_text": "10/10 Exceptional",
+                  "rating": 10,
+                  "total_reviews": 133,
+                  "review_count_text": "133 reviews",
+                  "category_ratings": [
+                    {
+                      "name": "Cleanliness",
+                      "rating": 10,
+                      "percent": 100
+                    },
+                    {
+                      "name": "Check-in",
+                      "rating": 10,
+                      "percent": 100
+                    },
+                    "… 3 more"
+                  ],
+                  "sort": "newest",
+                  "q": null,
+                  "page": 1,
+                  "page_size": 50,
+                  "count": 50,
+                  "next_page": 2,
+                  "reviews": [
+                    {
+                      "id": "6a91df0391916d21d5320b39",
+                      "rating": 10,
+                      "rating_text": "10/10 Excellent",
+                      "superlative": "Excellent",
+                      "title": null,
+                      "text": "The house was perfect for me and all my friends to stay in for the Renaissance Faire happening just a few blocks away from at Tahoe Paradise…",
+                      "locale": "en_US",
+                      "date": "Aug 28, 2026",
+                      "author": "Katherine V.",
+                      "travelers": [],
+                      "verified": true,
+                      "disclaimer": "Verified review",
+                      "source": null,
+                      "themes": [
+                        "Liked: Cleanliness, check-in, communication, location, listing accuracy"
+                      ],
+                      "helpful_votes": 0,
+                      "photos": [],
+                      "host_response": null
+                    },
+                    {
+                      "id": "6a8bd0180b191d00357d2b54",
+                      "rating": 10,
+                      "rating_text": "10/10 Excellent",
+                      "superlative": "Excellent",
+                      "title": null,
+                      "text": null,
+                      "locale": "en_US",
+                      "date": "Aug 24, 2026",
+                      "author": "Nicole C.",
+                      "travelers": [],
+                      "verified": true,
+                      "disclaimer": "Verified review",
+                      "source": null,
+                      "themes": [
+                        "Liked: Cleanliness, check-in, communication, listing accuracy"
+                      ],
+                      "helpful_votes": 0,
+                      "photos": [],
+                      "host_response": null
+                    },
+                    "… 48 more"
+                  ],
+                  "sort_options": [
+                    "newest",
+                    "highest",
+                    "… 2 more"
+                  ],
+                  "filters": [
+                    {
+                      "name": "sortBy",
+                      "label": "Sort by",
+                      "options": [
+                        {
+                          "value": "HIGHEST_TO_LOWEST_RATED",
+                          "label": "Highest guest rating",
+                          "selected": false
+                        },
+                        {
+                          "value": "LOWEST_TO_HIGHEST_RATED",
+                          "label": "Lowest guest rating",
+                          "selected": false
+                        },
+                        "… 2 more"
+                      ]
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/vrbo/v1/search": {
+      "get": {
+        "operationId": "vrboSearch",
+        "summary": "Vrbo vacation rental search",
+        "description": "Vacation rentals Vrbo lists for a destination: property id, listing number, name, type and place, bedrooms, beds, bathrooms, highlights, free-cancellation deadline, guest rating with label and review count, nightly price (and the struck-through price), total for the stay, price notes, badges, photos and link. Filter with any value of the `filters` list each answer carries (guest rating, amenities, common spaces, house rules, property type, location, nearby activities, booking options, discounts, free cancellation, accessibility, beach access, premier host, ...), neighborhoods and a nightly or total price range. Give dates for prices and availability. 50 rentals per page: pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/vrbo-search",
+        "tags": [
+          "Vrbo"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "destination",
+            "in": "query",
+            "required": true,
+            "description": "Destination: city, region, area or landmark, e.g. `Lake Tahoe`, `Miami, Florida`, `Outer Banks`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Lake Tahoe"
+          },
+          {
+            "name": "check_in",
+            "in": "query",
+            "required": false,
+            "description": "Check-in date (YYYY-MM-DD); with check_out, prices are for the stay.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "check_out",
+            "in": "query",
+            "required": false,
+            "description": "Check-out date (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "description": "Adults (default 2).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "required": false,
+            "description": "Children's ages, comma-separated, e.g. `4,7`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default recommended).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recommended",
+                "price_asc",
+                "price_desc",
+                "rating",
+                "reviews"
+              ]
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "Filter values, comma-separated, e.g. `hot_tub,pets_allowed,house,45_stars,free_cancellation_14,instant_confirmation` (the `filters` list in each answer gives every value).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "neighborhoods",
+            "in": "query",
+            "required": false,
+            "description": "Neighborhood ids from the `filters` list, comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price (USD).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Highest price (USD).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "price_type",
+            "in": "query",
+            "required": false,
+            "description": "Whether min_price and max_price are per night (default) or for the whole stay.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nightly",
+                "total"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (`next_page` from the previous answer).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "destination": "Lake Tahoe",
+                  "check_in": null,
+                  "check_out": null,
+                  "adults": 2,
+                  "children": [],
+                  "sort": "recommended",
+                  "applied_filters": {
+                    "filters": [],
+                    "neighborhoods": [],
+                    "min_price": null,
+                    "max_price": null,
+                    "price_type": "nightly"
+                  },
+                  "total": 23,
+                  "results_label": null,
+                  "heading": "Search results showing 23 properties in Lake Tahoe, United States of America",
+                  "page": 1,
+                  "page_size": 50,
+                  "count": 23,
+                  "next_page": null,
+                  "listings": [
+                    {
+                      "id": "35188452",
+                      "listing_id": "17154",
+                      "name": "Next to Sugar Pine State Park, Two Morrows Tahoe Cabin loves kids and dogs!",
+                      "headline": "Next to Sugar Pine State Park, Two Morrows Tahoe Cabin loves kids and dogs!",
+                      "details": [
+                        "3 bedrooms · 6 beds · Balcony · Ski-in/ski-out · Dog-friendly",
+                        "4 min drive to the beach"
+                      ],
+                      "sleeps": null,
+                      "bedrooms": 3,
+                      "beds": 6,
+                      "bathrooms": null,
+                      "free_cancellation": false,
+                      "rating": 9.8,
+                      "rating_text": "Exceptional",
+                      "reviews": 37,
+                      "price": "$373",
+                      "price_amount": 373,
+                      "strike_price": null,
+                      "price_period": "avg per night",
+                      "total_text": "$746 for 2 nights",
+                      "total_amount": 746,
+                      "price_notes": [
+                        "All fees included",
+                        "Nov 5 - Nov 7"
+                      ],
+                      "badges": [
+                        "Loved by Guests"
+                      ],
+                      "images": [
+                        "https://media.vrbo.com/lodging/36000000/35190000/35188500/35188452/0b259890.jpg?impolicy=resizecrop&ra=fit&rw=455&rh=455",
+                        "https://media.vrbo.com/lodging/36000000/35190000/35188500/35188452/8e120ea2.jpg?impolicy=resizecrop&ra=fit&rw=455&rh=455",
+                        "… 2 more"
+                      ],
+                      "url": "https://www.vrbo.com/17154?adults=2"
+                    },
+                    {
+                      "id": "94852862",
+                      "listing_id": "3427860",
+                      "name": "Beautiful and Fun Condo for Everyone! (NSE18)",
+                      "headline": "Beautiful and Fun Condo for Everyone! (NSE18)",
+                      "details": [
+                        "3 bedrooms · 4 beds · Refrigerator · Internet · Washer",
+                        "11 min walk to the beach"
+                      ],
+                      "sleeps": null,
+                      "bedrooms": 3,
+                      "beds": 4,
+                      "bathrooms": null,
+                      "free_cancellation": false,
+                      "rating": 8.4,
+                      "rating_text": "Very Good",
+                      "reviews": 6,
+                      "price": "$473",
+                      "price_amount": 473,
+                      "strike_price": null,
+                      "price_period": "avg per night",
+                      "total_text": "$946 for 2 nights",
+                      "total_amount": 946,
+                      "price_notes": [
+                        "All fees included",
+                        "Nov 8 - Nov 10"
+                      ],
+                      "badges": [],
+                      "images": [
+                        "https://media.vrbo.com/lodging/95000000/94860000/94852900/94852862/db3d4607.jpg?impolicy=resizecrop&ra=fit&rw=455&rh=455",
+                        "https://media.vrbo.com/lodging/95000000/94860000/94852900/94852862/f1367465.jpg?impolicy=resizecrop&ra=fit&rw=455&rh=455",
+                        "… 2 more"
+                      ],
+                      "url": "https://www.vrbo.com/3427860?adults=2"
+                    },
+                    "… 21 more"
+                  ],
+                  "filters": [
+                    {
+                      "group": "property_reviews_group",
+                      "title": "Guest rating",
+                      "param": "filters",
+                      "options": [
+                        {
+                          "value": "45_stars",
+                          "label": "Wonderful 9+",
+                          "selected": false,
+                          "disabled": false
+                        },
+                        {
+                          "value": "4_stars",
+                          "label": "Very good 8+",
+                          "selected": false,
+                          "disabled": false
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    {
+                      "group": "popular_group",
+                      "title": "Popular",
+                      "param": "filters",
+                      "options": [
+                        {
+                          "value": "popular",
+                          "label": "Popular",
+                          "selected": false,
+                          "disabled": false
+                        }
+                      ]
+                    },
+                    "… 17 more"
+                  ],
+                  "sort_options": [
+                    "recommended",
+                    "price_asc",
+                    "… 3 more"
+                  ],
+                  "notice": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

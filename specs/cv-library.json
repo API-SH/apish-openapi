@@ -1,0 +1,1341 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: CV-Library",
+    "version": "1.0.0",
+    "description": "The CV-Library API from API.SH: public CV-Library data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "CV-Library",
+      "description": "4 endpoints (jobs & b2b)",
+      "x-slug": "cv-library",
+      "x-domains": [
+        "cv-library.co.uk"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cvlibrary/v1/companies": {
+      "get": {
+        "operationId": "cvlibraryCompanies",
+        "summary": "CV-Library employer directory",
+        "description": "CV-Library's employer A-Z: direct employers or recruitment agencies whose name starts with a letter (or 0-9), 20 per page, each with employer number, name, link, type, industries and logo; the total and page count. Use the number with /cvlibrary/v1/company. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/cvlibrary-companies",
+        "tags": [
+          "CV-Library"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "letter",
+            "in": "query",
+            "required": false,
+            "description": "A-Z or 0-9 (default A).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "B"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "employers (default) or agencies.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "employers",
+                "agencies"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/cvlibrary/v1/company": {
+      "get": {
+        "operationId": "cvlibraryCompany",
+        "summary": "CV-Library employer",
+        "description": "An employer or agency profile on CV-Library with its live jobs: name, type, tagline, address, website, logo, the profile's about sections as text, benefits, facts, tags and locations where the employer lists them, the number of live jobs with job categories, and 20 jobs per page in the search shape. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/cvlibrary-company",
+        "tags": [
+          "CV-Library"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Employer number (e.g. 479203) or its /list-jobs/ link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "479203"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page of the employer's jobs.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "479203",
+                  "url": "https://www.cv-library.co.uk/list-jobs/479203",
+                  "name": "A&O Shearman",
+                  "type": "employers",
+                  "tagline": "Jobs, Vacancies & Careers",
+                  "address": "One Bishops Square, ., Greater London, London, E1 6AD",
+                  "phone": null,
+                  "website": "https://www.aoshearman.com/",
+                  "logo": "https://www.cv-library.co.uk/api/media/file/companylogo-386278-big.png",
+                  "about": [
+                    {
+                      "label": "description",
+                      "text": "A firm built to achieve unparalleled outcomes\nWith nearly 4,000 lawyers globally, we are equally fluent in English law, U.S. law and the law…"
+                    },
+                    {
+                      "label": "different",
+                      "text": "A firm that delivers unmatched insight with seamless services \nA firm whose teams deliver unmatched insight with seamless service. A firm wi…"
+                    }
+                  ],
+                  "introduction": "A firm built to achieve unparalleled outcomes\nWith nearly 4,000 lawyers globally, we are equally fluent in English law, U.S. law and the law…",
+                  "benefits": [],
+                  "facts": [],
+                  "tags": [],
+                  "locations": [],
+                  "links": [],
+                  "live_jobs": 593,
+                  "page": 1,
+                  "count": 20,
+                  "next_page": 2,
+                  "job_categories": [
+                    {
+                      "value": "Managerial",
+                      "count": 165,
+                      "path": "managerial"
+                    },
+                    {
+                      "value": "Legal",
+                      "count": 135,
+                      "path": "legal"
+                    },
+                    "… 8 more"
+                  ],
+                  "jobs": [
+                    {
+                      "id": "225796653",
+                      "title": "HR Administration (12m FTC)",
+                      "url": "https://www.cv-library.co.uk/job/225796653/hr-administration-12m-ftc",
+                      "partner_listing": false,
+                      "employer": {
+                        "id": "479203",
+                        "name": "A&O Shearman",
+                        "type": "Corporate",
+                        "url": "https://www.cv-library.co.uk/list-jobs/479203"
+                      },
+                      "location": {
+                        "name": "BT30",
+                        "area": "Downpatrick",
+                        "county": "County Down",
+                        "region": "Northern Ireland",
+                        "country": null,
+                        "postcode": null,
+                        "lat": 54.327934,
+                        "lon": -5.71649,
+                        "distance_miles": null
+                      },
+                      "salary": null,
+                      "job_types": [
+                        "Permanent"
+                      ],
+                      "categories": [
+                        "Admin & Administration",
+                        "Sports Administration",
+                        "… 4 more"
+                      ],
+                      "posted": "2026-11-03T18:00:41Z",
+                      "summary": "We have an exciting opportunity for an HR Operations Manager to join our HR Advice team, based in A&O Shearman’s Belfast Office. This role i…",
+                      "remote": false,
+                      "featured": true,
+                      "salary_hidden": true,
+                      "applications": 1,
+                      "apply_type": "external",
+                      "apply_url": "https://dsp.prng.co/S8VXHhb",
+                      "logo": "https://www.cv-library.co.uk/logo/big/e6c16ab2a65546e59b3c519073d9d30d",
+                      "other_locations": []
+                    },
+                    {
+                      "id": "225796652",
+                      "title": "HR Operations (12m FTC)",
+                      "url": "https://www.cv-library.co.uk/job/225796652/hr-operations-12m-ftc",
+                      "partner_listing": false,
+                      "employer": {
+                        "id": "479203",
+                        "name": "A&O Shearman",
+                        "type": "Corporate",
+                        "url": "https://www.cv-library.co.uk/list-jobs/479203"
+                      },
+                      "location": {
+                        "name": "BT19",
+                        "area": "Bangor",
+                        "county": "County Down",
+                        "region": "Northern Ireland",
+                        "country": null,
+                        "postcode": null,
+                        "lat": 53.227716,
+                        "lon": -4.126882,
+                        "distance_miles": null
+                      },
+                      "salary": null,
+                      "job_types": [
+                        "Permanent"
+                      ],
+                      "categories": [
+                        "Customer Services",
+                        "Operations",
+                        "… 3 more"
+                      ],
+                      "posted": "2026-11-03T18:00:41Z",
+                      "summary": "We have an exciting opportunity for an HR Operations Manager to join our HR Advice team, based in A&O Shearman’s Belfast Office. This role i…",
+                      "remote": false,
+                      "featured": true,
+                      "salary_hidden": true,
+                      "applications": 2,
+                      "apply_type": "external",
+                      "apply_url": "https://dsp.prng.co/pOd0Lyb",
+                      "logo": "https://www.cv-library.co.uk/logo/big/e6c16ab2a65546e59b3c519073d9d30d",
+                      "other_locations": []
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/cvlibrary/v1/job": {
+      "get": {
+        "operationId": "cvlibraryJob",
+        "summary": "CV-Library job",
+        "description": "One CV-Library job in full: title, employer (id, name, type, logo), the contact named on the advert, location (area, county, postcode, coordinates), salary, job types, categories, remote flag, posted and closing dates, summary, full description as text and HTML, number of applications, apply type and link, featured and hidden-salary flags and the employer's reference. A job that has closed answers 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/cvlibrary-job",
+        "tags": [
+          "CV-Library"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Job number (e.g. 225788486) or the job's link (id or latest is needed).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.cv-library.co.uk/job/225788486/data-developer-12-month-contract"
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "true: the newest London developer job (an example that never expires).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "225784440",
+                  "url": "https://www.cv-library.co.uk/job/225784440/senior-director-head-of-oncology",
+                  "title": "Senior Director, Head of Oncology",
+                  "employer": {
+                    "id": "476719",
+                    "name": "Jazz Pharmaceuticals",
+                    "type": "Corporate",
+                    "url": "https://www.cv-library.co.uk/list-jobs/476719",
+                    "logo": "https://www.cv-library.co.uk/logo/big/3a607bdb0c544da4897411ecd7ecbb81"
+                  },
+                  "contact_name": "Recruitment",
+                  "location": {
+                    "name": "London",
+                    "area": "London",
+                    "county": null,
+                    "region": null,
+                    "country": "England",
+                    "postcode": null,
+                    "lat": null,
+                    "lon": null,
+                    "distance_miles": null
+                  },
+                  "salary": null,
+                  "job_types": [
+                    "Permanent"
+                  ],
+                  "categories": [
+                    "Healthcare",
+                    "Oncology",
+                    "… 2 more"
+                  ],
+                  "remote": false,
+                  "posted": "2026-11-06T03:18:02Z",
+                  "closes": "2026-12-06T03:18:02.000Z",
+                  "summary": "If you are a current Jazz employee please apply via the Internal Career site. Jazz Pharmaceuticals is a global biopharma company whose purpo…",
+                  "description": "If you are a current Jazz employee please apply via the Internal Career site. Jazz Pharmaceuticals is a global biopharma company whose purpo…",
+                  "description_html": "<p>If you are a current Jazz employee please apply via the Internal Career site.</p><p>Jazz Pharmaceuticals is a global biopharma company wh…",
+                  "applications": 2,
+                  "apply_type": "external",
+                  "apply_url": "https://click.appcast.io/t/L5PwCLs1LdPNLxhw5WNLxu_8hGne3jIkVTa7S4eoejE=",
+                  "featured": true,
+                  "salary_hidden": true,
+                  "external_reference": "4781_R040249-164",
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/cvlibrary/v1/search": {
+      "get": {
+        "operationId": "cvlibrarySearch",
+        "summary": "CV-Library job search",
+        "description": "Search UK jobs on CV-Library by keyword and/or location with the site's filters: radius in miles, posted within 1-30 days, job type (permanent, contract, temporary, part time; several comma-separated), salary range (annual, daily or hourly GBP), sort (relevance, newest, salary high/low, distance) and 20 or 50 results per page. Each job has id, title, link, employer (id, name, type), location (area, county, coordinates, distance), salary (period, min/max and annualised), job types, categories, posted date, summary, remote and featured flags, number of applications, apply type and link, logo and the other locations the same job is posted in. Jobs the board takes from partner feeds have `partner_listing` true and link to their apply page. Also the resolved location and radius, and facets (nearby locations, categories, related job titles) with counts. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/cvlibrary-search",
+        "tags": [
+          "CV-Library"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Job title, skill or keyword (q or location is needed).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "developer"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Town, city, county or postcode (a postcode needs keywords too).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "london"
+          },
+          {
+            "name": "distance",
+            "in": "query",
+            "required": false,
+            "description": "Radius in miles around the location (1, 2, 5, 7, 10, 15, 20, 25, 35, 50, 75, 100, 250, 500, 750; default 15).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "posted",
+            "in": "query",
+            "required": false,
+            "description": "Posted within this many days: 1, 2, 3, 7, 15 or 30.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "job_type",
+            "in": "query",
+            "required": false,
+            "description": "permanent, contract, temporary, part time; several separated by commas.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "salary_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest salary (GBP, in salary_period units).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "salary_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest salary (GBP).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "salary_period",
+            "in": "query",
+            "required": false,
+            "description": "annum (default), day or hour.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "annum",
+                "day",
+                "hour"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), newest, salary_desc, salary_asc, distance.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "newest",
+                "salary_desc",
+                "salary_asc",
+                "distance"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page: 20 (default) or 50.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "applied_filters": {
+                    "q": "developer",
+                    "location": "london",
+                    "sort": "relevance"
+                  },
+                  "location": {
+                    "name": "London, Greater London",
+                    "type": "city",
+                    "distance_miles": 15
+                  },
+                  "spelling_suggestion": null,
+                  "expanded_radius": false,
+                  "page": 1,
+                  "limit": 20,
+                  "total": 389,
+                  "count": 20,
+                  "next_page": 2,
+                  "facets": {
+                    "locations": [
+                      {
+                        "value": "Developer Jobs in Greater London",
+                        "count": 213,
+                        "path": "developer-jobs-in-greater-london"
+                      },
+                      {
+                        "value": "Developer Jobs in Clerkenwell",
+                        "count": 11,
+                        "path": "developer-jobs-in-clerkenwell"
+                      },
+                      "… 7 more"
+                    ],
+                    "categories": [
+                      {
+                        "value": "It",
+                        "count": 235,
+                        "path": "it"
+                      },
+                      {
+                        "value": "Construction",
+                        "count": 183,
+                        "path": "construction"
+                      },
+                      "… 8 more"
+                    ],
+                    "titles": [
+                      {
+                        "value": "Coding Trainee Placement Programme",
+                        "count": 38,
+                        "path": "coding trainee placement programme"
+                      },
+                      {
+                        "value": "Trainee Coding & Programmer Placement Programme",
+                        "count": 26,
+                        "path": "trainee coding & programmer placement programme"
+                      },
+                      "… 8 more"
+                    ]
+                  },
+                  "jobs": [
+                    {
+                      "id": "225788486",
+                      "title": "Data Developer (12 month contract)",
+                      "url": "https://www.cv-library.co.uk/job/225788486/data-developer-12-month-contract",
+                      "partner_listing": false,
+                      "employer": {
+                        "id": "479203",
+                        "name": "A&O Shearman",
+                        "type": "Corporate",
+                        "url": "https://www.cv-library.co.uk/list-jobs/479203"
+                      },
+                      "location": {
+                        "name": "EC3A 2DB",
+                        "area": "Tower, Greater London",
+                        "county": "City and County of the City of London",
+                        "region": "England",
+                        "country": null,
+                        "postcode": null,
+                        "lat": 51.521808,
+                        "lon": -0.084466,
+                        "distance_miles": 3.4
+                      },
+                      "salary": null,
+                      "job_types": [
+                        "Permanent"
+                      ],
+                      "categories": [
+                        "IT",
+                        "Developer",
+                        "… 3 more"
+                      ],
+                      "posted": "2026-11-02T14:00:38Z",
+                      "summary": "We are recruiting for a Data Developer to join our Group Finance - Technical Analysts team in London, on a 12 month contract basis.",
+                      "remote": true,
+                      "featured": true,
+                      "salary_hidden": true,
+                      "applications": 37,
+                      "apply_type": "external",
+                      "apply_url": "https://dsp.prng.co/qyTDR3b",
+                      "logo": "https://www.cv-library.co.uk/logo/big/e6c16ab2a65546e59b3c519073d9d30d",
+                      "other_locations": [
+                        {
+                          "id": "225788472",
+                          "url": "https://www.cv-library.co.uk/job/225788472",
+                          "name": "UB10 9PG",
+                          "area": "Hillingdon East, Greater London",
+                          "county": "Greater London"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "225767834",
+                      "title": "Senior Developer",
+                      "url": "https://www.cv-library.co.uk/job/225767834/senior-developer",
+                      "partner_listing": false,
+                      "employer": {
+                        "id": "365155",
+                        "name": "Olive Jar Digital Ltd",
+                        "type": "Direct Employer",
+                        "url": "https://www.cv-library.co.uk/list-jobs/365155"
+                      },
+                      "location": {
+                        "name": "London",
+                        "area": "Greater London",
+                        "county": "Greater London",
+                        "region": "England",
+                        "country": null,
+                        "postcode": null,
+                        "lat": null,
+                        "lon": null,
+                        "distance_miles": null
+                      },
+                      "salary": {
+                        "currency": "GBP",
+                        "period": "annum",
+                        "min": 70000,
+                        "max": 70000,
+                        "annual_min": 70000,
+                        "annual_max": 70000,
+                        "text": null
+                      },
+                      "job_types": [
+                        "Temporary"
+                      ],
+                      "categories": [
+                        "IT",
+                        "Development",
+                        "… 3 more"
+                      ],
+                      "posted": "2026-10-27T09:47:41Z",
+                      "summary": "Temporary Experienced Senior Developer About the role Olive Jar Digital is looking for an experienced Senior Developer specialising in Pytho…",
+                      "remote": false,
+                      "featured": false,
+                      "salary_hidden": false,
+                      "applications": 27,
+                      "apply_type": "email",
+                      "apply_url": null,
+                      "logo": "https://www.cv-library.co.uk/logo/big/879c503d983a4573b57ff9fc6efb1413",
+                      "other_locations": []
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

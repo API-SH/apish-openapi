@@ -1,0 +1,1356 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Resy",
+    "version": "1.0.0",
+    "description": "The Resy API from API.SH: public Resy data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Resy",
+      "description": "5 endpoints (food & delivery)",
+      "x-slug": "resy",
+      "x-domains": [
+        "resy.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resy/v1/cities": {
+      "get": {
+        "operationId": "resyCities",
+        "summary": "Resy cities",
+        "description": "Every city Resy serves: id, code, slug (use as `city` elsewhere), name, country, time zone, coordinates, radius and whether it is listed in the city menu, with its Resy link.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/resy-cities",
+        "tags": [
+          "Resy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter country, e.g. US, GB.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only cities whose name or slug contains this.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "description": "0 = only the cities shown in Resy's city menu.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "US",
+                  "q": null,
+                  "count": 1843,
+                  "cities": [
+                    {
+                      "id": 1368,
+                      "code": "abrd",
+                      "slug": "aberdeen-township-nj",
+                      "name": "Aberdeen Township, NJ",
+                      "country": "United States",
+                      "country_code": "US",
+                      "region": null,
+                      "time_zone": "EST5EDT",
+                      "lat": 40.4170948,
+                      "lon": -74.2221155,
+                      "radius_miles": 4,
+                      "listed": false,
+                      "url": "https://resy.com/cities/aberdeen-township-nj"
+                    },
+                    {
+                      "id": 3729,
+                      "code": "abrdn",
+                      "slug": "aberdeen-nc-nc",
+                      "name": "Aberdeen, NC",
+                      "country": "United States",
+                      "country_code": "US",
+                      "region": null,
+                      "time_zone": "EST5EDT",
+                      "lat": 35.131547,
+                      "lon": -79.4294789,
+                      "radius_miles": 4,
+                      "listed": true,
+                      "url": "https://resy.com/cities/aberdeen-nc-nc"
+                    },
+                    "… 1841 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/resy/v1/collection": {
+      "get": {
+        "operationId": "resyCollection",
+        "summary": "Resy curated collections",
+        "description": "Resy's curated restaurant lists of a city: id, name, short name, slug, description and image. Open one with /resy/v1/collection/venues.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/resy-collection",
+        "tags": [
+          "Resy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "Resy city slug (default new-york-ny); see /resy/v1/cities.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "new-york-ny"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "city": "new-york-ny",
+                  "city_name": "New York",
+                  "count": 24,
+                  "collections": [
+                    {
+                      "id": 1056,
+                      "name": "New York’s Essential Brunch Spots",
+                      "short_name": "Best of Brunch",
+                      "slug": "new-yorks-essential-brunch-spots",
+                      "description": "So that when it comes time for weekend brunch, you’re in good hands.",
+                      "image": "https://s3.amazonaws.com/resy.com/images/lists/eggs.svg",
+                      "pickup": false,
+                      "order": 61
+                    },
+                    {
+                      "id": 998,
+                      "name": "New York’s Best Outdoor Dining",
+                      "short_name": "Al Fresco Dining",
+                      "slug": "new-yorks-best-outdoor-dining",
+                      "description": "Where to dine outside this season — from sunny sidewalk seating to secret backyard gardens.",
+                      "image": "https://s3.amazonaws.com/resy.com/images/lists/spring.svg",
+                      "pickup": false,
+                      "order": 62
+                    },
+                    "… 22 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/resy/v1/collection/venues": {
+      "get": {
+        "operationId": "resyCollectionVenues",
+        "summary": "Resy collection restaurants",
+        "description": "The restaurants of one Resy curated list with cuisine, price band, rating, ratings count, neighbourhood, coordinates, average ticket, link and the open slots (start, end, seating type) for the date and party size. Lists are long and carry every slot of the day, so this call is heavier than most.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 4 credits per successful call. Docs: https://api.sh/docs/resy-collection-venues",
+        "tags": [
+          "Resy"
+        ],
+        "x-credits": 4,
+        "parameters": [
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "Resy city slug (default new-york-ny).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "new-york-ny"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Collection id or slug from /resy/v1/collection.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1056"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Date for open slots (YYYY-MM-DD, default today).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seats",
+            "in": "query",
+            "required": false,
+            "description": "Party size (default 2).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "city": "new-york-ny",
+                  "city_name": "New York",
+                  "date": "2026-11-05",
+                  "seats": 2,
+                  "id": 1056,
+                  "name": "New York’s Essential Brunch Spots",
+                  "short_name": "Best of Brunch",
+                  "slug": "new-yorks-essential-brunch-spots",
+                  "description": "So that when it comes time for weekend brunch, you’re in good hands.",
+                  "image": "https://s3.amazonaws.com/resy.com/images/lists/eggs.svg",
+                  "pickup": false,
+                  "order": 61,
+                  "count": 253,
+                  "venues": [
+                    {
+                      "id": 98764,
+                      "name": "Palermo Argentinian Bistro - Soho",
+                      "slug": "palermo-argentinian-bistro-soho",
+                      "cuisine": "Argentinean",
+                      "price_range": 1,
+                      "rating": 4.7931,
+                      "ratings": 29,
+                      "neighborhood": "SoHo",
+                      "lat": 40.72235641971825,
+                      "lon": -74.00368863305891,
+                      "average_ticket": "$1",
+                      "url": "https://resy.com/cities/new-york-ny/venues/palermo-argentinian-bistro-soho",
+                      "image": null,
+                      "notify": null,
+                      "slots": [
+                        {
+                          "time": "2026-11-05 12:00:00",
+                          "end": "2026-11-05 13:30:00",
+                          "type": "Dining Room"
+                        },
+                        {
+                          "time": "2026-11-05 12:00:00",
+                          "end": "2026-11-05 13:30:00",
+                          "type": "Lounge"
+                        },
+                        "… 74 more"
+                      ]
+                    },
+                    {
+                      "id": 97133,
+                      "name": "Dumbo Oyster Bar",
+                      "slug": "dumbo-oyster-bar",
+                      "cuisine": "Seafood",
+                      "price_range": 2,
+                      "rating": 4.07018,
+                      "ratings": 57,
+                      "neighborhood": "Dumbo",
+                      "lat": 40.703388181038925,
+                      "lon": -73.99383964655391,
+                      "average_ticket": "$35",
+                      "url": "https://resy.com/cities/new-york-ny/venues/dumbo-oyster-bar",
+                      "image": null,
+                      "notify": null,
+                      "slots": [
+                        {
+                          "time": "2026-11-05 11:30:00",
+                          "end": "2026-11-05 13:00:00",
+                          "type": "Dining Room"
+                        },
+                        {
+                          "time": "2026-11-05 11:30:00",
+                          "end": "2026-11-05 13:00:00",
+                          "type": "L1"
+                        },
+                        "… 134 more"
+                      ]
+                    },
+                    "… 251 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 4
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/resy/v1/search": {
+      "get": {
+        "operationId": "resySearch",
+        "summary": "Resy restaurants with tables on a date",
+        "description": "Restaurants on Resy in a city for a date and party size, optionally matching a query (name, cuisine, neighbourhood), ordered by availability that day: id, name, slug, link, cuisines, neighbourhood, locality, region, country, rating and count, price band (1-4), currency, coordinates, phone, maximum party, waitlist and Global Dining Access flags, collections, the day's open time slots with seating type, and images, with the total and the matching cuisines. The first 20 venues; narrow with query.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/resy-search",
+        "tags": [
+          "Resy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "Resy city slug: new-york-ny (default), los-angeles-ca, miami-fl, chicago-il, san-francisco-ca, washington-dc, austin-tx, london-uk...",
+            "schema": {
+              "type": "string"
+            },
+            "example": "new-york-ny"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Date YYYY-MM-DD (default tomorrow).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seats",
+            "in": "query",
+            "required": false,
+            "description": "Party size, 1-20 (default 2).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "2"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Name, cuisine or neighbourhood.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "italian"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "city": "new-york-ny",
+                  "date": "2026-11-05",
+                  "seats": 2,
+                  "query": "italian",
+                  "total": 371,
+                  "count": 20,
+                  "venues": [
+                    {
+                      "id": 92126,
+                      "name": "Eccolo Italian Restaurant",
+                      "slug": "eccolo-italian-restaurant",
+                      "url": "https://resy.com/cities/new-york-ny/venues/eccolo-italian-restaurant",
+                      "cuisine": [
+                        "Italian"
+                      ],
+                      "neighborhood": "Hell's Kitchen",
+                      "locality": "New York",
+                      "region": "NY",
+                      "country": "United States",
+                      "rating": 4.41,
+                      "rating_count": 133,
+                      "price_range": 1,
+                      "currency": "USD",
+                      "lat": 40.761549,
+                      "lon": -73.987693,
+                      "phone": "+1 555 010 0000",
+                      "max_party": 20,
+                      "waitlist": false,
+                      "global_dining_access": false,
+                      "collections": [],
+                      "slots": [
+                        {
+                          "time": "2026-11-05 16:00:00",
+                          "type": "Dining Room"
+                        },
+                        {
+                          "time": "2026-11-05 16:00:00",
+                          "type": "Patio"
+                        },
+                        "… 48 more"
+                      ],
+                      "images": [
+                        "https://image.resy.com/3/003/2/92126/c4b61fbf0de87f66478b403dcc48c6ce6950c776/jpg/640x360",
+                        "https://image.resy.com/3/003/2/92126/2e48fed2ba2d8cc35c15e9ae5e1c5a008a2a1a86/jpg/640x360",
+                        "… 3 more"
+                      ]
+                    },
+                    {
+                      "id": 87058,
+                      "name": "Foodance Italian Restaurant",
+                      "slug": "foodance-italian-restaurant",
+                      "url": "https://resy.com/cities/new-york-ny/venues/foodance-italian-restaurant",
+                      "cuisine": [
+                        "Italian"
+                      ],
+                      "neighborhood": "Hell's Kitchen",
+                      "locality": "New York",
+                      "region": "NY",
+                      "country": "United States",
+                      "rating": 4.64,
+                      "rating_count": 235,
+                      "price_range": 2,
+                      "currency": "USD",
+                      "lat": 40.76272474879676,
+                      "lon": -73.99281267434957,
+                      "phone": "+1 555 010 0000",
+                      "max_party": 16,
+                      "waitlist": false,
+                      "global_dining_access": false,
+                      "collections": [
+                        "Where to Dine with a Crew in New York",
+                        "If You’re Craving Pasta in New York..."
+                      ],
+                      "slots": [
+                        {
+                          "time": "2026-11-05 16:30:00",
+                          "type": "Dining Room"
+                        },
+                        {
+                          "time": "2026-11-05 16:45:00",
+                          "type": "Dining Room"
+                        },
+                        "… 21 more"
+                      ],
+                      "images": [
+                        "https://image.resy.com/3/003/2/87058/c6fd59e7c9aef170498c75d06791082a7652da19/jpg/640x360",
+                        "https://image.resy.com/3/003/2/87058/e50289350a0844eb05ed634a0f33cda1c161c088/jpg/640x360",
+                        "… 3 more"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "cuisines": [
+                    "Italian",
+                    "Dessert",
+                    "… 7 more"
+                  ],
+                  "note": "The first 20 venues, ordered by availability that day; narrow with query.",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/resy/v1/venue": {
+      "get": {
+        "operationId": "resyVenue",
+        "summary": "Resy venue with open tables",
+        "description": "One Resy venue for a date and party size: id, name, link, cuisine, price band, average ticket, currency, timezone, rating and count, address, city, region, postal code, country, neighbourhood, cross streets, coordinates, phone, website, menu link, Instagram and Facebook, about / why we like it / need to know texts, description, restaurant group, party-size limits and large-party message, Global Dining Access flag, awards, collections; the day's open slots (time, end, seating type, party range, deposit, duration in minutes, tables free), notices; `menu_highlights` (signature dishes), `booking_policy` (deposit, service charge, cancellation fee, cancellation and change cut-offs, large-party rules), `turn_times` (table time by party size), `images_full` (full-size photos), `special_announcement`, `average_ticket_label`, `tax_included`; the calendar of the next year's days (reservation, event, walk-in status) and upcoming events with prices.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/resy-venue",
+        "tags": [
+          "Resy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "The venue's resy.com/cities/<city>/venues/<slug> link (from /resy/v1/search).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://resy.com/cities/new-york-ny/venues/carbone"
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "City slug (with slug) instead of url.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "new-york-ny"
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Venue slug (with city).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "carbone"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Date YYYY-MM-DD for the slots (default tomorrow).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seats",
+            "in": "query",
+            "required": false,
+            "description": "Party size, 1-20 (default 2).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "2"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 6194,
+                  "name": "Carbone",
+                  "slug": "carbone",
+                  "url": "https://resy.com/cities/new-york-ny/venues/carbone",
+                  "type": "Italian",
+                  "cuisine": "Italian",
+                  "price_range": 4,
+                  "average_ticket": 150,
+                  "currency": "USD",
+                  "timezone": "EST5EDT",
+                  "rating": 4.75,
+                  "rating_count": 34627,
+                  "address": "181 Thompson Street",
+                  "city": "New York",
+                  "region": "NY",
+                  "postal_code": "10012",
+                  "country": "United States",
+                  "neighborhood": "Greenwich Village",
+                  "cross_street": "Bleecker Street",
+                  "lat": 40.7279891,
+                  "lon": -74.0002311,
+                  "phone": "+1 555 010 0000",
+                  "website": "http://carbonenewyork.com/",
+                  "menu_url": "https://carbonenewyork.com/?menu=dinner",
+                  "instagram": "majorfoodgroup",
+                  "facebook": "https://www.facebook.com/pages/Carbone/420465384699862",
+                  "about": "Carbone is Chef Mario Carbone’s homage to the great Italian American restaurants of mid-20th century in New York, where delicious, exception…",
+                  "why_we_like_it": "Carbone puts on the ritz of times gone by, where Dean Martin croons over the speakers, waiters sport tuxedos, and Italian-American cuisine i…",
+                  "need_to_know": "Reservations for both lunch and dinner can be made through Resy or via email up to 30 days in advance, starting at 10:00 AM EST.\n\nTo secure …",
+                  "from_the_venue": null,
+                  "tagline": null,
+                  "description": "Carbone is an Italian restaurant in the Greenwich Village neighborhood of New York.",
+                  "group": "Major Food Group",
+                  "min_party": 1,
+                  "max_party": 14,
+                  "large_party_message": "If you would like to make a reservation for a group larger than 8 guests, please reach out to our events team at name@example.com.",
+                  "global_dining_access": true,
+                  "awards": [],
+                  "collections": [
+                    "If You’re Craving Pasta in New York...",
+                    "Book Tonight",
+                    "… 4 more"
+                  ],
+                  "date": "2026-11-05",
+                  "…": "17 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

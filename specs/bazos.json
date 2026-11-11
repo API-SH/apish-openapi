@@ -1,0 +1,1332 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Bazos",
+    "version": "1.0.0",
+    "description": "The Bazos API from API.SH: public Bazos data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Bazos",
+      "description": "5 endpoints (e-commerce)",
+      "x-slug": "bazos",
+      "x-domains": [
+        "bazos.cz"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bazos/v1/categories": {
+      "get": {
+        "operationId": "bazosCategories",
+        "summary": "Bazoš sections and categories",
+        "description": "Bazoš's sections (the values /bazos/v1/search takes as section) with sample categories, or, for one section, its category groups and categories (slug, name, link) and the section's number of ads.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bazos-categories",
+        "tags": [
+          "Bazos"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "cz (default), sk, pl or at.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk",
+                "pl",
+                "at"
+              ]
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "required": false,
+            "description": "A section such as mobil, auto, pc, reality (omit for the list of sections).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "mobil"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "cz",
+                  "section": "mobil",
+                  "name": "Mobily",
+                  "total_ads": 19058,
+                  "groups": [
+                    {
+                      "group": "Kategorie",
+                      "categories": [
+                        {
+                          "category": "apple",
+                          "section": "mobil",
+                          "name": "Apple",
+                          "url": "https://mobil.bazos.cz/apple/"
+                        },
+                        {
+                          "category": "google",
+                          "section": "mobil",
+                          "name": "Google",
+                          "url": "https://mobil.bazos.cz/google/"
+                        },
+                        "… 8 more"
+                      ]
+                    },
+                    {
+                      "group": "Příslušenství",
+                      "categories": [
+                        {
+                          "category": "baterie",
+                          "section": "mobil",
+                          "name": "Baterie",
+                          "url": "https://mobil.bazos.cz/baterie/"
+                        },
+                        {
+                          "category": "bezdratove",
+                          "section": "mobil",
+                          "name": "Bezdrátové telefony",
+                          "url": "https://mobil.bazos.cz/bezdratove/"
+                        },
+                        "… 11 more"
+                      ]
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/bazos/v1/listing": {
+      "get": {
+        "operationId": "bazosListing",
+        "summary": "Bazoš ad details",
+        "description": "One Bazoš ad: price, full description, photos, date, views, TOP flag and approximate location (postcode, place, coordinates), plus the category path (`category_path`), the TOP placement's end date (`top_until`), a link to similar ads (`similar_search_url`) and the ad lists shown under it: `similar` ads and the same seller's other ads (`seller_other_ads`), each with id, link, title, description, price, place, postcode, views, date and image, and the seller (`seller`: display name, member id, `profile_url` for /bazos/v1/seller-profile, and the phone and email fields as the ad page shows them). Pass `url`, or `latest=1` with search params. Bazoš shows no member-since date.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bazos-listing",
+        "tags": [
+          "Bazos"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Bazoš ad url.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`1`: open the first current result of a search made with this route's search params (q, location and filters) instead of an id. Ads expire, so this keeps a link working.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search keywords (with latest=1).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "iphone"
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "required": false,
+            "description": "Section (with latest=1).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "mobil"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Site (with latest=1).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk",
+                "pl",
+                "at"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "225968544",
+                  "url": "https://mobil.bazos.cz/inzerat/225968544/iphone-17-pro-max-512gb-top-stav-zaruka-122027l.php",
+                  "section": "mobil",
+                  "country": "cz",
+                  "title": "IPhone 17 Pro Max 512gb ,,TOP STAV/ ZÁRUKA 12/2027´l",
+                  "description": "IPhone 17 pro Max 512gb v barvě Cosmis Orange, záruka do 26.12.2027, baterie 100%, telefon je ve 100% perfektní stavu bez jakéhokoliv poškoz…",
+                  "price": 28990,
+                  "price_text": "28 990 Kč",
+                  "currency": "CZK",
+                  "date": "2026-11-04",
+                  "top": true,
+                  "views": 95,
+                  "location": {
+                    "postcode": "103 00",
+                    "place": "Praha 10",
+                    "latitude": 50.016674,
+                    "longitude": 14.633017,
+                    "approximate": true
+                  },
+                  "images": [
+                    "https://www.bazos.cz/img/1/544/225968544.jpg?t=1793739845",
+                    "https://www.bazos.cz/img/2/544/225968544.jpg?t=1793739845",
+                    "… 11 more"
+                  ],
+                  "image_count": 13,
+                  "category_path": [
+                    {
+                      "name": "Mobily",
+                      "url": "https://mobil.bazos.cz/"
+                    },
+                    {
+                      "name": "Apple",
+                      "url": "https://mobil.bazos.cz/apple/"
+                    }
+                  ],
+                  "top_until": "2026-11-28",
+                  "similar_search_url": "https://mobil.bazos.cz/inzeraty/iphone-17/",
+                  "similar": [
+                    {
+                      "id": "225975036",
+                      "url": "https://mobil.bazos.cz/inzerat/225975036/iphone-17-pro-max-256gb-stribrny.php",
+                      "title": "iPhone 17 PRO MAX, 256gb, Stříbrný",
+                      "description": "Prodám uvedený telefon, v krásném stavu, stav baterie 99% celou dobu nalepeno sklo a nošen v krytu. Osobní převzetí Ostrava, Havířov, Frýdek…",
+                      "price": 25498,
+                      "price_text": "25 498 Kč",
+                      "currency": "CZK",
+                      "place": "Frýdek - Místek",
+                      "postcode": "738 01",
+                      "views": 10,
+                      "date": "2026-11-04",
+                      "image": "https://www.bazos.cz/img/1t/036/225975036.jpg?t=1793770230"
+                    },
+                    {
+                      "id": "225969355",
+                      "url": "https://mobil.bazos.cz/inzerat/225969355/iphone-17-pro-max-modry-256-gb-95.php",
+                      "title": "iPhone 17 Pro Max modrý 256 GB 95%",
+                      "description": "Prodám svůj iPhone 17 Pro Max v krásné modré barvě. Telefon je v perfektním stavu, bez škrábanců a jakéhokoliv poškození. Všechno funguje, j…",
+                      "price": 26000,
+                      "price_text": "26 000 Kč",
+                      "currency": "CZK",
+                      "place": "Praha 3",
+                      "postcode": "130 00",
+                      "views": 467,
+                      "date": "2026-11-03",
+                      "image": "https://www.bazos.cz/img/1t/355/225969355.jpg"
+                    },
+                    "… 8 more"
+                  ],
+                  "seller_other_ads": [
+                    {
+                      "id": "225361779",
+                      "url": "https://pc.bazos.cz/inzerat/225361779/apple-studio-displey-apple-mac-mini-m4-novynepouzivany.php",
+                      "title": "Apple Studio Displey + Apple Mac Mini M4 ,, NOVÝ/NEPOUŽIVANÝ",
+                      "description": "Apple Studio Displey + Apple Mac Mini M4+ Bezdrátová klávesnice+ Bezdrátová myš, prodám tento stolní počítač který me doma pouze ležel bez p…",
+                      "price": 50000,
+                      "price_text": "50 000 Kč",
+                      "currency": "CZK",
+                      "place": "Praha 10",
+                      "postcode": "103 00",
+                      "views": 1987,
+                      "date": "2026-11-04",
+                      "image": "https://www.bazos.cz/img/1t/779/225361779.jpg?t=1792526068"
+                    },
+                    {
+                      "id": "224956120",
+                      "url": "https://obleceni.bazos.cz/inzerat/224956120/hublot-big-bang-diamonds-38mm-top-stav-zaruka-hublot.php",
+                      "title": "Hublot Big Bang Diamonds 38mm ,, TOP STAV- ZÁRUKA HUBLOT”",
+                      "description": "Hublot Big Bang Steel Diamonds 38mm, diamantová luneta( originál žádné předělávky),mam je necelý rok a záruka je ještě platna 12 měsíců, kup…",
+                      "price": 210000,
+                      "price_text": "210 000 Kč",
+                      "currency": "CZK",
+                      "place": "Praha 10",
+                      "postcode": "103 00",
+                      "views": 1230,
+                      "date": "2026-11-04",
+                      "image": "https://www.bazos.cz/img/1t/120/224956120.jpg?t=1791739797"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/bazos/v1/search": {
+      "get": {
+        "operationId": "bazosSearch",
+        "summary": "Search Bazoš ads",
+        "description": "Bazoš (Czech Republic, Slovakia, Poland, Austria) classified ads for a keyword and section, around a postcode, with price and sort: title, short text, price, place, postcode, views, date, TOP flag and photo. 20 per page. Private sellers' names, phone numbers and email addresses are never returned (masked in ad text).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bazos-search",
+        "tags": [
+          "Bazos"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "iphone"
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "required": false,
+            "description": "Section (www = all, auto, moto, mobil, pc, foto, elektro, dum, reality, nabytek, deti, obleceni, sport, zvirata, hudba, knihy, prace, sluzby, stroje, ostatni).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "mobil"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Site.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk",
+                "pl",
+                "at"
+              ]
+            }
+          },
+          {
+            "name": "postcode",
+            "in": "query",
+            "required": false,
+            "description": "Postcode to search around (e.g. 11000).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Radius in km (default 25).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "price_asc",
+                "price_desc",
+                "views"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Results page, 1 for the first. Pass back `next_page`; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "iphone",
+                  "country": "cz",
+                  "section": "mobil",
+                  "page": 1,
+                  "total": 6824,
+                  "count": 40,
+                  "next_page": 2,
+                  "results": [
+                    {
+                      "id": "225968544",
+                      "url": "https://mobil.bazos.cz/inzerat/225968544/iphone-17-pro-max-512gb-top-stav-zaruka-122027l.php",
+                      "title": "IPhone 17 Pro Max 512gb ,,TOP STAV/ ZÁRUKA 12/2027´l",
+                      "description": "iphone 17 pro Max 512gb v barvě Cosmis Orange, záruka do 26.12.2027, baterie 100%, telefon je ve 100% perfektní stavu bez jakéhokoliv poškoz…",
+                      "price": 28990,
+                      "price_text": "28 990 Kč",
+                      "currency": "CZK",
+                      "place": "Praha 10",
+                      "postcode": "103 00",
+                      "views": 96,
+                      "date": "2026-11-04",
+                      "top": true,
+                      "image": "https://www.bazos.cz/img/1t/544/225968544.jpg?t=1793739845"
+                    },
+                    {
+                      "id": "224806153",
+                      "url": "https://mobil.bazos.cz/inzerat/224806153/iphone-16-pro-1-tb-bily.php",
+                      "title": "IPhone 16 PRO MAX 512GB zánovní",
+                      "description": "Telefon je nový, nepoužívaný, pouze rozbalený a odzkoušený",
+                      "price": 23500,
+                      "price_text": "23 500 Kč",
+                      "currency": "CZK",
+                      "place": "Hradec Králové",
+                      "postcode": "504 01",
+                      "views": 318,
+                      "date": "2026-11-04",
+                      "top": true,
+                      "image": "https://www.bazos.cz/img/1t/153/224806153.jpg?t=1793691901"
+                    },
+                    "… 38 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/bazos/v1/seller": {
+      "get": {
+        "operationId": "bazosSeller",
+        "summary": "Seller's ads by phone number",
+        "description": "A Bazoš seller's listings by their phone number, with paging. Returns the seller's name and all their ads on the given section (or all sections when section=www). Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bazos-seller",
+        "tags": [
+          "Bazos"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "phone",
+            "in": "query",
+            "required": true,
+            "description": "The seller's phone number (digits only, 7–15 characters).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "608123456"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country TLD (cz, sk, pl, at).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cz",
+                "sk",
+                "pl",
+                "at"
+              ],
+              "default": "cz"
+            }
+          },
+          {
+            "name": "section",
+            "in": "query",
+            "required": false,
+            "description": "A Bazoš section such as auto, mobil, pc, reality; www = all.",
+            "schema": {
+              "type": "string",
+              "default": "www"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": "1"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/bazos/v1/seller-profile": {
+      "get": {
+        "operationId": "bazosSellerProfile",
+        "summary": "Bazoš seller ratings and ads",
+        "description": "One Bazoš seller's public profile: display name, member id, ratings (`ratings`, 5 per page: text, positive or negative, date, the rater's display name and member id; `rating_count`) and their current ads (`listings`, 50 per page: id, link, title, description, price, place, postcode, views, date, image; `listing_count`). Pass the `seller.profile_url` of a /bazos/v1/listing answer, or any Bazoš ad link. Pass `next_page` back as `page` and `next_ratings_page` as `ratings_page`; each is null on its last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/bazos-seller-profile",
+        "tags": [
+          "Bazos"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "A seller profile link (`seller.profile_url` of a listing) or a Bazoš ad link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.bazos.cz/hodnoceni.php?idmail=19055983&idphone=19002139&jmeno=Autodraft"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page of the seller's ads (50 per page).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "ratings_page",
+            "in": "query",
+            "required": false,
+            "description": "Page of the seller's ratings (5 per page).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

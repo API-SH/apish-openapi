@@ -1,0 +1,1036 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Yellow Pages",
+    "version": "1.0.0",
+    "description": "The Yellow Pages API from API.SH: public Yellow Pages data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Yellow Pages",
+      "description": "3 endpoints (search & seo)",
+      "x-slug": "yellow-pages",
+      "x-domains": [
+        "yellowpages.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/yellowpages/v1/business": {
+      "get": {
+        "operationId": "yellowpagesBusiness",
+        "summary": "One Yellow Pages business",
+        "description": "Also returns address_parts (street, city, region, postal code, country), area_served, aggregate_rating (value, count), opening_hours (as listed, e.g. Mo-Th 10:00-22:00), founded_year, logo, services_list and payment_methods_list as arrays; latitude and longitude are filled from the listing's coordinates when the map has none.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/yellowpages-business",
+        "tags": [
+          "Yellow Pages"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.yellowpages.com/new-york-ny/mip/joes-pizza-1234567"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.yellowpages.com/killeen-tx/mip/koreana-restaurant-1234567",
+                  "json_ld": [
+                    {
+                      "@context": "https://schema.org",
+                      "@type": [
+                        "http://schema.org/Restaurant",
+                        "LocalBusiness"
+                      ],
+                      "@id": "/killeen-tx/mip/koreana-restaurant-1234567",
+                      "name": "Koreana Restaurant",
+                      "address": {
+                        "@type": "PostalAddress",
+                        "addressCountry": "US",
+                        "streetAddress": "205 W Rancier Ave",
+                        "addressLocality": "Killeen",
+                        "addressRegion": "TX",
+                        "postalCode": "76541"
+                      },
+                      "areaServed": {
+                        "@type": "City",
+                        "name": "Killeen, TX"
+                      },
+                      "geo": {
+                        "@type": "GeoCoordinates",
+                        "latitude": 31.127102,
+                        "longitude": -97.73003
+                      },
+                      "telephone": "+1 555 010 0000",
+                      "url": "http://koreanarestauranttx.localsearch.com",
+                      "paymentAccepted": "amex, cash, check, debit, diners club, discover, visa, master card",
+                      "foundingDate": "1997",
+                      "openingHours": [
+                        "Mo-Sa 11:00-22:00"
+                      ],
+                      "image": {
+                        "@type": "ImageObject",
+                        "url": "https://i1.ypcdn.com/ypu/images/default-thumbnails-v2/thumbnail-1.svg?fbfdc6472"
+                      },
+                      "review": [],
+                      "servesCuisine": "Menu"
+                    },
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "BreadcrumbList",
+                      "itemListElement": [
+                        {
+                          "@type": "ListItem",
+                          "position": 1,
+                          "item": {
+                            "…": "2 fields"
+                          }
+                        },
+                        {
+                          "@type": "ListItem",
+                          "position": 2,
+                          "item": {
+                            "…": "2 fields"
+                          }
+                        },
+                        "… 4 more"
+                      ]
+                    }
+                  ],
+                  "info": {
+                    "Payment method": "amex, cash, check, debit, diners club, discover, visa, master card",
+                    "Other Link": "http://koreanarestauranttx.localsearch.com",
+                    "Categories": "Korean Restaurants, Restaurants",
+                    "Other Information": "Cuisines: Korean, Asian"
+                  },
+                  "other_phones": [],
+                  "payment_methods": "amex, cash, check, debit, diners club, discover, visa, master card",
+                  "neighborhoods": null,
+                  "aka": null,
+                  "brands": null,
+                  "services": null,
+                  "social_links": [],
+                  "images": [],
+                  "latitude": null,
+                  "longitude": null,
+                  "reviews": [],
+                  "name": "Koreana Restaurant",
+                  "categories": [
+                    "Korean Restaurants",
+                    "Restaurants"
+                  ],
+                  "rating": "zero  ",
+                  "rating_count": null,
+                  "phone": "+1 555 010 0000",
+                  "website": "http://koreanarestauranttx.localsearch.com",
+                  "address": "205 W Rancier AveKilleen, TX 76541",
+                  "hours": {
+                    "Mo": "11:00-22:00",
+                    "Tu": "11:00-22:00",
+                    "We": "11:00-22:00",
+                    "Th": "11:00-22:00",
+                    "Fr": "11:00-22:00",
+                    "Sa": "11:00-22:00"
+                  },
+                  "years_in_business": "29 Years",
+                  "email": null,
+                  "description": null,
+                  "credits_used": 1,
+                  "cached": false
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/yellowpages/v1/reviews": {
+      "get": {
+        "operationId": "yellowpagesReviews",
+        "summary": "Yellow Pages business reviews",
+        "description": "Every review a yellowpages.com business page carries: reviewer, date, overall star rating and the per-aspect ratings (expertise, professionalism, promptness and so on), text, helpful votes and the business's reply, with the business's average rating and review count. A business without reviews answers an empty list.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/yellowpages-reviews",
+        "tags": [
+          "Yellow Pages"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "A yellowpages.com business page (https://www.yellowpages.com/<city>/mip/<business>), as `businesses[].url` in /yellowpages/v1/search.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.yellowpages.com/los-angeles-ca/mip/ritz-plumbing-heating-air-electrical-9270807"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.yellowpages.com/los-angeles-ca/mip/ritz-plumbing-heating-air-electrical-9270807",
+                  "name": "Ritz Plumbing Heating, Air & Electrical",
+                  "rating": 5,
+                  "review_count": 3,
+                  "tripadvisor_rating": null,
+                  "count": 3,
+                  "reviews": [
+                    {
+                      "id": "ee9550c1-39c1-49fe-a61c-3ebf38d1b402",
+                      "author": "Lucya F.",
+                      "author_url": "https://www.yellowpages.com/user/1322149097/reviews",
+                      "author_image": null,
+                      "date": "2026-05-20",
+                      "rating": 5,
+                      "aspect_ratings": {
+                        "expertise": 5,
+                        "professionalism": 5,
+                        "promptness": 5
+                      },
+                      "title": null,
+                      "text": "Fast, reliable, and professional service from start to finish. The team arrived on time, explained the repair clearly, and completed the wor…",
+                      "helpful": 0,
+                      "business_response": null
+                    },
+                    {
+                      "id": "6c57a78f-8977-47c7-b388-1fa9b31d1522",
+                      "author": "Lindsay W.",
+                      "author_url": "https://www.yellowpages.com/user/2206818766/reviews",
+                      "author_image": "https://i3.ypcdn.com/blob/50990c500bef3e8a14bc92e93a919550f0614453_40x40_crop.jpg",
+                      "date": "2024-04-13",
+                      "rating": 5,
+                      "aspect_ratings": {
+                        "expertise": 5,
+                        "professionalism": 5,
+                        "promptness": 5
+                      },
+                      "title": null,
+                      "text": "Tough jobs not a problem I was very satisfied",
+                      "helpful": 1,
+                      "business_response": null
+                    },
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/yellowpages/v1/search": {
+      "get": {
+        "operationId": "yellowpagesSearch",
+        "summary": "Yellow Pages search",
+        "description": "Pass `next_page` from the previous response; `next_page` is null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/yellowpages-search",
+        "tags": [
+          "Yellow Pages"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "pizza"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "New York, NY"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "pizza",
+                  "location": "New York, NY",
+                  "sort": "default",
+                  "url": "https://www.yellowpages.com/search?search_terms=pizza&geo_location_terms=New+York%2C+NY",
+                  "page": 1,
+                  "total": 1696,
+                  "pages": 57,
+                  "next_page": 2,
+                  "count": 30,
+                  "businesses": [
+                    {
+                      "name": "Famous Original Ray's Pizza",
+                      "url": "https://www.yellowpages.com/new-york-ny/mip/famous-original-rays-pizza-459218516",
+                      "id": "459218516",
+                      "phone": "+1 555 010 0000",
+                      "address": "736 7th Ave, New York, NY 10019",
+                      "street": "736 7th Ave",
+                      "locality": "New York, NY 10019",
+                      "categories": [
+                        "Pizza",
+                        "Take Out Restaurants",
+                        "… 1 more"
+                      ],
+                      "rating": "four",
+                      "rating_value": 4,
+                      "review_count": 4,
+                      "years_in_business": "23 Years",
+                      "website": "http://www.rayspizza.com",
+                      "position": 1,
+                      "ad": false,
+                      "neighborhoods": [],
+                      "tripadvisor_rating": "{\"rating\":\"3.5\",\"count\":\"185\"}",
+                      "open_status": "open now",
+                      "price_range": null,
+                      "amenities": [],
+                      "snippet": "Dining at Famous Original Ray's Pizza was an absolute delight and a true testament to the artistry of pizza making. From the moment I walked…",
+                      "image": "https://i2.ypcdn.com/blob/130c80297994a5442323b662240e86e63faca689_130x130_crop.jpg?fbfdc6472",
+                      "images": [
+                        "https://i2.ypcdn.com/blob/130c80297994a5442323b662240e86e63faca689_130x130_crop.jpg?fbfdc6472",
+                        "//i3.ypcdn.com/ypu/images/icons/biz-info/in-business.svg?fbfdc6472"
+                      ],
+                      "menu_url": null,
+                      "order_url": null,
+                      "links": [
+                        "https://www.yellowpages.com/new-york-ny/mip/famous-original-rays-pizza-459218516?lid=459218516#gallery",
+                        "https://www.yellowpages.com/new-york-ny/mip/famous-original-rays-pizza-459218516",
+                        "… 5 more"
+                      ],
+                      "attributes": {
+                        "data-analytics": "{\"adclick\":true,\"events\":\"event7,event6\",\"category\":\"8002304\",\"impression_id\":\"4b90e098-3bee-426e-8a5c-a6d83c16bc74\",\"listing_id\":\"459218516…",
+                        "data-ypid": "459218516",
+                        "data-impressionid": "4b90e098-3bee-426e-8a5c-a6d83c16bc74"
+                      },
+                      "text": "1. Famous Original Ray's PizzaPizzaTake Out RestaurantsItalian Restaurants(4)Website23 Yearsin Business(212) 956-7297736 7th AveNew York, NY…"
+                    },
+                    {
+                      "name": "Belmora Pizza & Restaurant",
+                      "url": "https://www.yellowpages.com/new-york-ny/mip/belmora-pizza-restaurant-14370536",
+                      "id": "14370536",
+                      "phone": "+1 555 010 0000",
+                      "address": "139 E 57th St Frnt A, New York, NY 10022",
+                      "street": "139 E 57th St Frnt A",
+                      "locality": "New York, NY 10022",
+                      "categories": [
+                        "Pizza",
+                        "Restaurants"
+                      ],
+                      "rating": null,
+                      "rating_value": null,
+                      "review_count": 39,
+                      "years_in_business": "39 Years",
+                      "website": "http://belmorapizzarestaurant.localsearch.com",
+                      "position": 2,
+                      "ad": false,
+                      "neighborhoods": [],
+                      "tripadvisor_rating": null,
+                      "open_status": "closed now",
+                      "price_range": null,
+                      "amenities": [],
+                      "snippet": null,
+                      "image": "//i1.ypcdn.com/ypu/images/default-thumbnails-v2/thumbnail-6.svg?fbfdc6472",
+                      "images": [
+                        "//i1.ypcdn.com/ypu/images/default-thumbnails-v2/thumbnail-6.svg?fbfdc6472",
+                        "//i3.ypcdn.com/ypu/images/icons/biz-info/in-business.svg?fbfdc6472"
+                      ],
+                      "menu_url": null,
+                      "order_url": null,
+                      "links": [
+                        "https://www.yellowpages.com/new-york-ny/mip/belmora-pizza-restaurant-14370536",
+                        "https://www.yellowpages.com/new-york-ny/pizza",
+                        "… 2 more"
+                      ],
+                      "attributes": {
+                        "data-analytics": "{\"adclick\":true,\"events\":\"event7,event6\",\"category\":\"8002304\",\"impression_id\":\"88144588-183b-469c-b1d0-97c70d988344\",\"listing_id\":\"14370536\"…",
+                        "data-ypid": "14370536",
+                        "data-impressionid": "88144588-183b-469c-b1d0-97c70d988344"
+                      },
+                      "text": "2. Belmora Pizza & RestaurantPizzaRestaurantsWebsite39 Yearsin Business(212) 935-2080139 E 57th St Frnt ANew York, NY 10022closed now"
+                    },
+                    "… 28 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

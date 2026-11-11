@@ -1,0 +1,1229 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Jobindex",
+    "version": "1.0.0",
+    "description": "The Jobindex API from API.SH: public Jobindex data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Jobindex",
+      "description": "3 endpoints (jobs & b2b)",
+      "x-slug": "jobindex",
+      "x-domains": [
+        "jobindex.dk"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobindex/v1/company": {
+      "get": {
+        "operationId": "jobindexCompany",
+        "summary": "Employer profile",
+        "description": "A Jobindex employer profile: name, logo, followers, website, address, employees, parent company, about text, registry facts (legal name, type, founded, VAT), yearly accounts (revenue, profit, equity, employees), employee ratings with a featured comment, job ad statistics, and the open jobs.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/jobindex-company",
+        "tags": [
+          "Jobindex"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Company id, or a jobindex.dk/virksomhed/<id>/<name> link (in `url`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "19082"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A jobindex.dk company link instead of id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "19082",
+                  "name": "Dampskibsselskabet NORDEN A/S",
+                  "url": "https://www.jobindex.dk/virksomhed/19082/dampskibsselskabet-norden-a-s",
+                  "logo": "https://www.jobindex.dk/img/logo/norden-vp-logo-2024.png",
+                  "followers": 368,
+                  "website": "https://norden.com/career",
+                  "career_page": null,
+                  "address": "Strandvejen 52, 2900 Hellerup",
+                  "employees": 237,
+                  "employees_year": 2024,
+                  "parent_company": "Dampskibsselskabet NORDEN A/S",
+                  "about": "Our history at a glance\n\r\nNORDEN is a global provider of ocean-based freight services for bulk and project cargo of all sizes. We integrate …",
+                  "social": [
+                    null,
+                    null,
+                    "… 4 more"
+                  ],
+                  "registry": {
+                    "legal_name": "DAMPSKIBSSELSKABET NORDEN A/S",
+                    "type": "Aktieselskab",
+                    "founded": "1915",
+                    "vat": "DK67758919",
+                    "staff_count": 425,
+                    "currency": "USD"
+                  },
+                  "accounts": [
+                    {
+                      "year": 2013,
+                      "currency": "USD",
+                      "revenue": 1915980,
+                      "gross_profit": null,
+                      "profit_before_tax": -43586,
+                      "profit": -47452,
+                      "equity": 1604817,
+                      "balance": 2116099,
+                      "employees": 595,
+                      "personnel_costs": -47338
+                    },
+                    {
+                      "year": 2014,
+                      "currency": "USD",
+                      "revenue": 1791831,
+                      "gross_profit": null,
+                      "profit_before_tax": -413599,
+                      "profit": -416551,
+                      "equity": 1139291,
+                      "balance": 1762213,
+                      "employees": 568,
+                      "personnel_costs": -49474
+                    },
+                    "… 10 more"
+                  ],
+                  "ratings": {
+                    "count": 45,
+                    "comments": 3,
+                    "by_question": {
+                      "0": 4,
+                      "1": 4,
+                      "2": 3,
+                      "3": 4,
+                      "4": 3,
+                      "5": 3,
+                      "6": 4,
+                      "7": 4
+                    },
+                    "featured_comment": {
+                      "rating": 3,
+                      "positive": "Flinke kollegaer i TECH.",
+                      "negative": "Har en meget lukket ledelse - og man kan regne med meget pludselige organisatoriske ændringer (fra dag til dag).",
+                      "date": "7. juni 2021",
+                      "still_employed": false
+                    }
+                  },
+                  "job_ad_statistics": {
+                    "areas": [
+                      {
+                        "link": "/jobsoegning?archive=2&companyid=19082&geoareaid=15182&maxdate=20261104&mindate=20070101",
+                        "name": "Storkøbenhavn",
+                        "y": 445
+                      },
+                      {
+                        "link": "/jobsoegning?archive=2&companyid=19082&geoareaid=15185&maxdate=20261104&mindate=20070101",
+                        "name": "Udlandet",
+                        "y": 53
+                      },
+                      "… 6 more"
+                    ],
+                    "channels": [
+                      {
+                        "link": "/jobsoegning?archive=2&companyid=19082&maxdate=20261104&mindate=20070101&supid=8",
+                        "name": "Kontor og økonomi",
+                        "y": 272
+                      },
+                      {
+                        "link": "/jobsoegning?archive=2&companyid=19082&maxdate=20261104&mindate=20070101&supid=10",
+                        "name": "Øvrige stillinger",
+                        "y": 96
+                      },
+                      "… 7 more"
+                    ]
+                  },
+                  "similar_company": {
+                    "name": "TORM A/S",
+                    "url": "https://www.jobindex.dk/virksomhed/25041/torm-a-s#om-virksomhed",
+                    "jobs": 0
+                  },
+                  "open_jobs": 4,
+                  "jobs": [
+                    {
+                      "id": "h1712356",
+                      "title": "Data Scientist, Maritime Logistics",
+                      "url": "https://www.jobindex.dk/vis-job/h1712356",
+                      "apply_url": "https://www.jobindex.dk/c?t=h1712356&ctx=w&jobsearchid=1144494988&jobsearch_position=1",
+                      "company": "Dampskibsselskabet NORDEN A/S",
+                      "company_id": "19082",
+                      "company_url": "https://www.jobindex.dk/virksomhed/19082/dampskibsselskabet-norden-a-s",
+                      "company_website": "https://norden.com/career",
+                      "company_followers": 368,
+                      "rating": {
+                        "score": 4,
+                        "count": 45
+                      },
+                      "logo": "https://www.jobindex.dk/img/logo/1_applogo_dampskibsselskabetnorden_19082_20250320.png",
+                      "area": "Hellerup",
+                      "addresses": [
+                        {
+                          "address": "Strandvejen 52, 2900 Hellerup",
+                          "city": "Hellerup",
+                          "zipcode": "2900",
+                          "latitude": 55.72647,
+                          "longitude": 12.576728
+                        }
+                      ],
+                      "home_workplace": false,
+                      "posted_at": "2026-11-02",
+                      "deadline": "2026-11-22",
+                      "deadline_asap": true,
+                      "salary": null,
+                      "source": null,
+                      "paid": true,
+                      "archived": false,
+                      "summary": "Hellerup\n\nSe rejsetid\n\nAs our new Data Scientist in Maritime Logistics, you will turn that complexity into models we can explore, test and l…"
+                    },
+                    {
+                      "id": "h1712353",
+                      "title": "Senior Full-Stack Engineer, Chartering Analytics",
+                      "url": "https://www.jobindex.dk/vis-job/h1712353",
+                      "apply_url": "https://www.jobindex.dk/c?t=h1712353&ctx=w&jobsearchid=1144494988&jobsearch_position=2",
+                      "company": "Dampskibsselskabet NORDEN A/S",
+                      "company_id": "19082",
+                      "company_url": "https://www.jobindex.dk/virksomhed/19082/dampskibsselskabet-norden-a-s",
+                      "company_website": "https://norden.com/career",
+                      "company_followers": 368,
+                      "rating": {
+                        "score": 4,
+                        "count": 45
+                      },
+                      "logo": "https://www.jobindex.dk/img/logo/1_applogo_dampskibsselskabetnorden_19082_20250320.png",
+                      "area": "Hellerup",
+                      "addresses": [
+                        {
+                          "address": "Strandvejen 52, 2900 Hellerup",
+                          "city": "Hellerup",
+                          "zipcode": "2900",
+                          "latitude": 55.72647,
+                          "longitude": 12.576728
+                        }
+                      ],
+                      "home_workplace": false,
+                      "posted_at": "2026-11-02",
+                      "deadline": "2026-11-22",
+                      "deadline_asap": true,
+                      "salary": null,
+                      "source": null,
+                      "paid": true,
+                      "archived": false,
+                      "summary": "Hellerup\n\nSe rejsetid\n\nYou will join a team of six Data Scientists and AI Engineers with backgrounds in mathematics, statistics and computer…"
+                    },
+                    "… 2 more"
+                  ],
+                  "jobs_url": "https://www.jobindex.dk/jobsoegning?companyid=19082",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/jobindex/v1/job": {
+      "get": {
+        "operationId": "jobindexJob",
+        "summary": "Jobindex job ad",
+        "description": "One Jobindex job ad: title, company and its profile link, area, the ad text shown on Jobindex (HTML and text) and the apply link (often the employer's own page). Give `id` (or the vis-job URL), or `q` with search filters to open the first current result (then dates, addresses and the company website are added).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/jobindex-job",
+        "tags": [
+          "Jobindex"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Job id (e.g. h1711367).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "The jobindex.dk/vis-job/<id> URL.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords: opens the first current search result.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "h1712356",
+                  "title": "Data Scientist, Maritime Logistics",
+                  "url": "https://www.jobindex.dk/vis-job/h1712356",
+                  "company": "Dampskibsselskabet NORDEN A/S",
+                  "company_url": "https://www.jobindex.dk/virksomhed/19082/dampskibsselskabet-norden-a-s",
+                  "area": "Hellerup",
+                  "description_html": "<h4><A HREF=\"https://www.norden.com/career/jobs/361421/\" data-click=\"/c?t=h1712356&amp;ctx=w\" rel=\"noopener\" target=\"_blank\">Data Scientist,…",
+                  "description": "Hellerup\n\nSee travel time\n\nAs our new Data Scientist in Maritime Logistics, you will turn that complexity into models we can explore, test a…",
+                  "apply_url": "https://www.jobindex.dk/c?t=h1712356&ctx=w&jobsearch_position=1&jobsearchid=1144496401",
+                  "posted_at": "2026-11-02",
+                  "deadline": "2026-11-22",
+                  "addresses": [
+                    {
+                      "address": "Strandvejen 52, 2900 Hellerup",
+                      "city": "Hellerup",
+                      "zipcode": "2900",
+                      "latitude": 55.72647,
+                      "longitude": 12.576728
+                    }
+                  ],
+                  "company_website": "https://norden.com/career",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/jobindex/v1/search": {
+      "get": {
+        "operationId": "jobindexSearch",
+        "summary": "Search Jobindex jobs",
+        "description": "Job ads on Jobindex (Denmark) for keywords, with the site's filters: area, category, employment type, working hours, posting age and home workplace, sorted by relevance or date. Each result has the title, company with profile link, website, followers and rating, area, addresses with coordinates, posting date and application deadline, summary and apply link. `facets` lists the ids for areas, categories, employment types, hours and posting age. 20 per page; pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/jobindex-search",
+        "tags": [
+          "Jobindex"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords (title, skill or company).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python"
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "required": false,
+            "description": "Area ids, comma separated (facets.areas; e.g. 15182 Greater Copenhagen).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category ids, comma separated (facets.categories; e.g. 1 IT development).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "employment_type",
+            "in": "query",
+            "required": false,
+            "description": "1 permanent, 2 temporary, 3 student job, 4 apprentice, 5 graduate, 6 internship, 8 flex job, 9 volunteer, 10 youth job, 11 freelance, 12 hourly; comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "description": "1 full time, 2 part time; comma separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "posted",
+            "in": "query",
+            "required": false,
+            "description": "Posting age in days.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "7",
+                "30"
+              ]
+            }
+          },
+          {
+            "name": "home_workplace",
+            "in": "query",
+            "required": false,
+            "description": "1 = jobs with a home workplace.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "date"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (from 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "python",
+                  "url": "https://www.jobindex.dk/jobsoegning?q=python",
+                  "applied_filters": {},
+                  "sort": "relevance",
+                  "total": 207,
+                  "pages": 11,
+                  "count": 20,
+                  "page": 1,
+                  "next_page": 2,
+                  "facets": {
+                    "areas": [
+                      {
+                        "id": 15182,
+                        "name": "Storkøbenhavn"
+                      },
+                      {
+                        "id": 15187,
+                        "name": "Nordsjælland"
+                      },
+                      "… 108 more"
+                    ],
+                    "employment_types": [
+                      {
+                        "id": 1,
+                        "name": "Fastansættelse"
+                      },
+                      {
+                        "id": 2,
+                        "name": "Tidsbegrænset"
+                      },
+                      "… 10 more"
+                    ],
+                    "hours": [
+                      {
+                        "id": 1,
+                        "name": "Fuldtid"
+                      },
+                      {
+                        "id": 2,
+                        "name": "Deltid"
+                      },
+                      "… 1 more"
+                    ],
+                    "posted": [
+                      {
+                        "id": "",
+                        "name": "Alle aktuelle"
+                      },
+                      {
+                        "id": "0",
+                        "name": "Fra i dag"
+                      },
+                      "… 4 more"
+                    ],
+                    "categories": [
+                      {
+                        "id": 99,
+                        "name": "Bud og udbringning",
+                        "group": "Handel og service"
+                      },
+                      {
+                        "id": 23,
+                        "name": "Børnepasning",
+                        "group": "Handel og service"
+                      },
+                      "… 88 more"
+                    ]
+                  },
+                  "jobs": [
+                    {
+                      "id": "h1712356",
+                      "title": "Data Scientist, Maritime Logistics",
+                      "url": "https://www.jobindex.dk/vis-job/h1712356",
+                      "apply_url": "https://www.jobindex.dk/c?t=h1712356&ctx=w&jobsearch_position=1&jobsearchid=1144260359",
+                      "company": "Dampskibsselskabet NORDEN A/S",
+                      "company_id": "19082",
+                      "company_url": "https://www.jobindex.dk/virksomhed/19082/dampskibsselskabet-norden-a-s",
+                      "company_website": "https://norden.com/career",
+                      "company_followers": 368,
+                      "rating": {
+                        "score": 4,
+                        "count": 45
+                      },
+                      "logo": "https://www.jobindex.dk/img/logo/1_applogo_dampskibsselskabetnorden_19082_20250320.png",
+                      "area": "Hellerup",
+                      "addresses": [
+                        {
+                          "address": "Strandvejen 52, 2900 Hellerup",
+                          "city": "Hellerup",
+                          "zipcode": "2900",
+                          "latitude": 55.72647,
+                          "longitude": 12.576728
+                        }
+                      ],
+                      "home_workplace": false,
+                      "posted_at": "2026-11-02",
+                      "deadline": "2026-11-22",
+                      "deadline_asap": true,
+                      "salary": null,
+                      "source": null,
+                      "paid": true,
+                      "archived": false,
+                      "summary": "Hellerup\n\nSe rejsetid\n\nAs our new Data Scientist in Maritime Logistics, you will turn that complexity into models we can explore, test and l…"
+                    },
+                    {
+                      "id": "h1709521",
+                      "title": "PhD scholarship in Atomistic Stabilization in Solid Oxide Electrolysis Cells - DTU Physics",
+                      "url": "https://www.jobindex.dk/vis-job/h1709521",
+                      "apply_url": "https://www.jobindex.dk/c?t=h1709521&ctx=w&jobsearch_position=2&jobsearchid=1144260359",
+                      "company": "DTU, Danmarks Tekniske Universitet",
+                      "company_id": "25934",
+                      "company_url": "https://www.jobindex.dk/virksomhed/25934/dtu-danmarks-tekniske-universitet",
+                      "company_website": "https://www.dtu.dk/",
+                      "company_followers": 3790,
+                      "rating": {
+                        "score": 5,
+                        "count": 1102
+                      },
+                      "logo": "https://www.jobindex.dk/img/logo/dtu_mobil_logo_2019.png",
+                      "area": "Kgs. Lyngby",
+                      "addresses": [
+                        {
+                          "address": "DTU Fysik, Fysikvej 309, 2800 Kgs. Lyngby",
+                          "city": "Kgs. Lyngby",
+                          "zipcode": "2800",
+                          "latitude": 55.7848419,
+                          "longitude": 12.516268
+                        }
+                      ],
+                      "home_workplace": false,
+                      "posted_at": "2026-11-02",
+                      "deadline": "2026-11-30",
+                      "deadline_asap": false,
+                      "salary": null,
+                      "source": null,
+                      "paid": false,
+                      "archived": false,
+                      "summary": "Kgs. Lyngby\n\nSe rejsetid\n\nAre you passionate about using atomistic simulations and machine learning to accelerate the green transition?\nIn t…"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

@@ -1,0 +1,1552 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: GOG",
+    "version": "1.0.0",
+    "description": "The GOG API from API.SH: public GOG data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "GOG",
+      "description": "3 endpoints (media & music)",
+      "x-slug": "gog",
+      "x-domains": [
+        "gog.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gog/v1/product": {
+      "get": {
+        "operationId": "gogProduct",
+        "summary": "GOG product",
+        "description": "A GOG game, DLC or pack: price and rating, description and overview, developers, publishers, tags, features, languages (text/audio), system requirements per OS, age ratings (ESRB, PEGI, USK...), editions, bonus content, videos, screenshots, images, DLCs, related products, installer and patch sizes, changelog, forum and support links, release dates and sale status.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gog-product",
+        "tags": [
+          "GOG"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "GOG product id (`1207658924`), slug (`the_witcher`) or a gog.com/game link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1207658924"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A gog.com/game link instead of `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter country for prices (default US).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Currency code for prices (e.g. USD, EUR); the country's own by default.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of texts, e.g. en-US (default), de-DE, fr-FR, pl-PL.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1207658924",
+                  "title": "The Witcher: Enhanced Edition",
+                  "slug": "the_witcher",
+                  "url": "https://www.gog.com/en/game/the_witcher",
+                  "product_type": "GAME",
+                  "release_status": "default",
+                  "release_date": "2011-05-09T23:00:00+0200",
+                  "gog_release_date": "2011-05-09T23:00:00+02:00",
+                  "available_for_sale": true,
+                  "visible_in_catalog": true,
+                  "pre_order": false,
+                  "in_development": false,
+                  "price": {
+                    "final": 9.99,
+                    "base": 9.99,
+                    "currency": "USD",
+                    "discount_percent": 0,
+                    "final_text": "$9.99",
+                    "base_text": "$9.99",
+                    "free": null
+                  },
+                  "rating": 4.6,
+                  "reviews_count": 14129,
+                  "developers": [
+                    "CD PROJEKT RED"
+                  ],
+                  "publishers": [
+                    "CD PROJEKT RED"
+                  ],
+                  "tags": [
+                    "Role-playing",
+                    "Action",
+                    "… 1 more"
+                  ],
+                  "genres_and_properties": [
+                    "Action",
+                    "Fantasy",
+                    "… 14 more"
+                  ],
+                  "features": [
+                    "Cloud saves",
+                    "Single-player"
+                  ],
+                  "description": "The Witcher is a role-playing game set in a dark fantasy world where moral ambiguity reigns. Shattering the line between good and evil, the …",
+                  "description_html": "\n\n<p>\nThe Witcher is a role-playing game set in a dark fantasy world where moral ambiguity reigns. Shattering the line between good and evil…",
+                  "overview": "The Witcher is a role-playing game set in a dark fantasy world where moral ambiguity reigns. Shattering the line between good and evil, the …",
+                  "features_description": null,
+                  "copyrights": "The Witcher © 2008 CD PROJEKT S.A. All rights reserved. The Witcher and The Witcher logo are trademarks of CD PROJEKT Capital Group. All rig…",
+                  "size_mb": 9706,
+                  "uses_dosbox": false,
+                  "technologies": [],
+                  "languages": [
+                    {
+                      "code": "cz",
+                      "name": "Czech",
+                      "text": true,
+                      "audio": true
+                    },
+                    {
+                      "code": "de",
+                      "name": "German",
+                      "text": true,
+                      "audio": true
+                    },
+                    "… 8 more"
+                  ],
+                  "system_requirements": [
+                    {
+                      "os": "windows",
+                      "versions": "Windows",
+                      "requirements": [
+                        {
+                          "type": "minimum",
+                          "items": [
+                            {
+                              "…": "2 fields"
+                            },
+                            {
+                              "…": "2 fields"
+                            },
+                            "… 5 more"
+                          ],
+                          "text": "Windows 7, Intel Pentium 4 2.4GHz or AMD Athlon 64 +2800, 1 GB RAM for Windows XP, 1.5 GB for Vista, NVIDIA GeForce 6600 or ATI Radeon 9800 …"
+                        }
+                      ]
+                    },
+                    {
+                      "os": "osx",
+                      "versions": "Mac OS X",
+                      "requirements": [
+                        {
+                          "type": "minimum",
+                          "items": [
+                            {
+                              "…": "2 fields"
+                            },
+                            {
+                              "…": "2 fields"
+                            },
+                            "… 3 more"
+                          ],
+                          "text": "OS X 10.8, 10.9, 10.10\nProcessor: Intel Core i5\nMemory: 4 GB of RAM\nGraphics:  nVidia GeForce GT 650m (1440x900), AMD Radeon HD 6750M (1440x…"
+                        },
+                        {
+                          "type": "recommended",
+                          "items": [
+                            {
+                              "…": "2 fields"
+                            },
+                            {
+                              "…": "2 fields"
+                            },
+                            "… 3 more"
+                          ],
+                          "text": "OS: OS X 10.8, 10.9, 10.10\nProcessor: Intel Core i5 or Core i7\nMemory: 4 GB RAM\nGraphics: nVidia GeForce GT 650m (1440x900), AMD Radeon HD 6…"
+                        }
+                      ]
+                    }
+                  ],
+                  "age_ratings": {
+                    "esrb": {
+                      "category": {
+                        "name": "Mature 17+",
+                        "id": 18
+                      },
+                      "contentDescriptors": [
+                        {
+                          "descriptor": "Violence",
+                          "id": 25
+                        },
+                        {
+                          "descriptor": "Blood and Gore",
+                          "id": 31
+                        },
+                        "… 3 more"
+                      ],
+                      "ageRating": 17
+                    },
+                    "pegi": {
+                      "ageRating": 18,
+                      "contentDescriptors": [
+                        {
+                          "descriptor": "Bad Language"
+                        },
+                        {
+                          "descriptor": "Violence"
+                        }
+                      ]
+                    },
+                    "usk": {
+                      "ageRating": 18,
+                      "category": {
+                        "name": "Not approved for young persons aged under 18"
+                      }
+                    },
+                    "br": null,
+                    "gog": {
+                      "ageRating": 18
+                    }
+                  },
+                  "editions": [],
+                  "bonuses": [
+                    "manual",
+                    "artbook",
+                    "… 22 more"
+                  ],
+                  "videos": [
+                    {
+                      "provider": "youtube",
+                      "id": "PZ_gex3U31U",
+                      "url": "https://www.youtube.com/embed/PZ_gex3U31U?wmode=opaque&rel=0",
+                      "thumbnail": "https://img.youtube.com/vi/PZ_gex3U31U/hqdefault.jpg"
+                    },
+                    {
+                      "provider": "youtube",
+                      "id": "iLCcXRoAY68",
+                      "url": "https://www.youtube.com/embed/iLCcXRoAY68?wmode=opaque&rel=0",
+                      "thumbnail": "https://img.youtube.com/vi/iLCcXRoAY68/hqdefault.jpg"
+                    }
+                  ],
+                  "screenshots": [
+                    "https://images.gog-statics.com/84aa9ca13d2dbbaaf9208d54690b015ec15643c021ada3f3d66f080ab2430047_ggvgl.jpg",
+                    "https://images.gog-statics.com/92186f55b3af6298f62a9b6f99c44f1aabbfcaea578862b1e73da0c10845cb03_ggvgl.jpg",
+                    "… 16 more"
+                  ],
+                  "images": {
+                    "icon": "https://images.gog-statics.com/82ecfe17e7c3fa7fe3252664927ba9b0014ca17039d8ec1b46275677ab7a7898.png",
+                    "icon_square": null,
+                    "logo": "https://images.gog-statics.com/def9381ff2a8047fc343f023e3f976a65818f81381e616ac04094595cb1893a0.png",
+                    "box_art": "https://images.gog-statics.com/32385c2c39b8715a9ccfb159ed481b55503b96526b00866f75a4af48461615a5.jpg",
+                    "background": "https://images.gog-statics.com/c73009d18e964448b9704ad9d69a7c68bab5f8a10df410254bb511f2f9198a3a.jpg",
+                    "galaxy_background": "https://images.gog-statics.com/46d5f76e789d0f335558b4ea79487ef7f1b2864ca67e77e127494882a3571751.jpg"
+                  },
+                  "dlcs": [],
+                  "dlc_ids": [],
+                  "included_in": [
+                    "https://api.gog.com:80/v2/games/1207665493?locale=en-US"
+                  ],
+                  "related_products": [],
+                  "…": "7 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gog/v1/reviews": {
+      "get": {
+        "operationId": "gogReviews",
+        "summary": "GOG user reviews",
+        "description": "User reviews of a GOG product: title, text, rating (1-5), date, helpful votes, language and reviewer name; review and rating counts, average and filtered average rating, the most helpful review. Sort and language filter as on the site. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gog-reviews",
+        "tags": [
+          "GOG"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "GOG product id, slug or link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1207664663"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A gog.com/game link instead of `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default helpful).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "helpful",
+                "newest",
+                "oldest",
+                "rating_high",
+                "rating_low"
+              ]
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Review languages, comma separated (e.g. en-US,de-DE); all by default.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number from 1.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page, 1-50 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "product_id": "1207664663",
+                  "sort": "helpful",
+                  "language": null,
+                  "review_count": 1646,
+                  "rating_count": 12980,
+                  "average_rating": 4.8,
+                  "filtered_average_rating": 4.8,
+                  "is_reviewable": true,
+                  "most_helpful": {
+                    "id": "ae7955ea-958b-11e8-ba90-00163e97122a",
+                    "title": "Amazing, highly recommend it!",
+                    "text": "What can I say? Runs excellent on my machine, very small load times, reworked combat system feels more natural, great addition of the new do…",
+                    "language": "en-US",
+                    "rating": 5,
+                    "date": "2015-05-19T02:47:11+03:00",
+                    "created": "2015-05-19T02:47:11+03:00",
+                    "helpful_votes": null,
+                    "unhelpful_votes": null,
+                    "reviewer": {
+                      "username": "Fowlmove",
+                      "avatar": "https://images.gog.com/d276759fb4eaee9bc410422f66eb97969fc380b168920857a8564937fbd0faca_avm.jpg",
+                      "games_owned": null,
+                      "reviews": null
+                    },
+                    "labels": [
+                      "verified_owner"
+                    ]
+                  },
+                  "page": 1,
+                  "pages": 83,
+                  "count": 20,
+                  "next_page": 2,
+                  "items": [
+                    {
+                      "id": "ae7955ea-958b-11e8-ba90-00163e97122a",
+                      "title": "Amazing, highly recommend it!",
+                      "text": "What can I say? Runs excellent on my machine, very small load times, reworked combat system feels more natural, great addition of the new do…",
+                      "language": "en-US",
+                      "rating": 5,
+                      "date": "2015-05-19T02:47:11+03:00",
+                      "created": "2015-05-19T02:47:11+03:00",
+                      "helpful_votes": null,
+                      "unhelpful_votes": null,
+                      "reviewer": {
+                        "username": "Fowlmove",
+                        "avatar": "https://images.gog.com/d276759fb4eaee9bc410422f66eb97969fc380b168920857a8564937fbd0faca_avm.jpg",
+                        "games_owned": null,
+                        "reviews": null
+                      },
+                      "labels": [
+                        "verified_owner"
+                      ]
+                    },
+                    {
+                      "id": "b87cdf6c-958b-11e8-b6be-00163e97122a",
+                      "title": "Best Witcher Yet",
+                      "text": "TW3 GOTY 2015\n\nI'm probably one of the few that believed TW1&gt;TW2. \n\nFor me, TW3 is the sequel TW1 deserved. \n\nI miss dice poker... \n\nPerf…",
+                      "language": "en-US",
+                      "rating": 5,
+                      "date": "2015-05-19T03:24:37+03:00",
+                      "created": "2015-05-19T03:24:37+03:00",
+                      "helpful_votes": null,
+                      "unhelpful_votes": null,
+                      "reviewer": {
+                        "username": "mcgeehe",
+                        "avatar": "https://images.gog.com/502536891c97a4199a808955ad320a23674e6f42a43309fc5a2da68899952130_avm.jpg",
+                        "games_owned": null,
+                        "reviews": null
+                      },
+                      "labels": [
+                        "verified_owner"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gog/v1/search": {
+      "get": {
+        "operationId": "gogSearch",
+        "summary": "Search the GOG store",
+        "description": "GOG store catalog with every store filter and sort: query, product type, genres, tags, features, languages, operating systems, developers, publishers, price range, release years, discounted, release status, excluded tags; prices for any country and currency. Each product: id, slug, title, price (final, base, discount), rating, review count, developers, publishers, systems, genres, tags, features, editions, age ratings, covers and screenshots. Also returns the filter values the store offers. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gog-search",
+        "tags": [
+          "GOG"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search text.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "witcher"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort (trending by default without q).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "trending",
+                "bestselling",
+                "score",
+                "rating",
+                "newest",
+                "oldest",
+                "store_newest",
+                "title",
+                "title_desc",
+                "price_low",
+                "price_high",
+                "discount"
+              ]
+            }
+          },
+          {
+            "name": "product_type",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated: game, pack, dlc, extras (default all).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "genres",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated genre slugs (e.g. rpg,strategy); see `available_filters`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated tag slugs (e.g. story-rich,indie).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exclude_tags",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated tag slugs to leave out.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "features",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated feature slugs (e.g. achievements,cloud_saves,controller_support,single,coop).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "languages",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated language codes (e.g. en,de,jp).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "systems",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated: windows, osx, linux.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "developers",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated developer names as GOG lists them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "publishers",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated publisher names.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "year_from",
+            "in": "query",
+            "required": false,
+            "description": "Released from this year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "year_to",
+            "in": "query",
+            "required": false,
+            "description": "Released up to this year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "discounted",
+            "in": "query",
+            "required": false,
+            "description": "`true`: only discounted.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "release_status",
+            "in": "query",
+            "required": false,
+            "description": "Comma separated: upcoming, new-arrival, early-access.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number from 1.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Products per page, 1-100 (default 48).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter country for prices (default US).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Currency code for prices (e.g. USD, EUR); the country's own by default.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "description": "Language of texts, e.g. en-US (default), de-DE, fr-FR, pl-PL.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "witcher",
+                  "applied_filters": {
+                    "countryCode": "US",
+                    "locale": "en-US",
+                    "query": "like:witcher",
+                    "productType": "in:game,pack,dlc,extras"
+                  },
+                  "total": 59,
+                  "page": 1,
+                  "pages": 2,
+                  "count": 48,
+                  "next_page": 2,
+                  "available_filters": {
+                    "genres": [
+                      {
+                        "name": "Action",
+                        "slug": "action",
+                        "level": 1
+                      },
+                      {
+                        "name": "Adventure",
+                        "slug": "adventure",
+                        "level": 1
+                      },
+                      "… 62 more"
+                    ],
+                    "tags": [
+                      {
+                        "name": "Adventure",
+                        "slug": "adventure"
+                      },
+                      {
+                        "name": "Indie",
+                        "slug": "indie"
+                      },
+                      "… 201 more"
+                    ],
+                    "features": [
+                      {
+                        "slug": "single",
+                        "name": "Single-player"
+                      },
+                      {
+                        "slug": "multi",
+                        "name": "Multi-player"
+                      },
+                      "… 7 more"
+                    ],
+                    "languages": [
+                      {
+                        "slug": "ar",
+                        "name": "العربية"
+                      },
+                      {
+                        "slug": "br",
+                        "name": "Português do Brasil"
+                      },
+                      "… 28 more"
+                    ],
+                    "systems": [
+                      {
+                        "slug": "windows",
+                        "name": "Windows"
+                      },
+                      {
+                        "slug": "osx",
+                        "name": "macOS"
+                      },
+                      "… 1 more"
+                    ],
+                    "release_statuses": [
+                      {
+                        "slug": "new-arrival",
+                        "name": "New Arrivals"
+                      },
+                      {
+                        "slug": "upcoming",
+                        "name": "Upcoming"
+                      },
+                      "… 1 more"
+                    ],
+                    "types": [
+                      "game",
+                      "dlc",
+                      "… 2 more"
+                    ],
+                    "price_range": {
+                      "min": 0,
+                      "max": 49.99,
+                      "currency": "USD",
+                      "decimalPlaces": 2
+                    },
+                    "release_year_range": {
+                      "min": 2007,
+                      "max": 2026
+                    }
+                  },
+                  "items": [
+                    {
+                      "id": "1848438658",
+                      "slug": "relord_1_the_witch_of_herfort_and_stuffed_animals_unrated",
+                      "title": "Re;Lord 1 ~The witch of Herfort and stuffed animals~ - unrated",
+                      "url": "https://www.gog.com/en/game/relord_1_the_witch_of_herfort_and_stuffed_animals_unrated",
+                      "product_type": "dlc",
+                      "release_date": "2018-03-10",
+                      "store_release_date": "2022-01-18",
+                      "state": "default",
+                      "price": {
+                        "final": 3.99,
+                        "base": 9.99,
+                        "currency": "USD",
+                        "discount_percent": 60,
+                        "final_text": "$3.99",
+                        "base_text": "$9.99",
+                        "free": null
+                      },
+                      "rating": 2.9,
+                      "reviews_count": 8,
+                      "developers": [
+                        "Denpasoft"
+                      ],
+                      "publishers": [
+                        "Denpasoft"
+                      ],
+                      "operating_systems": [
+                        "windows"
+                      ],
+                      "genres": [
+                        "Fantasy",
+                        "Adventure",
+                        "… 1 more"
+                      ],
+                      "tags": [
+                        "Adventure",
+                        "Fantasy",
+                        "… 5 more"
+                      ],
+                      "features": [
+                        "Cloud saves",
+                        "Overlay",
+                        "… 1 more"
+                      ],
+                      "editions": [],
+                      "age_ratings": [
+                        {
+                          "name": "gogRating",
+                          "ageRating": "18"
+                        }
+                      ],
+                      "cover_vertical": "https://images.gog-statics.com/f59732cd55284ac7e459392b292ee95bb72a9f3a0cd1fb9fd02b16f025033976.jpg",
+                      "cover_horizontal": "https://images.gog-statics.com/70cc2588ba4a5589e0b64c2b0022011fb9f216e290a3ff66d24d9e96ba5540db.png",
+                      "logo": "https://images.gog-statics.com/ced50f1cf9ea3365965fa578151e0f5da96e40d2a7f9a05e1710a73b08ea206c.png",
+                      "screenshots": [
+                        "https://images.gog-statics.com/186c2481b9df902f0721a50d3ed994b983ffa492577761e66a47dc5bb88d821b_ggvgl.jpg",
+                        "https://images.gog-statics.com/fe0a8c0486dc6e3bcc5fcea2069d89b0e24c63b54f029062991da84b9268a16a_ggvgl.jpg",
+                        "… 7 more"
+                      ]
+                    },
+                    {
+                      "id": "1647345860",
+                      "slug": "creature_kitchen_soundtrack",
+                      "title": "Creature Kitchen Soundtrack",
+                      "url": "https://www.gog.com/en/game/creature_kitchen_soundtrack",
+                      "product_type": "dlc",
+                      "release_date": "2026-03-18",
+                      "store_release_date": "2026-06-29",
+                      "state": "default",
+                      "price": {
+                        "final": 0,
+                        "base": 0,
+                        "currency": "USD",
+                        "discount_percent": 0,
+                        "final_text": "$0.00",
+                        "base_text": "$0.00",
+                        "free": null
+                      },
+                      "rating": 0,
+                      "reviews_count": 0,
+                      "developers": [
+                        "The Rat Zone"
+                      ],
+                      "publishers": [
+                        "The Rat Zone"
+                      ],
+                      "operating_systems": [
+                        "windows"
+                      ],
+                      "genres": [
+                        "Simulation",
+                        "Horror",
+                        "… 1 more"
+                      ],
+                      "tags": [
+                        "Indie",
+                        "Fantasy",
+                        "… 15 more"
+                      ],
+                      "features": [],
+                      "editions": [],
+                      "age_ratings": [],
+                      "cover_vertical": "https://images.gog-statics.com/2d4dbabdd3368815051da868a9739176c9468aaa4dce33707746b72b78615f29.jpg",
+                      "cover_horizontal": "https://images.gog-statics.com/3fbcac979439f3a3c67ca951716eb77cf09e3f76d2157fa988f316314aa83c0b.png",
+                      "logo": "https://images.gog-statics.com/79d7ba02ea053966664bc20d9bcac3d9245e088401814754623dd3878cb5e351.png",
+                      "screenshots": []
+                    },
+                    "… 46 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

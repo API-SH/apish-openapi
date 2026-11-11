@@ -1,0 +1,1230 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Yell",
+    "version": "1.0.0",
+    "description": "The Yell API from API.SH: public Yell data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Yell",
+      "description": "5 endpoints (search & seo)",
+      "x-slug": "yell",
+      "x-domains": [
+        "yell.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/yell/v1/autocomplete": {
+      "get": {
+        "operationId": "yellAutocomplete",
+        "summary": "Yell search suggestions",
+        "description": "What Yell's search box suggests while typing: keyword and business-name suggestions (type=keyword) or UK places (type=location), each with its type and text.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/yell-autocomplete",
+        "tags": [
+          "Yell"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The text typed so far, e.g. plumb or manc.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "plumb"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "keyword (default: keywords and business names) or location (towns, stations, postcodes).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "keyword",
+                "location"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "plumb",
+                  "type": "keyword",
+                  "count": 10,
+                  "suggestions": [
+                    {
+                      "type": "keyword",
+                      "name": "plumbers"
+                    },
+                    {
+                      "type": "keyword",
+                      "name": "plumbers' merchants"
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/yell/v1/business": {
+      "get": {
+        "operationId": "yellBusiness",
+        "summary": "Yell business details",
+        "description": "A business page on Yell: id, name, tagline, schema type, years with Yell, rating, rating and review counts, rating histogram (stars to count), postal address (street, town, postcode, country), latitude and longitude, phone numbers with their type, website, enquiry link, logo, main image, open-now text, opening hours per day, why-choose-us points, business overview (headline and text), products and services, payment methods, credentials (accreditations, associations), photos (full size, thumbnail, caption), its categories and town, related searches, and the first reviews shown on the page (all reviews: /yell/v1/reviews).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/yell-business",
+        "tags": [
+          "Yell"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "business",
+            "in": "query",
+            "required": true,
+            "description": "The business's Yell link (https://www.yell.com/biz/...) or its id from search, e.g. martin-beeson-london-901733714.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "martin-beeson-london-901733714"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/yell/v1/categories": {
+      "get": {
+        "operationId": "yellCategories",
+        "summary": "Yell categories",
+        "description": "Yell's business categories: the popular categories (default), every category starting with a letter (letter=a..z, the site's A-Z directory), or for one category (category=plumbers) the regions and towns the site lists with their results links. Each category: name, slug (use it as category or as search keywords) and link.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/yell-categories",
+        "tags": [
+          "Yell"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "letter",
+            "in": "query",
+            "required": false,
+            "description": "One letter a-z: every category starting with it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "A category slug from this list, e.g. plumbers or painters+and+decorators: its regions and towns.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "letter": null,
+                  "count": 250,
+                  "categories": [
+                    {
+                      "name": "Accountants",
+                      "slug": "accountants",
+                      "letter": "a",
+                      "url": "https://www.yell.com/l/accountants/"
+                    },
+                    {
+                      "name": "Aerial Services",
+                      "slug": "aerial+services",
+                      "letter": "a",
+                      "url": "https://www.yell.com/l/aerial+services/"
+                    },
+                    "… 248 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/yell/v1/reviews": {
+      "get": {
+        "operationId": "yellReviews",
+        "summary": "Yell business reviews",
+        "description": "Every review of a business on Yell, newest first: review id, reviewer's display name and profile link, date, title, star rating, text and the business's replies (author, date, text). Also the business's rating, rating count and histogram. 50 reviews a page; pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/yell-reviews",
+        "tags": [
+          "Yell"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "business",
+            "in": "query",
+            "required": true,
+            "description": "The business's Yell link or its id, e.g. cloverleaf-plumbing-heating-and-renewables-ltd-sidcup-8879509.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "cloverleaf-plumbing-heating-and-renewables-ltd-sidcup-8879509"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (50 reviews per page).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "business": {
+                    "id": "8879509",
+                    "slug": "cloverleaf-plumbing-heating-and-renewables-ltd-sidcup-8879509",
+                    "name": "Cloverleaf Plumbing, Heating & Renewables Ltd",
+                    "url": "https://www.yell.com/biz/cloverleaf-plumbing-heating-and-renewables-ltd-sidcup-8879509/",
+                    "rating": 4.9,
+                    "rating_count": 287,
+                    "review_count": 287,
+                    "rating_histogram": {
+                      "1": 4,
+                      "2": 0,
+                      "3": 0,
+                      "4": 25,
+                      "5": 258
+                    }
+                  },
+                  "total": 287,
+                  "page": 1,
+                  "count": 50,
+                  "next_page": 2,
+                  "reviews": [
+                    {
+                      "id": "7b747fe5-2795-4ae5-bce1-e3e99e0035b4",
+                      "author": "ShirleyB-288",
+                      "author_url": "https://www.yell.com/reviews/user/ShirleyB-288",
+                      "date": "2025-05-16T10:08:23Z",
+                      "title": "Cloverleaf are always my go to plumbers now",
+                      "rating": 5,
+                      "text": "Cloverleaf are always my go to plumbers now. Every time they respond rapidly and the level of work is excellent - Neil fixed my boiler yeste…",
+                      "replies": [
+                        {
+                          "id": "08de1624-bb55-4d3c-a21d-e1b714989530",
+                          "author": "Business Response",
+                          "date": "2025-05-29T12:49:59Z",
+                          "text": "Thanks so much for the great review! We really appreciate your continued trust in us — it means a lot. We're glad Neil was able to get your …"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "dbd18341-3449-47d4-ae92-9f46656f60fd",
+                      "author": "TerryM-2128",
+                      "author_url": "https://www.yell.com/reviews/user/TerryM-2128",
+                      "date": "2024-11-18T17:37:24Z",
+                      "title": "Fab work",
+                      "rating": 5,
+                      "text": "Cloverleaf has been doing our servicing and repairs since our extension was built in 2013 so this review covers work over more than a decade…",
+                      "replies": [
+                        {
+                          "id": "3e972027-c0dd-4532-8eb1-bfa6f9adbea9",
+                          "author": "Business Response",
+                          "date": "2024-11-19T10:06:12Z",
+                          "text": "Thank you for your kind comments Terry! Its a pleasure having you as our customer and we look forward to working with you again in the futur…"
+                        }
+                      ]
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/yell/v1/search": {
+      "get": {
+        "operationId": "yellSearch",
+        "summary": "Yell business search",
+        "description": "Search Yell, the UK business directory, by keyword (or business name) and UK town, city or postcode, with the site's sort orders (relevance, distance, rating, most reviewed), content filters (businesses with reviews, websites, videos or photos) and category refinements. Each result: Yell id, advert id, slug (for /yell/v1/business), name, link, category, schema type, strapline, sponsored flag, years with Yell, phone numbers with their type, website, enquiry link, address or service area, opening status, listed services, rating and rating count, logo. Also: the total, the categories to refine by and whether the term also matches a business name. 25 results a page; pass `next_page` back as `page`; null on the last page. A search without matches answers an empty list.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/yell-search",
+        "tags": [
+          "Yell"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "description": "What to find, e.g. plumbers, dentists, solicitors. Required unless company is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "plumbers"
+          },
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "description": "A business name to search for instead of keywords.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "description": "UK town, city or postcode, e.g. london, manchester, SW1A 1AA.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "london"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), distance, rating or most_reviewed.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "distance",
+                "rating",
+                "most_reviewed"
+              ]
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "Only businesses with reviews, websites, videos or photos.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "reviews",
+                "websites",
+                "videos",
+                "photos"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Narrow to one of the categories listed in `categories`, e.g. Blocked Drains.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (25 per page).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": {
+                    "keywords": "plumbers",
+                    "company": null,
+                    "location": "london",
+                    "sort": "relevance",
+                    "filter": null,
+                    "category": null
+                  },
+                  "heading": "Plumbers near me in London",
+                  "total": 5208,
+                  "page": 1,
+                  "count": 25,
+                  "next_page": 2,
+                  "items": [
+                    {
+                      "id": "901775980",
+                      "advert_id": "100041125036000020",
+                      "slug": "mnt-plumbing-and-drainage-ltd-london-901775980",
+                      "name": "MNT Plumbing And Drainage Ltd",
+                      "url": "https://www.yell.com/biz/mnt-plumbing-and-drainage-ltd-london-901775980/",
+                      "category": "Plumbers",
+                      "schema_type": "Plumber",
+                      "strapline": "24/7 Emergency Service",
+                      "sponsored": true,
+                      "years_with_yell": "1",
+                      "phones": [
+                        {
+                          "type": "Tel",
+                          "number": "020 3 807 4436"
+                        }
+                      ],
+                      "website": "https://www.mnt-plumbing-and-drainage.co.uk/?utm_source=yell&utm_medium=referral&utm_campaign=yell",
+                      "enquiry_url": "https://www.yell.com/customerneeds/sendenquiry/sendtoone/100041125036000020?searchedLocation=London",
+                      "address": "We serve London",
+                      "opening_status": "Open 24 hours",
+                      "services": [
+                        "Blocked Drains",
+                        "Blocked Toilets",
+                        "… 4 more"
+                      ],
+                      "rating": null,
+                      "rating_count": null,
+                      "logo": "https://c.yell.com/t_bigRect,f_auto/f07d865e-e1cd-4124-98e6-b13fbff3c9c8_image_png.png"
+                    },
+                    {
+                      "id": "901776261",
+                      "advert_id": "100041123756000050",
+                      "slug": "fast-and-local-plumbers-no-call-out-charge-ashford-901776261",
+                      "name": "Fast & LOCAL Plumbers - NO CALL OUT CHARGE",
+                      "url": "https://www.yell.com/biz/fast-and-local-plumbers-no-call-out-charge-ashford-901776261/",
+                      "category": "Plumbers",
+                      "schema_type": "Plumber",
+                      "strapline": "FAST & LOCAL SERVICE - NO CALL OUT CHARGE ⭐⭐⭐⭐⭐",
+                      "sponsored": true,
+                      "years_with_yell": "30+",
+                      "phones": [
+                        {
+                          "type": "Freephone",
+                          "number": "+1 555 010 0000"
+                        },
+                        {
+                          "type": "Mob",
+                          "number": "07537 149288"
+                        }
+                      ],
+                      "website": "https://fastandlocalplumbers.com/yell",
+                      "enquiry_url": null,
+                      "address": "We serve London",
+                      "opening_status": null,
+                      "services": [
+                        "Tanks, Taps, Leaks, Ballvalves",
+                        "Toilet Flushes & Overflows",
+                        "… 4 more"
+                      ],
+                      "rating": null,
+                      "rating_count": null,
+                      "logo": "https://c.yell.com/t_bigRect,f_auto/f67db380-47b3-4357-8b98-33e5ddfad329_image_png.png"
+                    },
+                    "… 23 more"
+                  ],
+                  "categories": [
+                    "Central Heating Services",
+                    "Emergency Plumbers",
+                    "… 11 more"
+                  ],
+                  "did_you_mean_company": true,
+                  "cached": false,
+                  "credits_used": 5
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

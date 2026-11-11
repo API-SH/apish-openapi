@@ -1,0 +1,2195 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Shazam",
+    "version": "1.0.0",
+    "description": "The Shazam API from API.SH: public Shazam data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Shazam",
+      "description": "8 endpoints (media & music)",
+      "x-slug": "shazam",
+      "x-domains": [
+        "shazam.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shazam/v1/album": {
+      "get": {
+        "operationId": "shazamAlbum",
+        "summary": "Shazam album",
+        "description": "An album with label, copyright, UPC, release date, genres, editorial notes, artists and every track (title, duration, ISRC, preview, track and disc numbers).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/shazam-album",
+        "tags": [
+          "Shazam"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Album id or an Apple Music album link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1544491232"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter store country for titles, links and availability (default US).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1544491232",
+                  "title": "21",
+                  "artist": "Adele",
+                  "release_date": "2011-01-24",
+                  "track_count": 12,
+                  "genres": [
+                    "Pop"
+                  ],
+                  "label": "XL Recordings",
+                  "copyright": "℗ 2011 XL Recordings Ltd",
+                  "upc": "191404113868",
+                  "single": false,
+                  "complete": true,
+                  "compilation": false,
+                  "explicit": false,
+                  "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                  "apple_music_url": "https://music.apple.com/us/album/21/1544491232",
+                  "editorial_notes": "<b>100 Best Albums</b> When the British soul belter Adele began working on the follow-up to her 2008 debut <i>19</i>, she had a difficult ti…",
+                  "artists": [
+                    {
+                      "id": "262836961",
+                      "name": "Adele",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "image": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/a2/2d/df/a22ddf71-9254-043c-c162-11fbc25c5ff3/mzl.ilbjswky.jpg/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/artist/adele/262836961",
+                      "shazam_url": "https://www.shazam.com/artist/adele/262836961"
+                    }
+                  ],
+                  "tracks": [
+                    {
+                      "id": "1544491233",
+                      "title": "Rolling in the Deep",
+                      "artist": "Adele",
+                      "album": "21",
+                      "composer": "Adele Adkins & Paul Epworth",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "duration_ms": 228093,
+                      "release_date": "2010-11-29",
+                      "isrc": "GBBKS1000335",
+                      "explicit": false,
+                      "track_number": 1,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/4c/4f/03/4c4f032a-3d2b-853d-da81-996602355b42/mzaf_11625850023134180491.…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/rolling-in-the-deep/1544491232?i=1544491233",
+                      "shazam_url": "https://www.shazam.com/song/1544491233/rolling-in-the-deep",
+                      "artist_ids": [],
+                      "album_id": null
+                    },
+                    {
+                      "id": "1544491234",
+                      "title": "Rumour Has It",
+                      "artist": "Adele",
+                      "album": "21",
+                      "composer": "Adele Adkins & Ryan Tedder",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "duration_ms": 223267,
+                      "release_date": "2011-01-19",
+                      "isrc": "GBBKS1000349",
+                      "explicit": false,
+                      "track_number": 2,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/70/13/3c/70133c86-3954-682b-a62c-3886f5edd48f/mzaf_2367818398299018759.p…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/rumour-has-it/1544491232?i=1544491234",
+                      "shazam_url": "https://www.shazam.com/song/1544491234/rumour-has-it",
+                      "artist_ids": [],
+                      "album_id": null
+                    },
+                    "… 10 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/shazam/v1/artist": {
+      "get": {
+        "operationId": "shazamArtist",
+        "summary": "Shazam artist",
+        "description": "An artist with bio, origin, born or formed, genres and image, top songs, latest release, albums, singles, compilations, live albums, appears-on albums, similar artists, music videos and featured playlists.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/shazam-artist",
+        "tags": [
+          "Shazam"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Artist id or a Shazam / Apple Music artist link (shazam.com/artist/adele/262836961).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "262836961"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter store country for titles, links and availability (default US).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "262836961",
+                  "name": "Adele",
+                  "genres": [
+                    "Pop"
+                  ],
+                  "image": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/a2/2d/df/a22ddf71-9254-043c-c162-11fbc25c5ff3/mzl.ilbjswky.jpg/1000x1000bb.jpg",
+                  "apple_music_url": "https://music.apple.com/us/artist/adele/262836961",
+                  "shazam_url": "https://www.shazam.com/artist/adele/262836961",
+                  "bio": null,
+                  "born_or_formed": null,
+                  "origin": null,
+                  "is_group": null,
+                  "top_songs": [
+                    {
+                      "id": "1544491998",
+                      "title": "Someone Like You",
+                      "artist": "Adele",
+                      "album": "21",
+                      "composer": "Adele Adkins & Dan Wilson",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "duration_ms": 285240,
+                      "release_date": "2011-01-19",
+                      "isrc": "GBBKS1000351",
+                      "explicit": false,
+                      "track_number": 11,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/08/22/2e/08222e25-43f5-20e6-a442-b8127ac83368/mzaf_1689070223363740216.p…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/someone-like-you/1544491232?i=1544491998",
+                      "shazam_url": "https://www.shazam.com/song/1544491998/someone-like-you",
+                      "artist_ids": [],
+                      "album_id": null
+                    },
+                    {
+                      "id": "1544491233",
+                      "title": "Rolling in the Deep",
+                      "artist": "Adele",
+                      "album": "21",
+                      "composer": "Adele Adkins & Paul Epworth",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "duration_ms": 228093,
+                      "release_date": "2010-11-29",
+                      "isrc": "GBBKS1000335",
+                      "explicit": false,
+                      "track_number": 1,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/4c/4f/03/4c4f032a-3d2b-853d-da81-996602355b42/mzaf_11625850023134180491.…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/rolling-in-the-deep/1544491232?i=1544491233",
+                      "shazam_url": "https://www.shazam.com/song/1544491233/rolling-in-the-deep",
+                      "artist_ids": [],
+                      "album_id": null
+                    },
+                    "… 8 more"
+                  ],
+                  "latest_release": null,
+                  "albums": [
+                    {
+                      "id": "1590035691",
+                      "title": "30",
+                      "artist": "Adele",
+                      "release_date": "2021-11-19",
+                      "track_count": 12,
+                      "genres": [
+                        "Pop"
+                      ],
+                      "label": "Columbia",
+                      "copyright": "℗ 2021 Melted Stone under exclusive license to Columbia Records, a Division of Sony Music Entertainment",
+                      "upc": "886449666430",
+                      "single": false,
+                      "complete": true,
+                      "compilation": false,
+                      "explicit": false,
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/73/6d/7c/736d7cfb-c79d-c9a9-4170-5e71d008dea1/886449666430.jpg/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/30/1590035691"
+                    },
+                    {
+                      "id": "1544494115",
+                      "title": "25",
+                      "artist": "Adele",
+                      "release_date": "2015-11-20",
+                      "track_count": 11,
+                      "genres": [
+                        "Pop"
+                      ],
+                      "label": "XL Recordings",
+                      "copyright": "℗ 2015 XL Recordings Ltd",
+                      "upc": "191404113974",
+                      "single": false,
+                      "complete": true,
+                      "compilation": false,
+                      "explicit": false,
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/08/8c/24/088c2405-2e33-801b-5c38-e967f2c01e69/191404113974.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/25/1544494115"
+                    },
+                    "… 2 more"
+                  ],
+                  "singles": [
+                    {
+                      "id": "566322358",
+                      "title": "Skyfall - Single",
+                      "artist": "Adele",
+                      "release_date": "2012-10-05",
+                      "track_count": 1,
+                      "genres": [
+                        "Pop",
+                        "Rock",
+                        "… 3 more"
+                      ],
+                      "label": "XL Recordings/Columbia",
+                      "copyright": "℗ 2012 Melted Stone Ltd under exclusive license to Columbia Records / Skyfall © 2012 Danjaq LLC, United Artists Corporation, Columbia Pictur…",
+                      "upc": "886443673632",
+                      "single": true,
+                      "complete": true,
+                      "compilation": false,
+                      "explicit": false,
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/b3/fe/cf/b3fecf76-0359-8e14-0651-4b101fc68a3f/886443673632.jpg/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/skyfall-single/566322358"
+                    },
+                    {
+                      "id": "1545039947",
+                      "title": "Rolling in the Deep (Jamie xx Shuffle) - Single",
+                      "artist": "Adele",
+                      "release_date": "2011-04-11",
+                      "track_count": 1,
+                      "genres": [
+                        "Pop",
+                        "Rock"
+                      ],
+                      "label": "XL Recordings",
+                      "copyright": "℗ 2011 XL Recordings Ltd",
+                      "upc": "191404115152",
+                      "single": true,
+                      "complete": true,
+                      "compilation": false,
+                      "explicit": false,
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/e9/6b/d9/e96bd9ca-3db1-6582-246d-0ed6dc1aae70/191404115152.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/rolling-in-the-deep-jamie-xx-shuffle-single/1545039947"
+                    },
+                    "… 4 more"
+                  ],
+                  "compilations": [],
+                  "live_albums": [
+                    {
+                      "id": "1544490298",
+                      "title": "iTunes Festival: London 2011 - EP",
+                      "artist": "Adele",
+                      "release_date": "2011-07-12",
+                      "track_count": 6,
+                      "genres": [
+                        "Pop"
+                      ],
+                      "label": "XL Recordings",
+                      "copyright": "℗ 2011 XL Recordings Ltd",
+                      "upc": "191404114957",
+                      "single": false,
+                      "complete": true,
+                      "compilation": false,
+                      "explicit": false,
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/8c/e9/c1/8ce9c14c-d183-2fe1-2862-cd3fa821b69d/191404114957.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/itunes-festival-london-2011-ep/1544490298"
+                    }
+                  ],
+                  "appears_on": [],
+                  "similar_artists": [
+                    {
+                      "id": "156488786",
+                      "name": "Sam Smith",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "image": "https://is1-ssl.mzstatic.com/image/thumb/Features221/v4/35/66/a4/3566a4be-5d49-06db-781a-0e0da0f1c956/mza_15363053124567060624.png/1000x1000…",
+                      "apple_music_url": "https://music.apple.com/us/artist/sam-smith/156488786",
+                      "shazam_url": "https://www.shazam.com/artist/sam-smith/156488786"
+                    },
+                    {
+                      "id": "183313439",
+                      "name": "Ed Sheeran",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "image": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages211/v4/04/fe/72/04fe7255-8298-6ea3-a842-489161a0afeb/ami-identity-759967e43150fe52ef…",
+                      "apple_music_url": "https://music.apple.com/us/artist/ed-sheeran/183313439",
+                      "shazam_url": "https://www.shazam.com/artist/ed-sheeran/183313439"
+                    },
+                    "… 8 more"
+                  ],
+                  "music_videos": [],
+                  "featured_playlists": [
+                    {
+                      "id": "pl.efaeab71d9cd4e079d9d1097c3b6b525",
+                      "name": "Adele Essentials",
+                      "curator": "Apple Music Pop",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/a2/2d/df/a22ddf71-9254-043c-c162-11fbc25c5ff3/mzl.ilbjswky.jpg/1000x1000SC.FPESS05.j…",
+                      "apple_music_url": "https://music.apple.com/us/playlist/adele-essentials/pl.efaeab71d9cd4e079d9d1097c3b6b525"
+                    },
+                    {
+                      "id": "pl.b4b1408130f348a39abc1694f1bd45f5",
+                      "name": "Adele Video Essentials",
+                      "curator": "Apple Music Pop",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/a2/2d/df/a22ddf71-9254-043c-c162-11fbc25c5ff3/mzl.ilbjswky.jpg/1000x1000SC.MVESS05.j…",
+                      "apple_music_url": "https://music.apple.com/us/playlist/adele-video-essentials/pl.b4b1408130f348a39abc1694f1bd45f5"
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/shazam/v1/artist/top-tracks": {
+      "get": {
+        "operationId": "shazamArtistTopTracks",
+        "summary": "Shazam artist top songs and other lists",
+        "description": "An artist's top songs (or, with `list`, albums, singles, music videos, appears-on, compilations, live albums or similar artists), paged. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/shazam-artist-top-tracks",
+        "tags": [
+          "Shazam"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Artist id or a Shazam / Apple Music artist link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "262836961"
+          },
+          {
+            "name": "list",
+            "in": "query",
+            "required": false,
+            "description": "top-songs (default), albums, singles, music-videos, appears-on, compilations, live-albums, similar-artists.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "top-songs",
+                "albums",
+                "singles",
+                "music-videos",
+                "appears-on",
+                "compilations",
+                "live-albums",
+                "similar-artists"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Items per page (top songs up to 20, others up to 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Start position (default 0).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter store country for titles, links and availability (default US).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "262836961",
+                  "list": "top-songs",
+                  "limit": 20,
+                  "offset": 0,
+                  "count": 20,
+                  "next_offset": 20,
+                  "items": [
+                    {
+                      "position": 1,
+                      "id": "1544491998",
+                      "title": "Someone Like You",
+                      "artist": "Adele",
+                      "album": "21",
+                      "composer": "Adele Adkins & Dan Wilson",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "duration_ms": 285240,
+                      "release_date": "2011-01-19",
+                      "isrc": "GBBKS1000351",
+                      "explicit": false,
+                      "track_number": 11,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/08/22/2e/08222e25-43f5-20e6-a442-b8127ac83368/mzaf_1689070223363740216.p…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/someone-like-you/1544491232?i=1544491998",
+                      "shazam_url": "https://www.shazam.com/song/1544491998/someone-like-you",
+                      "artist_ids": [],
+                      "album_id": null
+                    },
+                    {
+                      "position": 2,
+                      "id": "1544491233",
+                      "title": "Rolling in the Deep",
+                      "artist": "Adele",
+                      "album": "21",
+                      "composer": "Adele Adkins & Paul Epworth",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "duration_ms": 228093,
+                      "release_date": "2010-11-29",
+                      "isrc": "GBBKS1000335",
+                      "explicit": false,
+                      "track_number": 1,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/4c/4f/03/4c4f032a-3d2b-853d-da81-996602355b42/mzaf_11625850023134180491.…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/rolling-in-the-deep/1544491232?i=1544491233",
+                      "shazam_url": "https://www.shazam.com/song/1544491233/rolling-in-the-deep",
+                      "artist_ids": [],
+                      "album_id": null
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/shazam/v1/charts": {
+      "get": {
+        "operationId": "shazamCharts",
+        "summary": "Shazam charts (global, country, city, genre, viral)",
+        "description": "The current Shazam chart: global or a country's top chart, its viral chart, a genre chart (global or per country), a city chart, or a global radio-spins genre chart. Each track: rank, id, title, artist, album, composer, genres, duration, release date, ISRC, explicit flag, preview audio, artwork, Apple Music and Shazam links. The chart's name and last update come with it. Pass `next_offset` back as `offset`; null on the last page. Every chart id is listed by /shazam/v1/charts/list.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/shazam-charts",
+        "tags": [
+          "Shazam"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "A country code or name with Shazam charts (US, GB, DE, IN, BR...) or `global` (default).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "top (default), viral, genre, radio_spins (global only) or city.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "top",
+                "viral",
+                "genre",
+                "radio_spins",
+                "city"
+              ]
+            }
+          },
+          {
+            "name": "genre",
+            "in": "query",
+            "required": false,
+            "description": "Genre for type=genre or radio_spins, e.g. pop, hip-hop-rap, dance, latin, k-pop (see /shazam/v1/charts/list).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "City for a city chart, e.g. chicago, london, paris (see /shazam/v1/charts/list).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Tracks per page, up to 200 (default 50).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "10"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Start position (default 0).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chart": {
+                    "id": "pl.fab44ed8bcd643d58ac613b2e75280bd",
+                    "type": "top",
+                    "name": "Shazam Charts United States",
+                    "label": "Top, United States",
+                    "country": "US",
+                    "updated_at": "2026-11-03T07:00:39Z",
+                    "url": "https://music.apple.com/us/playlist/shazam-charts-united-states/pl.fab44ed8bcd643d58ac613b2e75280bd",
+                    "artwork": "https://is1-ssl.mzstatic.com/image/thumb/2g62RAMNoUY5ThcvDt3usg/1000x1000bb.jpg"
+                  },
+                  "limit": 10,
+                  "offset": 0,
+                  "count": 10,
+                  "next_offset": 10,
+                  "tracks": [
+                    {
+                      "rank": 1,
+                      "id": "6796864754",
+                      "title": "BbY WOW",
+                      "artist": "KAROL G, Judeline & rusowsky",
+                      "album": "NO ME ARREPIENTO DE SENTIR TANTO",
+                      "composer": "Cordel Dexter Burrell, Carolina Giraldo Navarro, Marco Masis, Omer Fedi, Lara Fernández Castrelo, Andres Jael Correa Rios & Ruslán Mediavill…",
+                      "genres": [
+                        "Urbano latino",
+                        "Latin"
+                      ],
+                      "duration_ms": 225835,
+                      "release_date": "2026-08-05",
+                      "isrc": "USUG12607940",
+                      "explicit": false,
+                      "track_number": 11,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/f3/08/da/f308da3d-00cc-7682-7be9-87cb882f4ea5/mzaf_129115212197250565.pl…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/2b/66/b2/2b66b26c-ab23-faa1-c4ee-06fa2cce8f76/26UM1IM00558.rgb.jpg/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/bby-wow/6796864741?i=6796864754",
+                      "shazam_url": "https://www.shazam.com/song/6796864754/bby-wow",
+                      "artist_ids": [],
+                      "album_id": null
+                    },
+                    {
+                      "rank": 2,
+                      "id": "1584390038",
+                      "title": "Somebody's Watching Me",
+                      "artist": "Rockwell",
+                      "album": "Somebody's Watching Me",
+                      "composer": "Rockwell",
+                      "genres": [
+                        "R&B/Soul"
+                      ],
+                      "duration_ms": 298867,
+                      "release_date": "1984-01-30",
+                      "isrc": "USMO18400484",
+                      "explicit": false,
+                      "track_number": 1,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/c9/6d/bb/c96dbb3e-39dd-a855-94f5-a29d94fec1c8/mzaf_168606166018957873.pl…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/a5/19/0e/a5190eb7-3a36-c413-57e5-96961a99dd7d/21UMGIM51501.rgb.jpg/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/somebodys-watching-me/1584389835?i=1584390038",
+                      "shazam_url": "https://www.shazam.com/song/1584390038/somebodys-watching-me",
+                      "artist_ids": [],
+                      "album_id": null
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/shazam/v1/charts/list": {
+      "get": {
+        "operationId": "shazamChartsList",
+        "summary": "Every Shazam chart",
+        "description": "All the charts Shazam publishes: the global top and viral charts, global genre and radio-spins charts, and for each country its top, viral and genre charts and its city charts, with the ids and names to pass to /shazam/v1/charts.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/shazam-charts-list",
+        "tags": [
+          "Shazam"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "global": {
+                    "top": "pl.92d704ba99a3411289a34fab82866a62",
+                    "viral": "pl.b127c05305ad413fb742e8585599ec84",
+                    "genres": [
+                      {
+                        "id": "pop",
+                        "name": "Pop",
+                        "chart_id": "pl.2efc8b15871c43729c3d0fd28730b079",
+                        "size": 200
+                      },
+                      {
+                        "id": "hip-hop-rap",
+                        "name": "Hip-Hop/Rap",
+                        "chart_id": "pl.f518afc7eeda43eca22989da0b5c8a95",
+                        "size": 200
+                      },
+                      "… 16 more"
+                    ],
+                    "radio_spins": [
+                      {
+                        "id": "pop",
+                        "name": "Pop",
+                        "chart_id": "pl.4920c2915efb4b7ab0e4956750555140",
+                        "size": 200
+                      },
+                      {
+                        "id": "hip-hop-rap",
+                        "name": "Hip-Hop/Rap",
+                        "chart_id": "pl.802d0b32b9554e5abc18055ce71b074b",
+                        "size": 200
+                      },
+                      "… 14 more"
+                    ]
+                  },
+                  "count": 70,
+                  "countries": [
+                    {
+                      "code": "AE",
+                      "name": "United Arab Emirates",
+                      "slug": "united-arab-emirates",
+                      "top": "pl.436cd7e997794611ba6a3b302f89412f",
+                      "viral": null,
+                      "genres": [],
+                      "cities": [
+                        {
+                          "id": "292223",
+                          "name": "Dubai",
+                          "slug": "dubai",
+                          "chart_id": "pl.92261b13d68449f095b3b0c8b127ec6c"
+                        }
+                      ]
+                    },
+                    {
+                      "code": "AR",
+                      "name": "Argentina",
+                      "slug": "argentina",
+                      "top": "pl.616a38327bcf49c28dbf06fe8c427a2b",
+                      "viral": "pl.7f116e2125974f6286a44960cc07b028",
+                      "genres": [],
+                      "cities": [
+                        {
+                          "id": "3435910",
+                          "name": "Buenos Aires",
+                          "slug": "buenos-aires",
+                          "chart_id": "pl.3954afe90c5e459b8e0ef4cb5a645826"
+                        }
+                      ]
+                    },
+                    "… 68 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/shazam/v1/search": {
+      "get": {
+        "operationId": "shazamSearch",
+        "summary": "Shazam search (songs, artists, albums)",
+        "description": "Search songs, artists, albums, music videos and playlists by name, as the Shazam search box does. Songs come with ISRC, preview audio, artwork and Shazam links; artists with genres, image and Shazam link. Pass `next_offset` back as `offset`; null when no type has more results.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/shazam-search",
+        "tags": [
+          "Shazam"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Song, artist or album name.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "adele"
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: songs, artists, albums, music-videos, playlists (default songs,artists).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "songs,artists"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per type, up to 25 (default 10).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Start position (default 0).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter store country for titles, links and availability (default US).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "adele",
+                  "country": "US",
+                  "types": [
+                    "songs",
+                    "artists"
+                  ],
+                  "limit": 10,
+                  "offset": 0,
+                  "songs": [
+                    {
+                      "id": "1544491998",
+                      "title": "Someone Like You",
+                      "artist": "Adele",
+                      "album": "21",
+                      "composer": "Adele Adkins & Dan Wilson",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "duration_ms": 285240,
+                      "release_date": "2011-01-19",
+                      "isrc": "GBBKS1000351",
+                      "explicit": false,
+                      "track_number": 11,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/08/22/2e/08222e25-43f5-20e6-a442-b8127ac83368/mzaf_1689070223363740216.p…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/someone-like-you/1544491232?i=1544491998",
+                      "shazam_url": "https://www.shazam.com/song/1544491998/someone-like-you",
+                      "artist_ids": [],
+                      "album_id": null
+                    },
+                    {
+                      "id": "1544491988",
+                      "title": "Set Fire to the Rain",
+                      "artist": "Adele",
+                      "album": "21",
+                      "composer": "Adele Adkins & Fraser T. Smith",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "duration_ms": 242974,
+                      "release_date": "2011-01-19",
+                      "isrc": "GBBKS1000348",
+                      "explicit": false,
+                      "track_number": 5,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/96/8b/3f/968b3f92-f082-c8c2-47ba-ab7add22dfdc/mzaf_7388168289354543091.p…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/set-fire-to-the-rain/1544491232?i=1544491988",
+                      "shazam_url": "https://www.shazam.com/song/1544491988/set-fire-to-the-rain",
+                      "artist_ids": [],
+                      "album_id": null
+                    },
+                    "… 8 more"
+                  ],
+                  "artists": [
+                    {
+                      "id": "262836961",
+                      "name": "Adele",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "image": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/a2/2d/df/a22ddf71-9254-043c-c162-11fbc25c5ff3/mzl.ilbjswky.jpg/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/artist/adele/262836961",
+                      "shazam_url": "https://www.shazam.com/artist/adele/262836961"
+                    },
+                    {
+                      "id": "324008615",
+                      "name": "Emeli Sandé",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "image": "https://is1-ssl.mzstatic.com/image/thumb/AMCArtistImages126/v4/88/8b/2a/888b2ac5-9af2-01f1-4833-d0ba7e08435d/a855f029-4cc6-40e5-8ec8-4b5fcf0…",
+                      "apple_music_url": "https://music.apple.com/us/artist/emeli-sand%C3%A9/324008615",
+                      "shazam_url": "https://www.shazam.com/artist/emeli-sande/324008615"
+                    }
+                  ],
+                  "next_offset": 10,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/shazam/v1/track": {
+      "get": {
+        "operationId": "shazamTrack",
+        "summary": "Shazam song page",
+        "description": "Everything on a song's Shazam page: Shazam count, popular segment (where in the song people Shazam it most), audio analysis (BPM, energy, danceability, valence, acousticness, melodicness), label, language, time-synced lyrics by section plus the plain lyrics text, writers, music video, the artist's top songs on Shazam and similar songs; with the catalogue record (title, artist, album, composer, genres, duration, release date, ISRC, preview, artwork, album details, artists, music videos).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/shazam-track",
+        "tags": [
+          "Shazam"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Song id or a Shazam / Apple Music song link (shazam.com/song/1544491233/rolling-in-the-deep).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1544491233"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter store country for titles, links and availability (default US).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1544491233",
+                  "title": "Rolling in the Deep",
+                  "artist": "Adele",
+                  "album": "21",
+                  "composer": "Adele Adkins & Paul Epworth",
+                  "genres": [
+                    "Pop"
+                  ],
+                  "duration_ms": 228093,
+                  "release_date": "2010-11-29",
+                  "isrc": "GBBKS1000335",
+                  "explicit": false,
+                  "track_number": 1,
+                  "disc_number": 1,
+                  "has_lyrics": true,
+                  "has_time_synced_lyrics": true,
+                  "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/4c/4f/03/4c4f032a-3d2b-853d-da81-996602355b42/mzaf_4776468650090964736.p…",
+                  "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                  "apple_music_url": "https://music.apple.com/us/album/rolling-in-the-deep/1544491232?i=1544491233",
+                  "shazam_url": "https://www.shazam.com/song/1544491233/rolling-in-the-deep",
+                  "artist_ids": [
+                    "262836961"
+                  ],
+                  "album_id": "1544491232",
+                  "shazam_key": "53080365",
+                  "shazam_count": 18946494,
+                  "label": "XL Recordings",
+                  "primary_artist": "Adele",
+                  "genre": "Pop",
+                  "language": "English",
+                  "audio_analysis": {
+                    "bpm": 104,
+                    "energy": 0.6899999976158142,
+                    "danceability": 0.8500000238418579,
+                    "valence": 0.949999988079071,
+                    "acousticness": 0.75,
+                    "melodicness": 0.9800000190734863
+                  },
+                  "popular_segment": {
+                    "description": "Rolling in the Deep was discovered most frequently in the first few seconds of the song during the past week",
+                    "at_seconds": null
+                  },
+                  "images": {
+                    "artistAvatar": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/a2/2d/df/a22ddf71-9254-043c-c162-11fbc25c5ff3/mzl.ilbjswky.jpg/800x800cc.jpg",
+                    "coverArt": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/400x400cc.jpg",
+                    "coverArtHq": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/800x800cc.jpg"
+                  },
+                  "share_url": "https://www.shazam.com/track/53080365/rolling-in-the-deep",
+                  "music_video": {
+                    "title": "Rolling in the Deep",
+                    "url": "https://video-ssl.itunes.apple.com/itunes-assets/Video114/v4/9b/aa/14/9baa140c-e852-1b77-05c2-2e4d26f5cefc/mzvf_1234311160509023431.720w.h26…",
+                    "thumbnail": "https://is1-ssl.mzstatic.com/image/thumb/Video114/v4/ae/50/de/ae50de46-75eb-6edd-ea4f-3419f7f635ea/191404114681_GBH481800026.jpg/720x405mv.j…",
+                    "uploaded": "2010-11-30T00:00:00.000Z"
+                  },
+                  "lyrics": [
+                    {
+                      "section": "Verse 1",
+                      "start": 5.306,
+                      "end": 41.534,
+                      "lines": [
+                        {
+                          "text": "There's a fire starting in my heart",
+                          "start": 5.306,
+                          "end": 9.802
+                        },
+                        {
+                          "text": "Reaching a fever pitch, it's bringing me out the dark",
+                          "start": 9.952,
+                          "end": 14.14
+                        },
+                        "… 6 more"
+                      ]
+                    },
+                    {
+                      "section": "PreChorus",
+                      "start": 42.795,
+                      "end": 58.852,
+                      "lines": [
+                        {
+                          "text": "The scars of your love remind me of us",
+                          "start": 42.795,
+                          "end": 47.419
+                        },
+                        {
+                          "text": "They keep me thinking that we almost had it all",
+                          "start": 47.405,
+                          "end": 51.837
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    "… 9 more"
+                  ],
+                  "lyrics_text": "There's a fire starting in my heart\nReaching a fever pitch, it's bringing me out the dark\nFinally, I can see you crystal clear\nGo ahead and …",
+                  "writers": [
+                    "Adele Adkins",
+                    "Paul Epworth"
+                  ],
+                  "details": {
+                    "language": "English"
+                  },
+                  "artist_top_songs": [
+                    {
+                      "id": "1544491998",
+                      "title": "Someone Like You"
+                    },
+                    {
+                      "id": "1544491233",
+                      "title": "Rolling in the Deep"
+                    },
+                    "… 8 more"
+                  ],
+                  "album_detail": {
+                    "id": "1544491232",
+                    "title": "21",
+                    "artist": "Adele",
+                    "release_date": "2011-01-24",
+                    "track_count": 12,
+                    "genres": [
+                      "Pop"
+                    ],
+                    "label": "XL Recordings",
+                    "copyright": "℗ 2011 XL Recordings Ltd",
+                    "upc": "191404113868",
+                    "single": false,
+                    "complete": true,
+                    "compilation": false,
+                    "explicit": false,
+                    "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                    "apple_music_url": "https://music.apple.com/us/album/21/1544491232"
+                  },
+                  "artists": [
+                    {
+                      "id": "262836961",
+                      "name": "Adele",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "image": "https://is1-ssl.mzstatic.com/image/thumb/Features125/v4/a2/2d/df/a22ddf71-9254-043c-c162-11fbc25c5ff3/mzl.ilbjswky.jpg/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/artist/adele/262836961",
+                      "shazam_url": "https://www.shazam.com/artist/adele/262836961"
+                    }
+                  ],
+                  "music_videos": [],
+                  "similar_count": 20,
+                  "…": "4 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/shazam/v1/track/related": {
+      "get": {
+        "operationId": "shazamTrackRelated",
+        "summary": "Songs similar to a song (Shazam)",
+        "description": "The songs Shazam lists as similar to a song, in order, each with its full catalogue record (title, artist, album, genres, duration, release date, ISRC, preview, artwork, Shazam link).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/shazam-track-related",
+        "tags": [
+          "Shazam"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Song id or a Shazam / Apple Music song link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1544491233"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter store country for titles, links and availability (default US).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "1544491233",
+                  "title": "Rolling in the Deep",
+                  "artist": "Adele",
+                  "count": 20,
+                  "tracks": [
+                    {
+                      "position": 1,
+                      "id": "573962551",
+                      "title": "Locked Out of Heaven",
+                      "artist": "Bruno Mars",
+                      "album": "Unorthodox Jukebox",
+                      "composer": "Ari Levine, Bruno Mars & Philip Lawrence",
+                      "genres": [
+                        "Pop",
+                        "Pop/Rock",
+                        "… 3 more"
+                      ],
+                      "duration_ms": 233478,
+                      "release_date": "2012-10-01",
+                      "isrc": "USAT21204492",
+                      "explicit": false,
+                      "track_number": 2,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/d5/05/04/d5050434-1278-6b8e-9cd8-6261ea319fd1/mzaf_9746689865251353718.p…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/e0/a4/7c/e0a47c6f-005a-9f9f-ce29-8e858e2bcfcb/075679957283.jpg/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/locked-out-of-heaven/573962245?i=573962551",
+                      "shazam_url": "https://www.shazam.com/song/573962551/locked-out-of-heaven",
+                      "artist_ids": [
+                        "278873078"
+                      ],
+                      "album_id": "573962245"
+                    },
+                    {
+                      "position": 2,
+                      "id": "1544491988",
+                      "title": "Set Fire to the Rain",
+                      "artist": "Adele",
+                      "album": "21",
+                      "composer": "Adele Adkins & Fraser T. Smith",
+                      "genres": [
+                        "Pop"
+                      ],
+                      "duration_ms": 242974,
+                      "release_date": "2011-01-19",
+                      "isrc": "GBBKS1000348",
+                      "explicit": false,
+                      "track_number": 5,
+                      "disc_number": 1,
+                      "has_lyrics": true,
+                      "has_time_synced_lyrics": null,
+                      "preview_url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/96/8b/3f/968b3f92-f082-c8c2-47ba-ab7add22dfdc/mzaf_7388168289354543091.p…",
+                      "artwork": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/eb/ca/25/ebca2596-cd1e-b295-91a3-771c868d0a79/191404113868.png/1000x1000bb.jpg",
+                      "apple_music_url": "https://music.apple.com/us/album/set-fire-to-the-rain/1544491232?i=1544491988",
+                      "shazam_url": "https://www.shazam.com/song/1544491988/set-fire-to-the-rain",
+                      "artist_ids": [
+                        "262836961"
+                      ],
+                      "album_id": "1544491232"
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

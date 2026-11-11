@@ -1,0 +1,1555 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Kraken",
+    "version": "1.0.0",
+    "description": "The Kraken API from API.SH: public Kraken data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Kraken",
+      "description": "8 endpoints (finance & crypto)",
+      "x-slug": "kraken",
+      "x-domains": [
+        "kraken.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kraken/v1/assets": {
+      "get": {
+        "operationId": "krakenAssets",
+        "summary": "Kraken assets",
+        "description": "Every asset Kraken lists, or the ones named: Kraken id, class, decimals, collateral value, margin rate and status.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kraken-assets",
+        "tags": [
+          "Kraken"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "asset",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated assets (BTC is read as XBT); empty lists all.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "XBT,ETH"
+          },
+          {
+            "name": "aclass",
+            "in": "query",
+            "required": false,
+            "description": "currency or tokenized_asset.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "currency",
+                "tokenized_asset"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 2,
+                  "items": [
+                    {
+                      "asset": "ETH",
+                      "kraken_id": "XETH",
+                      "class": "currency",
+                      "decimals": 10,
+                      "display_decimals": 5,
+                      "collateral_value": 0.99,
+                      "margin_rate": 0.02,
+                      "status": "enabled"
+                    },
+                    {
+                      "asset": "XBT",
+                      "kraken_id": "XXBT",
+                      "class": "currency",
+                      "decimals": 10,
+                      "display_decimals": 5,
+                      "collateral_value": 0.99,
+                      "margin_rate": 0.01,
+                      "status": "enabled"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kraken/v1/ohlc": {
+      "get": {
+        "operationId": "krakenOhlc",
+        "summary": "Kraken OHLC candles",
+        "description": "A Kraken pair's candles (open, high, low, close, volume-weighted price, volume, trade count), oldest first. Kraken keeps the latest 720 candles of each interval; `since` starts later within them.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kraken-ohlc",
+        "tags": [
+          "Kraken"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "pair",
+            "in": "query",
+            "required": true,
+            "description": "Kraken pair.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "XBTUSD"
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "description": "1m, 5m, 15m, 30m, 1h, 4h, 1d (default), 1w or 15d.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1m",
+                "5m",
+                "15m",
+                "30m",
+                "1h",
+                "4h",
+                "1d",
+                "1w",
+                "15d"
+              ]
+            },
+            "example": "1d"
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "Only candles after this unix time (seconds).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "pair": "XBTUSD",
+                  "kraken_id": "XXBTZUSD",
+                  "interval_minutes": 1440,
+                  "count": 721,
+                  "items": [
+                    {
+                      "time": "2024-11-14T00:00:00.000Z",
+                      "open": 90496.8,
+                      "high": 91780,
+                      "low": 86621.9,
+                      "close": 87313.2,
+                      "vwap": 89304.9,
+                      "volume": 6252.08697742,
+                      "trades": 61715
+                    },
+                    {
+                      "time": "2024-11-15T00:00:00.000Z",
+                      "open": 87314.4,
+                      "high": 91850,
+                      "low": 87135,
+                      "close": 91062,
+                      "vwap": 89507.4,
+                      "volume": 3879.47146166,
+                      "trades": 48562
+                    },
+                    "… 719 more"
+                  ],
+                  "next_since": "1793664000",
+                  "note": "Kraken keeps the latest 720 candles of each interval; `since` pages within them.",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kraken/v1/orderbook": {
+      "get": {
+        "operationId": "krakenOrderbook",
+        "summary": "Kraken order book",
+        "description": "A Kraken pair's order book: bids and asks with price, volume and time per level, best bid and ask and the spread.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kraken-orderbook",
+        "tags": [
+          "Kraken"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "pair",
+            "in": "query",
+            "required": true,
+            "description": "Kraken pair.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "XBTUSD"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Price levels per side, 1-500 (default 100).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "100"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "pair": "XBTUSD",
+                  "kraken_id": "XXBTZUSD",
+                  "best_bid": 77904.2,
+                  "best_ask": 77904.3,
+                  "spread": 0.10000000000582077,
+                  "bids": [
+                    {
+                      "price": 77904.2,
+                      "volume": 0.003,
+                      "time": "2026-11-04T05:53:55.000Z"
+                    },
+                    {
+                      "price": 77903.3,
+                      "volume": 0.176,
+                      "time": "2026-11-04T05:53:52.000Z"
+                    },
+                    "… 98 more"
+                  ],
+                  "asks": [
+                    {
+                      "price": 77904.3,
+                      "volume": 1.452,
+                      "time": "2026-11-04T05:53:54.000Z"
+                    },
+                    {
+                      "price": 77906.1,
+                      "volume": 0.958,
+                      "time": "2026-11-04T05:53:54.000Z"
+                    },
+                    "… 98 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kraken/v1/pairs": {
+      "get": {
+        "operationId": "krakenPairs",
+        "summary": "Kraken pairs",
+        "description": "Every Kraken trading pair with base and quote currency, status, price and volume decimals, minimum order and cost, tick size, leverage levels, margin call and stop levels and the taker and maker fee schedules.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kraken-pairs",
+        "tags": [
+          "Kraken"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "quote",
+            "in": "query",
+            "required": false,
+            "description": "Only pairs quoted in this currency (USD, EUR, XBT ...).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "USD"
+          },
+          {
+            "name": "base",
+            "in": "query",
+            "required": false,
+            "description": "Only pairs of this base currency.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only pair names containing this text.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "applied_filters": {
+                    "quote": "USD",
+                    "base": null,
+                    "q": null
+                  },
+                  "count": 682,
+                  "items": [
+                    {
+                      "pair": "0GUSD",
+                      "kraken_id": "0GUSD",
+                      "ws_name": "0G/USD",
+                      "base": "0G",
+                      "quote": "USD",
+                      "status": "online",
+                      "price_decimals": 3,
+                      "volume_decimals": 5,
+                      "cost_decimals": 5,
+                      "order_min": 30,
+                      "cost_min": 0.5,
+                      "tick_size": 0.001,
+                      "leverage_buy": [
+                        2,
+                        3
+                      ],
+                      "leverage_sell": [],
+                      "margin_call": 80,
+                      "margin_stop": 40,
+                      "fees_taker": [],
+                      "fees_maker": [],
+                      "fee_volume_currency": "ZUSD"
+                    },
+                    {
+                      "pair": "1INCHUSD",
+                      "kraken_id": "1INCHUSD",
+                      "ws_name": "1INCH/USD",
+                      "base": "1INCH",
+                      "quote": "USD",
+                      "status": "online",
+                      "price_decimals": 4,
+                      "volume_decimals": 8,
+                      "cost_decimals": 5,
+                      "order_min": 60,
+                      "cost_min": 0.5,
+                      "tick_size": 0.0001,
+                      "leverage_buy": [],
+                      "leverage_sell": [],
+                      "margin_call": 80,
+                      "margin_stop": 40,
+                      "fees_taker": [],
+                      "fees_maker": [],
+                      "fee_volume_currency": "ZUSD"
+                    },
+                    "… 680 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kraken/v1/spread": {
+      "get": {
+        "operationId": "krakenSpread",
+        "summary": "Kraken recent spreads",
+        "description": "Recent best bid and ask snapshots of a pair (about the last 200): time, bid, ask, spread and sizes. Pass `next_since` back as `since` to get only newer snapshots.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kraken-spread",
+        "tags": [
+          "Kraken"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "pair",
+            "in": "query",
+            "required": true,
+            "description": "Pair (XBTUSD, ETHEUR...).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "XBTUSD"
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "Unix time, or next_since from the previous call.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "pair": "XBTUSD",
+                  "kraken_id": "XXBTZUSD",
+                  "count": 250,
+                  "items": [
+                    {
+                      "time": "2026-11-03T12:07:20.000Z",
+                      "bid": 76944.6,
+                      "ask": 76945,
+                      "spread": 0.4,
+                      "bid_volume": null,
+                      "ask_volume": null
+                    },
+                    {
+                      "time": "2026-11-03T12:07:20.000Z",
+                      "bid": 76937.6,
+                      "ask": 76944.7,
+                      "spread": 7.1,
+                      "bid_volume": null,
+                      "ask_volume": null
+                    },
+                    "… 248 more"
+                  ],
+                  "next_since": "1793708002",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kraken/v1/system-status": {
+      "get": {
+        "operationId": "krakenSystemStatus",
+        "summary": "Kraken exchange status and time",
+        "description": "The exchange's trading status (online, maintenance, cancel_only, post_only) and its server time.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kraken-system-status",
+        "tags": [
+          "Kraken"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "status": "online",
+                  "status_timestamp": "2026-11-04T06:06:59Z",
+                  "server_time": "2026-11-04T06:06:58.000Z",
+                  "server_unixtime": 1793772418,
+                  "server_rfc1123": "Wed, 04 Nov 26 06:06:58 +0000",
+                  "meaning": "operating normally",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kraken/v1/ticker": {
+      "get": {
+        "operationId": "krakenTicker",
+        "summary": "Kraken ticker",
+        "description": "A Kraken pair's last price, best bid and ask with volumes, today's and 24-hour open, high, low, volume, volume-weighted average price and trade count. Give several pairs at once with `pairs`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kraken-ticker",
+        "tags": [
+          "Kraken"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "pair",
+            "in": "query",
+            "required": false,
+            "description": "Kraken pair, e.g. XBTUSD (bitcoin is XBT), ETHEUR, SOLUSD. Or give `pairs`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "XBTUSD"
+          },
+          {
+            "name": "pairs",
+            "in": "query",
+            "required": false,
+            "description": "Up to 50 pairs, comma-separated, instead of `pair`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "pair": "XBTUSD",
+                  "kraken_id": "XXBTZUSD",
+                  "price": 77707.8,
+                  "last_trade_volume": 0.00006,
+                  "ask": 77714.3,
+                  "ask_volume": 1,
+                  "bid": 77714.2,
+                  "bid_volume": 1,
+                  "open_today": 77331.7,
+                  "high_today": 78110.5,
+                  "high_24h": 78110.5,
+                  "low_today": 75625,
+                  "low_24h": 75625,
+                  "volume_today": 1228.1111565,
+                  "volume_24h": 3001.02843661,
+                  "vwap_today": 76710.26474,
+                  "vwap_24h": 77092.47774,
+                  "trades_today": 60595,
+                  "trades_24h": 168452,
+                  "change_percent_today": 0.48634647886960436,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/kraken/v1/trades": {
+      "get": {
+        "operationId": "krakenTrades",
+        "summary": "Kraken trades",
+        "description": "A Kraken pair's trades: trade id, time, price, volume, side (buy or sell) and order type (market or limit). Without `since`, the latest trades; with `since` (unix time), trades from then on, paged with `next_since` (null on the last page).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/kraken-trades",
+        "tags": [
+          "Kraken"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "pair",
+            "in": "query",
+            "required": true,
+            "description": "Kraken pair.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "XBTUSD"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Trades, 1-1000 (default 100).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "100"
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "Unix time to start from, or next_since from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "pair": "XBTUSD",
+                  "kraken_id": "XXBTZUSD",
+                  "count": 100,
+                  "items": [
+                    {
+                      "trade_id": 114168730,
+                      "time": "2026-11-04T06:09:46.901Z",
+                      "price": 77707.7,
+                      "volume": 0.00030267,
+                      "side": "sell",
+                      "order_type": "limit",
+                      "misc": null
+                    },
+                    {
+                      "trade_id": 114168731,
+                      "time": "2026-11-04T06:09:46.945Z",
+                      "price": 77707.7,
+                      "volume": 0.00009733,
+                      "side": "sell",
+                      "order_type": "limit",
+                      "misc": null
+                    },
+                    "… 98 more"
+                  ],
+                  "next_since": null,
+                  "note": "Without `since` this is the latest trades; with `since` (unix time) trades from that moment forward, paged by next_since.",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

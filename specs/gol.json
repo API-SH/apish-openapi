@@ -1,0 +1,1418 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: GOL",
+    "version": "1.0.0",
+    "description": "The GOL API from API.SH: public GOL data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "GOL",
+      "description": "4 endpoints (travel & events)",
+      "x-slug": "gol",
+      "x-domains": [
+        "voegol.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gol/v1/airports": {
+      "get": {
+        "operationId": "golAirports",
+        "summary": "GOL airports",
+        "description": "The airports GOL's booking site knows (GOL's own network and partner airports): IATA and ICAO codes, city code, names in Portuguese, English and Spanish, country, coordinates, whether GOL operates there, whether it can be booked and has online check-in, and the station's contact email. Search by code or name, filter by country.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gol-airports",
+        "tags": [
+          "GOL"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Airport code or part of its name (accents optional), e.g. REC or recife.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "recife"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter country code, e.g. BR.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "operated_by_gol",
+            "in": "query",
+            "required": false,
+            "description": "true: only airports GOL flies to itself; false: partner airports only.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 1,
+                  "q": "recife",
+                  "airports": [
+                    {
+                      "code": "REC",
+                      "icao": "SBRF",
+                      "city_code": null,
+                      "name": "Recife",
+                      "name_en": "Recife",
+                      "name_es": "Recife",
+                      "country": "BR",
+                      "latitude": -8.12583,
+                      "longitude": -34.92389,
+                      "operated_by_gol": true,
+                      "bookable": true,
+                      "online_checkin": true,
+                      "contact_email": "name@example.com"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gol/v1/calendar": {
+      "get": {
+        "operationId": "golCalendar",
+        "summary": "GOL fare calendar",
+        "description": "The cheapest GOL fare for each day from 15 days before to 15 days after the given date: total, fare and taxes in BRL for the passengers given, the flight behind that price and the seats left at it, plus the cheapest day. With `return_date`, the outbound day is fixed and the calendar covers the return days around `return_date` (round-trip totals).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gol-calendar",
+        "tags": [
+          "GOL"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "origin",
+            "in": "query",
+            "required": true,
+            "description": "Departure airport code (IATA), e.g. GRU, CGH, BSB.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "GRU"
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": true,
+            "description": "Arrival airport code (IATA).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "SSA"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Departure day, YYYY-MM-DD. Give this or `days_ahead`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days_ahead",
+            "in": "query",
+            "required": false,
+            "description": "Departure day as days from today (0-360), when `date` is not given.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "60"
+          },
+          {
+            "name": "return_date",
+            "in": "query",
+            "required": false,
+            "description": "Return day, YYYY-MM-DD, for a round trip.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "return_days",
+            "in": "query",
+            "required": false,
+            "description": "Return day as days after the departure day, when `return_date` is not given.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "description": "Adults (1-9, default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "required": false,
+            "description": "Children 2-11 (0-8, default 0).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "infants",
+            "in": "query",
+            "required": false,
+            "description": "Infants under 2 on a lap (default 0; at most one per adult).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "origin": "GRU",
+                  "destination": "SSA",
+                  "date": "2027-01-03",
+                  "return_date": null,
+                  "passengers": {
+                    "adults": 1,
+                    "children": 0,
+                    "infants": 0
+                  },
+                  "count": 31,
+                  "cheapest_date": "2027-01-09",
+                  "cheapest_total": 707.65,
+                  "days": [
+                    {
+                      "date": "2026-12-19",
+                      "total": 1072.65,
+                      "fare": 1036.9,
+                      "taxes": 35.75,
+                      "currency": "BRL",
+                      "seats_remaining": 9,
+                      "segments": [
+                        {
+                          "flight_number": "1378",
+                          "airline": "G3",
+                          "origin": "GRU",
+                          "destination": "GIG",
+                          "departure": "2026-12-19T19:15:00",
+                          "arrival": "2026-12-19T20:20:00"
+                        },
+                        {
+                          "flight_number": "1232",
+                          "airline": "G3",
+                          "origin": "GIG",
+                          "destination": "SSA",
+                          "departure": "2026-12-19T21:20:00",
+                          "arrival": "2026-12-19T23:20:00"
+                        }
+                      ]
+                    },
+                    {
+                      "date": "2026-12-20",
+                      "total": 1072.65,
+                      "fare": 1036.9,
+                      "taxes": 35.75,
+                      "currency": "BRL",
+                      "seats_remaining": 9,
+                      "segments": [
+                        {
+                          "flight_number": "1376",
+                          "airline": "G3",
+                          "origin": "GRU",
+                          "destination": "GIG",
+                          "departure": "2026-12-20T13:40:00",
+                          "arrival": "2026-12-20T14:40:00"
+                        },
+                        {
+                          "flight_number": "1736",
+                          "airline": "G3",
+                          "origin": "GIG",
+                          "destination": "SSA",
+                          "departure": "2026-12-20T15:50:00",
+                          "arrival": "2026-12-20T17:55:00"
+                        }
+                      ]
+                    },
+                    "… 29 more"
+                  ],
+                  "notices": [],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gol/v1/flight-delays": {
+      "get": {
+        "operationId": "golFlightDelays",
+        "summary": "Flight delay and cancellation rates",
+        "description": "The delay and cancellation rates per scheduled flight that GOL shows on its booking pages, for GOL and every other airline flying in Brazil: airline, flight number, route, the number of recent operations counted, the cancellation rate and the share of flights delayed more than 30 and 60 minutes (percent). Filter by airline, flight number, origin or destination. 100 rows per page; pass `next_page` back as `page` (null on the last page).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gol-flight-delays",
+        "tags": [
+          "GOL"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "airline",
+            "in": "query",
+            "required": false,
+            "description": "Three-letter ICAO airline code, e.g. GLO (GOL), AZU (Azul), TAM (LATAM Brasil), TAP.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "GLO"
+          },
+          {
+            "name": "flight_number",
+            "in": "query",
+            "required": false,
+            "description": "Flight number digits, e.g. 1560.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "description": "Departure airport code (IATA).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "GRU"
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": false,
+            "description": "Arrival airport code (IATA).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "applied_filters": {
+                    "airline": "GLO",
+                    "origin": "GRU"
+                  },
+                  "total": 119,
+                  "page": 1,
+                  "count": 100,
+                  "next_page": 2,
+                  "flights": [
+                    {
+                      "airline_code": "GLO",
+                      "airline": "GOL LINHAS AÉREAS S.A. (EX- VRG LINHAS AÉREAS S.A.)",
+                      "flight_number": "1128",
+                      "origin": "GRU",
+                      "destination": "CAC",
+                      "flights_counted": 30,
+                      "cancel_rate_pct": 13.33,
+                      "delay_over_30min_pct": 7.69,
+                      "delay_over_60min_pct": 3.85
+                    },
+                    {
+                      "airline_code": "GLO",
+                      "airline": "GOL LINHAS AÉREAS S.A. (EX- VRG LINHAS AÉREAS S.A.)",
+                      "flight_number": "1140",
+                      "origin": "GRU",
+                      "destination": "FLN",
+                      "flights_counted": 30,
+                      "cancel_rate_pct": 0,
+                      "delay_over_30min_pct": 13.33,
+                      "delay_over_60min_pct": 3.33
+                    },
+                    "… 98 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/gol/v1/flights": {
+      "get": {
+        "operationId": "golFlights",
+        "summary": "GOL flight search",
+        "description": "GOL's fares between two airports on a day, as the booking site lists them: every flight or connection with departure and arrival (local times), stops, duration, flight numbers, aircraft, and each fare family (Light, Classic, Flex and others) with total, fare and taxes in BRL per traveller (as the site shows them). Also returns the lowest fare on the nearby days (`nearby_dates`) and nearby destination airports the site suggests. A round trip (`return_date`) lists the outbound flights priced for the round trip. Filter by stops or fare family and sort by price, duration or departure. Airports outside the GOL network answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/gol-flights",
+        "tags": [
+          "GOL"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "return_options",
+            "in": "query",
+            "required": false,
+            "description": "With return_date: also list the return day's flights in `return_offers` (fares as sold one way). Default true; false skips them.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": true,
+            "description": "Departure airport code (IATA), e.g. GRU, CGH, BSB.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "GRU"
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": true,
+            "description": "Arrival airport code (IATA).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "SSA"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Departure day, YYYY-MM-DD. Give this or `days_ahead`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days_ahead",
+            "in": "query",
+            "required": false,
+            "description": "Departure day as days from today (0-360), when `date` is not given.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "60"
+          },
+          {
+            "name": "return_date",
+            "in": "query",
+            "required": false,
+            "description": "Return day, YYYY-MM-DD, for a round trip.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "return_days",
+            "in": "query",
+            "required": false,
+            "description": "Return day as days after the departure day, when `return_date` is not given.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "description": "Adults (1-9, default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "children",
+            "in": "query",
+            "required": false,
+            "description": "Children 2-11 (0-8, default 0).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "infants",
+            "in": "query",
+            "required": false,
+            "description": "Infants under 2 on a lap (default 0; at most one per adult).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order of the offers (default price).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "price",
+                "duration",
+                "departure"
+              ]
+            }
+          },
+          {
+            "name": "max_stops",
+            "in": "query",
+            "required": false,
+            "description": "Only offers with at most this many stops (0 = direct).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Only these fare families, comma separated codes (LI = Light, CL = Classic, FL = Flex; the `brands` field lists the names).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "promo_code",
+            "in": "query",
+            "required": false,
+            "description": "A GOL promo code, applied as the site applies it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "origin": "GRU",
+                  "destination": "SSA",
+                  "date": "2027-01-03",
+                  "return_date": null,
+                  "trip": "one_way",
+                  "passengers": {
+                    "adults": 1,
+                    "children": 0,
+                    "infants": 0
+                  },
+                  "sort": "price",
+                  "applied_filters": {},
+                  "search_id": "929c0244-8855-49eb-8486-421bb75a9e67",
+                  "total": 36,
+                  "count": 36,
+                  "offers": [
+                    {
+                      "origin": "GRU",
+                      "destination": "SSA",
+                      "departure": "2027-01-03T17:00:00",
+                      "arrival": "2027-01-03T19:15:00",
+                      "stops": 0,
+                      "duration_minutes": 135,
+                      "international": false,
+                      "airlines": [
+                        "G3"
+                      ],
+                      "operating_airlines": [
+                        "G3"
+                      ],
+                      "flight_numbers": [
+                        "G31356"
+                      ],
+                      "lowest_price": 822.65,
+                      "segments": [
+                        {
+                          "origin": "GRU",
+                          "destination": "SSA",
+                          "departure": "2027-01-03T17:00:00",
+                          "arrival": "2027-01-03T19:15:00",
+                          "duration_minutes": 135,
+                          "flight_number": 1356,
+                          "airline": "G3",
+                          "operating_flight_number": 1356,
+                          "operating_airline": "G3",
+                          "aircraft": "738",
+                          "aircraft_name": null,
+                          "lease_text": null
+                        }
+                      ],
+                      "fares": [
+                        {
+                          "brand_id": "LI",
+                          "brand": "Light",
+                          "fare_basis": "NNOAAG2J",
+                          "currency": "BRL",
+                          "total": 822.65,
+                          "fare": 786.9,
+                          "taxes": 35.75,
+                          "total_without_discount": null,
+                          "has_discount": false,
+                          "basket_id": 60596978
+                        },
+                        {
+                          "brand_id": "CL",
+                          "brand": "Classic",
+                          "fare_basis": "NNOAAG3J",
+                          "currency": "BRL",
+                          "total": 941.65,
+                          "fare": 905.9,
+                          "taxes": 35.75,
+                          "total_without_discount": null,
+                          "has_discount": false,
+                          "basket_id": -1534748703
+                        },
+                        "… 1 more"
+                      ],
+                      "nearby_destinations": [
+                        "FEC",
+                        "IOS",
+                        "… 1 more"
+                      ],
+                      "partner_tag": null
+                    },
+                    {
+                      "origin": "GRU",
+                      "destination": "SSA",
+                      "departure": "2027-01-03T21:55:00",
+                      "arrival": "2027-01-04T00:10:00",
+                      "stops": 0,
+                      "duration_minutes": 135,
+                      "international": false,
+                      "airlines": [
+                        "G3"
+                      ],
+                      "operating_airlines": [
+                        "G3"
+                      ],
+                      "flight_numbers": [
+                        "G31696"
+                      ],
+                      "lowest_price": 822.65,
+                      "segments": [
+                        {
+                          "origin": "GRU",
+                          "destination": "SSA",
+                          "departure": "2027-01-03T21:55:00",
+                          "arrival": "2027-01-04T00:10:00",
+                          "duration_minutes": 135,
+                          "flight_number": 1696,
+                          "airline": "G3",
+                          "operating_flight_number": 1696,
+                          "operating_airline": "G3",
+                          "aircraft": "738",
+                          "aircraft_name": null,
+                          "lease_text": null
+                        }
+                      ],
+                      "fares": [
+                        {
+                          "brand_id": "LI",
+                          "brand": "Light",
+                          "fare_basis": "NNOAAG2J",
+                          "currency": "BRL",
+                          "total": 822.65,
+                          "fare": 786.9,
+                          "taxes": 35.75,
+                          "total_without_discount": null,
+                          "has_discount": false,
+                          "basket_id": -64806716
+                        },
+                        {
+                          "brand_id": "CL",
+                          "brand": "Classic",
+                          "fare_basis": "NNOAAG3J",
+                          "currency": "BRL",
+                          "total": 941.65,
+                          "fare": 905.9,
+                          "taxes": 35.75,
+                          "total_without_discount": null,
+                          "has_discount": false,
+                          "basket_id": -1660152397
+                        },
+                        "… 1 more"
+                      ],
+                      "nearby_destinations": [
+                        "FEC",
+                        "IOS",
+                        "… 1 more"
+                      ],
+                      "partner_tag": null
+                    },
+                    "… 34 more"
+                  ],
+                  "nearby_dates": [
+                    {
+                      "date": "2026-12-31",
+                      "departure": "2026-12-31T11:40:00",
+                      "lowest_price": 822.65
+                    },
+                    {
+                      "date": "2027-01-01",
+                      "departure": "2027-01-01T17:00:00",
+                      "lowest_price": 838.65
+                    },
+                    "… 5 more"
+                  ],
+                  "brands": {
+                    "LI": "Light",
+                    "CL": "Classic",
+                    "FL": "Flex"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

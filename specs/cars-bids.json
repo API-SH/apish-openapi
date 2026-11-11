@@ -1,0 +1,946 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Cars & Bids",
+    "version": "1.0.0",
+    "description": "The Cars & Bids API from API.SH: public Cars & Bids data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Cars & Bids",
+      "description": "2 endpoints (automotive)",
+      "x-slug": "cars-bids",
+      "x-domains": [
+        "carsandbids.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/carsandbids/v1/auction": {
+      "get": {
+        "operationId": "carsandbidsAuction",
+        "summary": "Cars & Bids auction",
+        "description": "One Cars & Bids auction: status, current bid or sale amount, start and end time, bid, comment, watcher and view counts, VIN, make, model, year, mileage, body, engine, drivetrain, transmission, colours, title status, location, highlights, the write-up sections (equipment, modifications, known flaws, service history, ownership...), history report link, finance estimate, video titles, all photo URLs by group and the recent bids (amounts and times). Dealers are named; a private party seller is only marked as such. `latest=1` with the auctions filters opens the first current auction.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/carsandbids-auction",
+        "tags": [
+          "Cars & Bids"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A carsandbids.com/auctions/<id>/... link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "The auction id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "1: open the first auction /carsandbids/v1/auctions returns for the other params.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "With latest=1: live or closed.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "3LYDkLpW",
+                  "url": "https://carsandbids.com/auctions/3LYDkLpW/2026-porsche-911-gt3-weissach",
+                  "title": "2026 Porsche 911 GT3 Weissach",
+                  "subtitle": "6-Speed Manual, Oak Green Metallic Neo, $55k+ in Options, Unmodified",
+                  "status": "live",
+                  "current_bid": 272000,
+                  "sale_amount": null,
+                  "currency": "USD",
+                  "no_reserve": false,
+                  "canceled_message": null,
+                  "starts_at": "2026-10-28T17:00:00.000+00:00",
+                  "ends_at": "2026-11-04T18:30:00.000+00:00",
+                  "bids": 15,
+                  "comments": 34,
+                  "questions": 0,
+                  "watchers": 1140,
+                  "views": 15724,
+                  "make": "Porsche",
+                  "model": "992 911",
+                  "year": 2026,
+                  "make_slug": "porsche",
+                  "model_slug": "992-911",
+                  "vin": "WP0AC2A9XTS287344",
+                  "mileage": 1800,
+                  "mileage_text": null,
+                  "body_style": "coupe",
+                  "engine": "4.0L Flat-6",
+                  "drivetrain": "RWD",
+                  "transmission": "manual",
+                  "transmission_details": "6-Speed",
+                  "exterior_color": "Oak Green Metallic Neo",
+                  "interior_color": "Black",
+                  "title_status": "Clean (TX)",
+                  "location": "Hayward, CA 94544",
+                  "highlights": [
+                    "Clean Carfax history report",
+                    "Front axle lift system",
+                    "… 1 more"
+                  ],
+                  "not_a_car": false,
+                  "history_report": {
+                    "vendor": "carfax",
+                    "url": "https://www.carfax.com/vehiclehistory/ar20/YiAp3dvzfw8hZa2CkEre68tYbImVlBbbQ6tXwRktX5TYgFf9ISeanI6PwhvIUn6xFTF7qD6_wu-33_AQdYelD23nZtHASJ81W…",
+                    "expires": "2027-03-13T15:07:51.000+00:00"
+                  },
+                  "inspection_report": null,
+                  "seller": {
+                    "type": "dealer",
+                    "details": null,
+                    "name": "CSAuto",
+                    "certified": false
+                  },
+                  "sections": {
+                    "highlights": "THIS... is a 2026 Porsche 911 GT3 Weissach, finished in Oak Green Metallic Neo with a black interior.\n- This 911 features the desirable 6-sp…",
+                    "equipment": "This 911 is a GT3 model. A window sticker is provided in the photo gallery, and a partial list of notable equipment reported by the selling …",
+                    "modifications": null,
+                    "known_flaws": "- Scuff on front splitter",
+                    "recent_service_history": "The attached `Carfax` history report shows that the following services have been performed:\n- May 2026 (1,492 miles): Engine oil and filter …",
+                    "other_items": "- 2 keys\n- DME report\n- OEM car cover and bag\n- OEM battery tender",
+                    "ownership_history": "The selling dealer reportedly acquired this 911 earlier in 2026.",
+                    "seller_notes": "- This 911 is offered with the remainder of its factory warranty, valid until October 2029 or 50,000 miles. \n- The tires on this 911 carry 2…",
+                    "dougs_take": null
+                  },
+                  "…": "8 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/carsandbids/v1/auctions": {
+      "get": {
+        "operationId": "carsandbidsAuctions",
+        "summary": "Cars & Bids auctions",
+        "description": "Live Cars & Bids auctions or past results with the site's filters: words, make and model, transmission, body style, year range and no-reserve, plus the site's sorts and paging (50 per page). Each auction has id, link, title, subtitle, status, current bid, sale amount, end time, no-reserve and inspection flags, location, transmission, mileage, highlights and image. Pass `next_page` back as `page`; null on the last page. Each auction also has `year` (the model year from its title).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/carsandbids-auctions",
+        "tags": [
+          "Cars & Bids"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Live auctions or past results.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "live",
+                "closed"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Words to search for.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "make",
+            "in": "query",
+            "required": false,
+            "description": "Make (porsche, bmw...).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "porsche"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "description": "Model (911...). Needs make.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transmission",
+            "in": "query",
+            "required": false,
+            "description": "Transmission.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "automatic",
+                "manual"
+              ]
+            }
+          },
+          {
+            "name": "body_style",
+            "in": "query",
+            "required": false,
+            "description": "Body style.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "coupe",
+                "convertible",
+                "hatchback",
+                "sedan",
+                "suv",
+                "truck",
+                "van",
+                "wagon"
+              ]
+            }
+          },
+          {
+            "name": "year_min",
+            "in": "query",
+            "required": false,
+            "description": "Earliest year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "year_max",
+            "in": "query",
+            "required": false,
+            "description": "Latest year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "no_reserve",
+            "in": "query",
+            "required": false,
+            "description": "true: live no-reserve auctions first.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order. Live: ending_soon, newly_listed, no_reserve, lowest_mileage, newest_cars, oldest_cars. Closed: recently_ended, lowest_mileage, highest_mileage, lowest_price, highest_price.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-based). Pass `next_page` back as `page`; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "status": "live",
+                  "total": 30,
+                  "page": 1,
+                  "page_size": 50,
+                  "total_pages": 1,
+                  "next_page": null,
+                  "count": 30,
+                  "applied_filters": {
+                    "q": null,
+                    "make": "porsche",
+                    "model": null,
+                    "transmission": null,
+                    "body_style": null,
+                    "year_min": null,
+                    "year_max": null,
+                    "sort": "ending_soon",
+                    "no_reserve": null
+                  },
+                  "search_url": "https://carsandbids.com/search/porsche",
+                  "auctions": [
+                    {
+                      "id": "3LYDkLpW",
+                      "url": "https://carsandbids.com/auctions/3LYDkLpW/2026-porsche-911-gt3-weissach",
+                      "title": "2026 Porsche 911 GT3 Weissach",
+                      "subtitle": "6-Speed Manual, Oak Green Metallic Neo, $55k+ in Options, Unmodified",
+                      "year": 2026,
+                      "status": "live",
+                      "current_bid": 272000,
+                      "sale_amount": null,
+                      "currency": "USD",
+                      "ends_at": "2026-11-04T18:30:00.000+00:00",
+                      "no_reserve": false,
+                      "has_inspection": false,
+                      "featured": true,
+                      "notable": false,
+                      "location": "Hayward, CA 94544",
+                      "transmission": "manual",
+                      "mileage": 1800,
+                      "mileage_text": "1,800 Miles",
+                      "highlights": [],
+                      "image": "https://media.carsandbids.com/9004500a220bf3a3d455d15ee052cf8c332606f8/photos/Porsche911GT32026008/edit/9jM7L.jpg"
+                    },
+                    {
+                      "id": "9AWVD0Jw",
+                      "url": "https://carsandbids.com/auctions/9AWVD0Jw/2011-porsche-cayenne-s",
+                      "title": "2011 Porsche Cayenne S",
+                      "subtitle": "V8 Power, AWD, 68k Miles, Warm Climate-Owned",
+                      "year": 2011,
+                      "status": "live",
+                      "current_bid": 6058,
+                      "sale_amount": null,
+                      "currency": "USD",
+                      "ends_at": "2026-11-04T19:27:00.000+00:00",
+                      "no_reserve": false,
+                      "has_inspection": false,
+                      "featured": false,
+                      "notable": false,
+                      "location": "San Antonio, TX 78229",
+                      "transmission": "automatic",
+                      "mileage": 68100,
+                      "mileage_text": "68,100 Miles",
+                      "highlights": [],
+                      "image": "https://media.carsandbids.com/1477bbe21e8d6b5e719c7c3ccab577fd47dd8cc3/photos/KVqOAYJ0-BaJQaau/edit/OduyU.jpg"
+                    },
+                    "… 28 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

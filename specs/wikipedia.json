@@ -1,0 +1,1825 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Wikipedia",
+    "version": "1.0.0",
+    "description": "The Wikipedia API from API.SH: public Wikipedia data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Wikipedia",
+      "description": "7 endpoints (reference)",
+      "x-slug": "wikipedia",
+      "x-domains": [
+        "wikipedia.org"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wikipedia/v1/autocomplete": {
+      "get": {
+        "operationId": "wikipediaAutocomplete",
+        "summary": "Wikipedia title suggestions",
+        "description": "Article titles that start with what was typed, in the site's suggestion order: title, page id, short description, link and thumbnail, plus any redirects that were followed.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikipedia-autocomplete",
+        "tags": [
+          "Wikipedia"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The start of a title.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "albert ein"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language edition (default en), e.g. de, fr, ja.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Suggestions (default 10, max 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "albert ein",
+                  "lang": "en",
+                  "count": 10,
+                  "suggestions": [
+                    {
+                      "title": "Albert Einstein",
+                      "page_id": 736,
+                      "description": "German-born theoretical physicist (1879–1955)",
+                      "url": "https://en.wikipedia.org/wiki/Albert_Einstein",
+                      "thumbnail": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/Albert_Einstein_Head_cleaned.jpg/250px-Albert_Einstein_Head_cleaned.jpg?utm_source=…"
+                    },
+                    {
+                      "title": "Albert Einstein College of Medicine",
+                      "page_id": 319759,
+                      "description": "Private medical school in New York City",
+                      "url": "https://en.wikipedia.org/wiki/Albert_Einstein_College_of_Medicine",
+                      "thumbnail": null
+                    },
+                    "… 8 more"
+                  ],
+                  "redirects": [],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wikipedia/v1/category": {
+      "get": {
+        "operationId": "wikipediaCategory",
+        "summary": "Wikipedia category members",
+        "description": "The pages, subcategories and files in a category, alphabetically or by when they were added: title, page id, namespace, type, date added, sort prefix and link, with the category's totals. Pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikipedia-category",
+        "tags": [
+          "Wikipedia"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "description": "Category name (Physicists or Category:Physicists) or its link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Nobel laureates in Physics"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language edition (default en), e.g. de, fr, ja.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: page, subcat, file (default all three).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "sortkey = alphabetical (default), timestamp = when added.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sortkey",
+                "timestamp"
+              ]
+            }
+          },
+          {
+            "name": "dir",
+            "in": "query",
+            "required": false,
+            "description": "asc (default) or desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Members per page (default 100, max 500).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_cursor` back to get the next page; null on the last page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": "Category:Nobel laureates in Physics",
+                  "lang": "en",
+                  "url": "https://en.wikipedia.org/wiki/Category:Nobel_laureates_in_Physics",
+                  "totals": {
+                    "pages": 230,
+                    "subcats": 3,
+                    "files": 0,
+                    "size": 233
+                  },
+                  "type": [
+                    "page",
+                    "subcat",
+                    "… 1 more"
+                  ],
+                  "sort": "sortkey",
+                  "dir": "asc",
+                  "count": 100,
+                  "next_cursor": "eyJjbWNvbnRpbnVlIjoicGFnZXwzODUyNDA0ZTMyMDYwNDRjNTI0ZTRlMzI0MDQwMDQyYTQwMmE0NDAzMDY0YzUyNGU0ZTMyNDA0MDA0MmE0MDJhNDQwNDM4NTI0MDRlMzIwMTI1MDkw…",
+                  "members": [
+                    {
+                      "title": "List of Nobel laureates in Physics",
+                      "page_id": 19679192,
+                      "namespace": 0,
+                      "type": "page",
+                      "added": "2025-06-16T20:19:34Z",
+                      "sort_prefix": " ",
+                      "url": "https://en.wikipedia.org/wiki/List_of_Nobel_laureates_in_Physics"
+                    },
+                    {
+                      "title": "Alexei Abrikosov (physicist)",
+                      "page_id": 339220,
+                      "namespace": 0,
+                      "type": "page",
+                      "added": "2025-06-16T13:26:53Z",
+                      "sort_prefix": "Abrikosov, Alexei Alexeyevich",
+                      "url": "https://en.wikipedia.org/wiki/Alexei_Abrikosov_(physicist)"
+                    },
+                    "… 98 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wikipedia/v1/page": {
+      "get": {
+        "operationId": "wikipediaPage",
+        "summary": "Wikipedia article (summary, infobox, sections, links)",
+        "description": "One Wikipedia article in any language edition: title, short description, lead summary (plain text), Wikidata id, main image and thumbnail, coordinates, infobox type and key/values (cleaned text), section outline, categories, up to 500 linked articles, image files, language versions with URLs, last edit time and size. Redirects are followed (`redirected_from`). `last_edited` is the time of the latest revision; `page_views` has the daily views of the last 60 days with their total and daily average. `include=text` adds `text`, the whole article as plain text with `== Section ==` headings.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikipedia-page",
+        "tags": [
+          "Wikipedia"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "description": "Article title (spaces or underscores). Use `title` or `url`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Albert Einstein"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "Wikipedia article URL; its language wins over `lang`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language edition code (default en), e.g. de, fr, es, ja.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "en"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "description": "`text`: also return the full article text (costs extra).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "text"
+              ]
+            }
+          },
+          {
+            "name": "parts",
+            "in": "query",
+            "required": false,
+            "description": "Return only these parts of the page, comma-separated (title, page_id, lang and url always come back): `summary`, `ids`, `images`, `coordinates`, `page_views`, `text`, `infobox`, `sections`, `categories`, `links`, `languages`, `raw`. Default: everything except `text`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "title": "Eiffel Tower",
+                  "page_id": 9232,
+                  "lang": "en",
+                  "url": "https://en.wikipedia.org/wiki/Eiffel_Tower",
+                  "description": "Tower in Paris, France",
+                  "summary": "The Eiffel Tower (  EYE-fəl; French: Tour Eiffel [tuʁ ɛfɛl] ) is a lattice tower on the Champ de Mars in Paris, France. It is named after th…",
+                  "wikidata_id": "Q243",
+                  "short_description": "Tower in Paris, France",
+                  "disambiguation": false,
+                  "redirected_from": null,
+                  "thumbnail": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg/960px-Tour_Eiffel_Wikimedia_Commons…",
+                  "image": "https://upload.wikimedia.org/wikipedia/commons/8/85/Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg?utm_source=en.wikipedia.org&utm_campaign…",
+                  "coordinates": {
+                    "lat": 48.85822222,
+                    "lon": 2.2945,
+                    "type": null,
+                    "name": null,
+                    "country": "FR",
+                    "region": "75",
+                    "dim": "1000",
+                    "globe": "earth"
+                  },
+                  "last_modified": "2026-11-03T05:05:02Z",
+                  "length": 97417,
+                  "last_revision_id": 1383208616,
+                  "last_edited": "2026-11-01T15:22:00Z",
+                  "page_views": {
+                    "days": 59,
+                    "total": 254680,
+                    "daily_average": 4317,
+                    "daily": [
+                      {
+                        "date": "2026-09-05",
+                        "views": 2925
+                      },
+                      {
+                        "date": "2026-09-06",
+                        "views": 3290
+                      },
+                      "… 58 more"
+                    ]
+                  },
+                  "infobox_type": "building",
+                  "infobox": {
+                    "name": "Eiffel Tower",
+                    "native_name": "Tour Eiffel",
+                    "logo": "Eiffel Tower logo.svg",
+                    "logo_size": "120",
+                    "image": "Tour Eiffel Wikimedia Commons (cropped).jpg",
+                    "caption": "Seen from the Champ de Mars, 2009",
+                    "highest_start": "1889",
+                    "highest_end": "1930",
+                    "highest_prev": "Washington Monument",
+                    "highest_next": "Chrysler Building",
+                    "location": "7th arrondissement of Paris, France",
+                    "coordinates": "48|51|29.6|N|2|17|40.2|E|region:FR-75",
+                    "mapframe-zoom": "16",
+                    "construction_start_date": "1887-01-28",
+                    "completion_date": "1889-03-31",
+                    "opening_date": "1889-05-15",
+                    "building_type": "Observation tower; Broadcasting tower",
+                    "architectural": "300 m",
+                    "tip": "330 m",
+                    "top_floor": "276 m",
+                    "floor_count": "4 (3 accessible, 1 residual)",
+                    "elevator_count": "8",
+                    "architect": "Stephen Sauvestre",
+                    "structural_engineer": "Maurice Koechlin; Émile Nouguier",
+                    "main_contractor": "Compagnie des Etablissements Eiffel",
+                    "owner": "City of Paris, France",
+                    "operator": "Société d'Exploitation de la Tour Eiffel (SETE)",
+                    "website": "https://www.toureiffel.paris/en",
+                    "references": "I. talleststatus"
+                  },
+                  "sections": [
+                    {
+                      "number": "1",
+                      "level": 2,
+                      "title": "History",
+                      "anchor": "History",
+                      "index": 1
+                    },
+                    {
+                      "number": "1.1",
+                      "level": 3,
+                      "title": "Origin",
+                      "anchor": "Origin",
+                      "index": 2
+                    },
+                    "… 35 more"
+                  ],
+                  "categories": [
+                    "1889 establishments in France",
+                    "Architectural controversies",
+                    "… 17 more"
+                  ],
+                  "links": [
+                    "1900 Summer Olympics",
+                    "1915 Çanakkale Bridge",
+                    "… 498 more"
+                  ],
+                  "links_truncated": true,
+                  "images": [
+                    "File:1000 Eiffel tower night illumination by Pierre Bideau in Paris Photo by Giles Laurent.jpg",
+                    "File:2013 Fireworks on Eiffel Tower 11.jpg",
+                    "… 51 more"
+                  ],
+                  "languages": [
+                    {
+                      "lang": "af",
+                      "title": "Eiffeltoring",
+                      "url": "https://af.wikipedia.org/wiki/Eiffeltoring"
+                    },
+                    {
+                      "lang": "gsw",
+                      "title": "Eiffelturm",
+                      "url": "https://als.wikipedia.org/wiki/Eiffelturm"
+                    },
+                    "… 173 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wikipedia/v1/page/links": {
+      "get": {
+        "operationId": "wikipediaPageLinks",
+        "summary": "Wikipedia article links",
+        "description": "Every link of one kind for an article: the articles it links to, its categories (with hidden flag, sort key and date added), external links, the articles that link to it (backlinks), the templates it uses or the files it shows. Pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikipedia-page-links",
+        "tags": [
+          "Wikipedia"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "description": "Article title or link (https://fr.wikipedia.org/wiki/Tour_Eiffel; the link's language wins).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Albert Einstein"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language edition (default en), e.g. de, fr, ja.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "links (default), categories, external, backlinks, templates or images.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "links",
+                "categories",
+                "external",
+                "backlinks",
+                "templates",
+                "images"
+              ]
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "description": "links/backlinks: comma-separated namespace numbers (default 0 = articles).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Items per page (default 500, max 500).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_cursor` back to get the next page; null on the last page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "title": "Albert Einstein",
+                  "page_id": 736,
+                  "lang": "en",
+                  "type": "links",
+                  "count": 500,
+                  "next_cursor": "eyJwbGNvbnRpbnVlIjoiNzM2fDB8Si5fTWljaGFlbF9Lb3N0ZXJsaXR6IiwiY29udGludWUiOiJ8fCJ9",
+                  "items": [
+                    {
+                      "title": "1901 Nobel Prize in Physics",
+                      "namespace": 0,
+                      "url": "https://en.wikipedia.org/wiki/1901_Nobel_Prize_in_Physics"
+                    },
+                    {
+                      "title": "1921 Nobel Prize in Literature",
+                      "namespace": 0,
+                      "url": "https://en.wikipedia.org/wiki/1921_Nobel_Prize_in_Literature"
+                    },
+                    "… 498 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wikipedia/v1/page/revisions": {
+      "get": {
+        "operationId": "wikipediaPageRevisions",
+        "summary": "Wikipedia revision history",
+        "description": "An article's edit history: revision id, parent id, time, editor (name, id, anonymous flag), minor flag, edit summary, size and size change, tags, checksum, and links to the revision and its diff. Filter by date range or editor. Pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikipedia-page-revisions",
+        "tags": [
+          "Wikipedia"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "description": "Article title or link (https://fr.wikipedia.org/wiki/Tour_Eiffel; the link's language wins).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Albert Einstein"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language edition (default en), e.g. de, fr, ja.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dir",
+            "in": "query",
+            "required": false,
+            "description": "older = newest first (default), newer = oldest first.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "older",
+                "newer"
+              ]
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "description": "Start from this date or time (with dir=older: the newest edit to show).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "description": "Stop at this date or time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "required": false,
+            "description": "Only edits by this user.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exclude_user",
+            "in": "query",
+            "required": false,
+            "description": "Leave out edits by this user.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Revisions per page (default 50, max 500).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_cursor` back to get the next page; null on the last page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "title": "Albert Einstein",
+                  "page_id": 736,
+                  "lang": "en",
+                  "length": 240568,
+                  "last_revision_id": 1383620073,
+                  "dir": "older",
+                  "count": 50,
+                  "next_cursor": "eyJydmNvbnRpbnVlIjoiMjAyNjA3MjAxODIxMDZ8MTM2NTE2ODI3NSIsImNvbnRpbnVlIjoifHxpbmZvIn0=",
+                  "revisions": [
+                    {
+                      "revision_id": 1383620073,
+                      "parent_id": 1383619098,
+                      "timestamp": "2026-11-03T19:04:40Z",
+                      "user": "Sainide",
+                      "user_id": 55087297,
+                      "anonymous": false,
+                      "minor": true,
+                      "comment": "",
+                      "size": 240568,
+                      "size_change": 12,
+                      "tags": [
+                        "visualeditor"
+                      ],
+                      "sha1": "5886d1348b08af2e3d936977dc96eaf04be9d599",
+                      "url": "https://en.wikipedia.org/w/index.php?oldid=1383620073",
+                      "diff_url": "https://en.wikipedia.org/w/index.php?diff=1383620073&oldid=1383619098"
+                    },
+                    {
+                      "revision_id": 1383619098,
+                      "parent_id": 1383618653,
+                      "timestamp": "2026-11-03T18:56:52Z",
+                      "user": "Sainide",
+                      "user_id": 55087297,
+                      "anonymous": false,
+                      "minor": false,
+                      "comment": "",
+                      "size": 240556,
+                      "size_change": -42,
+                      "tags": [
+                        "visualeditor-switched",
+                        "wikieditor"
+                      ],
+                      "sha1": "4c2ac8c63ae28dd352e295921c20461ba703070a",
+                      "url": "https://en.wikipedia.org/w/index.php?oldid=1383619098",
+                      "diff_url": "https://en.wikipedia.org/w/index.php?diff=1383619098&oldid=1383618653"
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wikipedia/v1/pageviews": {
+      "get": {
+        "operationId": "wikipediaPageviews",
+        "summary": "Wikipedia page views",
+        "description": "Daily or monthly views of an article over a date range (default the last 30 days), with the total and average; or, with `top=1`, the most viewed articles of a day or month (rank, title, views, link). Data is ready about a day later.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikipedia-pageviews",
+        "tags": [
+          "Wikipedia"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": false,
+            "description": "Article title or link (not needed with top=1).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Albert Einstein"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language edition (default en), e.g. de, fr, ja.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "description": "First day, YYYY-MM-DD (default 30 days ago).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "description": "Last day, YYYY-MM-DD (default yesterday).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": false,
+            "description": "daily (default) or monthly.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "daily",
+                "monthly"
+              ]
+            }
+          },
+          {
+            "name": "access",
+            "in": "query",
+            "required": false,
+            "description": "Which platform (default all-access).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all-access",
+                "desktop",
+                "mobile-app",
+                "mobile-web"
+              ]
+            }
+          },
+          {
+            "name": "agent",
+            "in": "query",
+            "required": false,
+            "description": "Who viewed (default user = people).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "user",
+                "all-agents",
+                "spider",
+                "automated"
+              ]
+            }
+          },
+          {
+            "name": "top",
+            "in": "query",
+            "required": false,
+            "description": "1 = the most viewed articles instead of one title.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "With top=1: a day (YYYY-MM-DD) or month (YYYY-MM); default two days ago.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "With top=1: articles (default 100, max 1000).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "title": "Albert Einstein",
+                  "lang": "en",
+                  "granularity": "daily",
+                  "access": "all-access",
+                  "agent": "user",
+                  "start": "2026-10-04",
+                  "end": "2026-11-03",
+                  "total": 294188,
+                  "average": 9490,
+                  "count": 31,
+                  "views": [
+                    {
+                      "date": "2026-10-04",
+                      "views": 11126
+                    },
+                    {
+                      "date": "2026-10-05",
+                      "views": 9985
+                    },
+                    "… 29 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wikipedia/v1/search": {
+      "get": {
+        "operationId": "wikipediaSearch",
+        "summary": "Wikipedia full-text search",
+        "description": "Full-text search of one Wikipedia language edition: title, URL, snippet, size, word count and last edit time per article, the total hit count and a spelling suggestion. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikipedia-search",
+        "tags": [
+          "Wikipedia"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search text (Wikipedia search syntax such as intitle: and incategory: works).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "black hole"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language edition code (default en).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "en"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, 1-50 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_offset` from the previous response.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "black hole",
+                  "lang": "en",
+                  "total": 40391,
+                  "suggestion": "black hold",
+                  "count": 20,
+                  "items": [
+                    {
+                      "title": "Black hole",
+                      "page_id": 4650,
+                      "url": "https://en.wikipedia.org/wiki/Black_hole",
+                      "snippet": "A black hole is an astronomical body so compact that its gravity prevents anything, including light, from escaping. Albert Einstein's theory…",
+                      "size": 206788,
+                      "word_count": 21319,
+                      "last_modified": "2026-11-02T08:29:06Z",
+                      "redirect_title": null,
+                      "section_title": "Primordial black holes and the Big Bang"
+                    },
+                    {
+                      "title": "Supermassive black hole",
+                      "page_id": 215706,
+                      "url": "https://en.wikipedia.org/wiki/Supermassive_black_hole",
+                      "snippet": "A supermassive black hole (SMBH or sometimes SBH) is the largest type of black hole, with its mass being on the order of hundreds of thousan…",
+                      "size": 110576,
+                      "word_count": 11475,
+                      "last_modified": "2026-11-01T13:10:31Z",
+                      "redirect_title": null,
+                      "section_title": "Direct-collapse and primordial black holes"
+                    },
+                    "… 18 more"
+                  ],
+                  "offset": 0,
+                  "next_offset": 20,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

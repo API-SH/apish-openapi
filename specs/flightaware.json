@@ -1,0 +1,2451 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: FlightAware",
+    "version": "1.0.0",
+    "description": "The FlightAware API from API.SH: public FlightAware data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "FlightAware",
+      "description": "11 endpoints (travel & events)",
+      "x-slug": "flightaware",
+      "x-domains": [
+        "flightaware.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flightaware/v1/aircraft": {
+      "get": {
+        "operationId": "flightawareAircraft",
+        "summary": "FlightAware aircraft registration",
+        "description": "An aircraft's registration record: year, make and model, category, seats and engines, owner (companies and organisations; private owners are withheld), owner type, airworthiness class and date, serial number, engine, weight, Mode S code (octal and hex), registration status, certificate, last action and expiry dates, and the registry source.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-aircraft",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "registration",
+            "in": "query",
+            "required": true,
+            "description": "Tail number, e.g. `N12114`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "N12114"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "registration": "N12114",
+                  "summary": "1995 BOEING 757-224",
+                  "category": "Fixed wing multi engine",
+                  "seats_engines": "178 seats / 2 engines",
+                  "owner": "UNITED AIRLINES INC",
+                  "owner_location": "CHICAGO , IL, US",
+                  "owner_type": "Corporation",
+                  "airworthiness_class": "Standard/Transport",
+                  "serial_number": "27556",
+                  "engine": "ROLLS-ROYC RB-211 SERIES (Turbo-fan), Thrust: 22000lbs",
+                  "weight": "Over 20,000lbs",
+                  "speed": "Not defined",
+                  "mode_s_octal": "050055001",
+                  "mode_s_hex": "a05a01",
+                  "status": "Assigned",
+                  "certificate_issue_date": "2013-12-23",
+                  "airworthiness_date": "1995-07-15",
+                  "last_action_date": "2023-09-22",
+                  "expiration": "2029-12-31",
+                  "registry_source": "FAA",
+                  "title": "N12114 (1995 BOEING 757-224 owned by UNITED AIRLINES INC) Aircraft Registration",
+                  "flights_url": "https://www.flightaware.com/live/flight/N12114",
+                  "url": "https://www.flightaware.com/resources/registration/N12114",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flightaware/v1/aircraft-type/flights": {
+      "get": {
+        "operationId": "flightawareAircraftTypeFlights",
+        "summary": "FlightAware airborne flights of an aircraft type",
+        "description": "Every airborne flight of one aircraft type (20 per page): flight number, operator, flight id, origin, destination, departure time and estimated arrival. Sort by any column. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-aircraft-type-flights",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "description": "ICAO aircraft type designator, e.g. `A388`, `B789`, `C172`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "A388"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort column.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ident",
+                "type",
+                "origin",
+                "destination",
+                "departure",
+                "arrival"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Sort direction.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Row offset, a multiple of 20.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "type": "A388",
+                  "heading": "Airborne Airbus A380-800 (quad-jet) (A388) Aircraft",
+                  "offset": 0,
+                  "sort": "ident",
+                  "order": "asc",
+                  "count": 20,
+                  "flights": [
+                    {
+                      "ident": "AAR202",
+                      "operator": "Asiana \"Asiana\" (Republic Of Korea)",
+                      "flight_id": "AAR202-1793763020-schedule-927p:0",
+                      "url": "https://www.flightaware.com/live/flight/id/AAR202-1793763020-schedule-927p%3a0",
+                      "aircraft_type": "A388",
+                      "aircraft_type_name": "Airbus A380-800 (quad-jet)",
+                      "origin": {
+                        "name": "Incheon Intl",
+                        "location": "Seoul (Incheon)",
+                        "icao": "RKSI",
+                        "iata": "ICN"
+                      },
+                      "destination": {
+                        "name": "Los Angeles Intl",
+                        "location": "Los Angeles, CA",
+                        "icao": "KLAX",
+                        "iata": null
+                      },
+                      "departure": "Fri 12:57PM KST",
+                      "estimated_arrival": "Fri 06:14AM PST"
+                    },
+                    {
+                      "ident": "AAR602",
+                      "operator": "Asiana \"Asiana\" (Republic Of Korea)",
+                      "flight_id": "AAR602-1793748722-schedule-546p:8",
+                      "url": "https://www.flightaware.com/live/flight/id/AAR602-1793748722-schedule-546p%3a8",
+                      "aircraft_type": "A388",
+                      "aircraft_type_name": "Airbus A380-800 (quad-jet)",
+                      "origin": {
+                        "name": "Kingsford Smith Intl",
+                        "location": "Sydney, NSW",
+                        "icao": "YSSY",
+                        "iata": "SYD"
+                      },
+                      "destination": {
+                        "name": "Incheon Intl",
+                        "location": "Seoul (Incheon)",
+                        "icao": "RKSI",
+                        "iata": "ICN"
+                      },
+                      "departure": "Fri 10:54AM AEDT",
+                      "estimated_arrival": "Fri 06:48PM KST"
+                    },
+                    "… 18 more"
+                  ],
+                  "next_offset": 20,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flightaware/v1/airport": {
+      "get": {
+        "operationId": "flightawareAirport",
+        "summary": "FlightAware airport arrivals and departures",
+        "description": "One airport's boards as its public page shows them: the latest arrivals and departures and the next en route and scheduled flights (up to 20 each), each with flight number, operator, aircraft type, the other airport, and departure and arrival times (local), plus the airport's name, city and codes.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-airport",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "description": "ICAO or IATA airport code, e.g. `KSFO` or `SFO`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "KSFO"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "code": "KSFO",
+                  "name": "San Francisco Int'l Airport",
+                  "location": "San Francisco, CA",
+                  "iata": "SFO",
+                  "title": "San Francisco Int'l Airport (San Francisco, CA) SFO",
+                  "arrivals": [
+                    {
+                      "ident": "UAL367",
+                      "operator": "United \"United\" (Chicago, Illinois)",
+                      "aircraft_type": "B39M",
+                      "aircraft_type_name": "Boeing 737 MAX 9 (twin-jet)",
+                      "origin": {
+                        "name": "Washington Dulles Intl",
+                        "location": "Washington, DC",
+                        "icao": "KIAD",
+                        "iata": "IAD"
+                      },
+                      "departure": "10:36p EST",
+                      "arrival": "12:50a PST",
+                      "url": "https://www.flightaware.com/live/flight/UAL367/history/20261106/0330Z/KIAD/KSFO"
+                    },
+                    {
+                      "ident": "ASA404",
+                      "operator": "Alaska Airlines \"Alaska\"",
+                      "aircraft_type": "B39M",
+                      "aircraft_type_name": "Boeing 737 MAX 9 (twin-jet)",
+                      "origin": {
+                        "name": "Ellison Onizuka Kona Intl At Keahole",
+                        "location": "Kailua-Kona, HI",
+                        "icao": "PHKO",
+                        "iata": "KOA"
+                      },
+                      "departure": "05:55p HST",
+                      "arrival": "12:46a PST",
+                      "url": "https://www.flightaware.com/live/flight/ASA404/history/20261106/0302Z/PHKO/KSFO"
+                    },
+                    "… 18 more"
+                  ],
+                  "departures": [
+                    {
+                      "ident": "UAL2847",
+                      "operator": "United \"United\" (Chicago, Illinois)",
+                      "aircraft_type": "A21N",
+                      "aircraft_type_name": "Airbus A321neo (twin-jet)",
+                      "destination": {
+                        "name": "Chicago O'Hare Intl",
+                        "location": "Chicago, IL",
+                        "icao": "KORD",
+                        "iata": "ORD"
+                      },
+                      "departure": "12:57a PST",
+                      "arrival": "06:47a CST",
+                      "url": "https://www.flightaware.com/live/flight/UAL2847/history/20261106/0905Z/KSFO/KORD"
+                    },
+                    {
+                      "ident": "UAL60",
+                      "operator": "United \"United\" (Chicago, Illinois)",
+                      "aircraft_type": "B789",
+                      "aircraft_type_name": "Boeing 787-9 Dreamliner (twin-jet)",
+                      "destination": {
+                        "name": "Melbourne Intl",
+                        "location": "Melbourne, Victoria",
+                        "icao": "YMML",
+                        "iata": "MEL"
+                      },
+                      "departure": "12:54a PST",
+                      "arrival": "10:48a AEDT",
+                      "url": "https://www.flightaware.com/live/flight/UAL60/history/20261106/0745Z/KSFO/YMML"
+                    },
+                    "… 18 more"
+                  ],
+                  "enroute": [
+                    {
+                      "ident": "QXE2485",
+                      "operator": "Horizon \"Horizon Air\" (Seattle, WA)",
+                      "aircraft_type": "E75L",
+                      "aircraft_type_name": "EMBRAER 175 (long wing) (twin-jet)",
+                      "origin": {
+                        "name": "Los Angeles Intl",
+                        "location": "Los Angeles, CA",
+                        "icao": "KLAX",
+                        "iata": "LAX"
+                      },
+                      "departure": "12:37a PST",
+                      "arrival": "01:32a PST",
+                      "url": "https://www.flightaware.com/live/flight/QXE2485/history/20261106/0610Z/KLAX/KSFO"
+                    },
+                    {
+                      "ident": "ATN3360",
+                      "operator": "Air Transport International, Inc. \"Air Transport\" (Wilmington, OHIO)",
+                      "aircraft_type": "B763",
+                      "aircraft_type_name": "BOEING 767-300 (twin-jet)",
+                      "origin": {
+                        "name": "Wilmington Air Park",
+                        "location": "Wilmington, OH",
+                        "icao": "KILN",
+                        "iata": "ILN"
+                      },
+                      "departure": "12:36a EST",
+                      "arrival": "01:58a PST",
+                      "url": "https://www.flightaware.com/live/flight/ATN3360/history/20261106/0536Z/KILN/KSFO"
+                    },
+                    "… 18 more"
+                  ],
+                  "scheduled": [
+                    {
+                      "ident": "KOW957",
+                      "operator": "Baker Aviation, LLC \"Rodeo\" (Fort Worth, TX)",
+                      "aircraft_type": "C750",
+                      "aircraft_type_name": "Cessna Citation X (twin-jet)",
+                      "destination": {
+                        "name": "Pittsburgh Intl",
+                        "location": "Pittsburgh, PA",
+                        "icao": "KPIT",
+                        "iata": null
+                      },
+                      "departure": "08:10p PST",
+                      "arrival": "03:18a EST",
+                      "url": "https://www.flightaware.com/live/flight/KOW957/history/20261107/0240Z/KSFO/KPIT"
+                    },
+                    {
+                      "ident": "UAL604",
+                      "operator": "United \"United\" (Chicago, Illinois)",
+                      "aircraft_type": "B39M",
+                      "aircraft_type_name": "Boeing 737 MAX 9 (twin-jet)",
+                      "destination": {
+                        "name": "Houston Bush Int'ctl",
+                        "location": "Houston, TX",
+                        "icao": "KIAH",
+                        "iata": "IAH"
+                      },
+                      "departure": "01:14a PST",
+                      "arrival": "06:33a CST",
+                      "url": "https://www.flightaware.com/live/flight/UAL604/history/20261106/0855Z/KSFO/KIAH"
+                    },
+                    "… 18 more"
+                  ],
+                  "url": "https://www.flightaware.com/live/airport/KSFO",
+                  "note": "the most recent arrivals and departures and the next en route and scheduled flights (up to 20 each), as the public airport page shows them; …",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flightaware/v1/airport/details": {
+      "get": {
+        "operationId": "flightawareAirportDetails",
+        "summary": "FlightAware airport details, runways and FBOs",
+        "description": "An airport's overview: location and owner, coordinates and elevation, local time, tower, runways (length, width, surface, condition, lights), fuel types, FBOs with fuel prices and services, nearby FBOs with cheaper fuel, hotels and restaurants, maintenance, flight schools and other airport businesses, based aircraft counts and radio frequencies.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-airport-details",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "description": "ICAO or IATA airport code, e.g. `KSFO` or `SFO`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "KSFO"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "code": "KSFO",
+                  "name": "San Francisco Int'l Airport (San Francisco, CA) SFO",
+                  "summary": {
+                    "title": "SFO Airport Summary",
+                    "location_and_owner": "San Francisco, CA; (8 miles SE); San Francisco; City & County of San Francisco; Po Box 8097; San Francisco, Ca 94128",
+                    "coordinates_and_elevation": "37.619, -122.375 13.1 feet / 4 meters",
+                    "latitude": 37.619,
+                    "longitude": -122.375,
+                    "local_time": "Friday; 01:11AM PST",
+                    "tower": "Yes",
+                    "runways": [
+                      {
+                        "runway": "01L/19R",
+                        "dimensions_ft": "7,650 x 200",
+                        "surface": "Asphalt",
+                        "condition": "Good",
+                        "lights": "High lights"
+                      },
+                      {
+                        "runway": "01R/19L",
+                        "dimensions_ft": "8,650 x 200",
+                        "surface": "Asphalt",
+                        "condition": "Good",
+                        "lights": "High lights"
+                      },
+                      "… 2 more"
+                    ],
+                    "fuel": "100LL; JET A"
+                  },
+                  "sections": [
+                    {
+                      "title": "Fuel Prices (Jet A, 100LL) Airport FBOs at SFO",
+                      "columns": [
+                        "Name",
+                        "Contact",
+                        "… 10 more"
+                      ],
+                      "rows": [
+                        {
+                          "cells": [
+                            "Signature Aviation SFO",
+                            "128.920",
+                            "… 11 more"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "title": "Nearby FBOs at other airports with lower Jet A/100LL fuel prices",
+                      "columns": [
+                        "Name",
+                        "Airport",
+                        "… 10 more"
+                      ],
+                      "rows": [
+                        {
+                          "Name": "County of San Mateo",
+                          "Airport": "KHAF; 10mi SW",
+                          "Ready to Taxi™": "Available",
+                          "100LL": null,
+                          "100LL SS": "$5.90",
+                          "Jet A": null,
+                          "Jet A+Prist": null,
+                          "Fee": "No",
+                          "WiFi": "Yes",
+                          "Crew Car": "No",
+                          "Rental Car": "Yes",
+                          "Ratings and Reviews": "1 review"
+                        },
+                        {
+                          "Name": "Rabbit Aviation Services",
+                          "Airport": "KSQL; 10mi SE",
+                          "Ready to Taxi™": "Available",
+                          "100LL": "$6.95",
+                          "100LL SS": null,
+                          "Jet A": null,
+                          "Jet A+Prist": "$7.10",
+                          "Fee": null,
+                          "WiFi": "Yes",
+                          "Crew Car": "Yes",
+                          "Rental Car": "Yes",
+                          "Ratings and Reviews": "4 reviews"
+                        },
+                        "… 10 more"
+                      ]
+                    },
+                    "… 6 more"
+                  ],
+                  "url": "https://www.flightaware.com/resources/airport/KSFO/summary",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flightaware/v1/cancellations": {
+      "get": {
+        "operationId": "flightawareCancellations",
+        "summary": "FlightAware cancellation and delay statistics",
+        "description": "Cancelled and delayed flight counts and percentages for yesterday, today or tomorrow, by airline, origin airport or destination airport, optionally for one airport.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-cancellations",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "by",
+            "in": "query",
+            "required": false,
+            "description": "Group by.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "airline",
+                "origin",
+                "destination"
+              ]
+            },
+            "example": "airline"
+          },
+          {
+            "name": "day",
+            "in": "query",
+            "required": false,
+            "description": "Day.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "yesterday",
+                "today",
+                "tomorrow"
+              ]
+            }
+          },
+          {
+            "name": "airport",
+            "in": "query",
+            "required": false,
+            "description": "Only flights at this airport (ICAO code, e.g. `KJFK`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "by": "airline",
+                  "day": "today",
+                  "airport": null,
+                  "count": 65,
+                  "items": [
+                    {
+                      "cancelled": 70,
+                      "cancelled_pct": 80,
+                      "delayed": 0,
+                      "delayed_pct": 0,
+                      "name": "Air Tahiti",
+                      "code": "VTA",
+                      "url": "https://www.flightaware.com/live/fleet/VTA/cancelled"
+                    },
+                    {
+                      "cancelled": 33,
+                      "cancelled_pct": 33,
+                      "delayed": 0,
+                      "delayed_pct": 0,
+                      "name": "Winair",
+                      "code": "WIA",
+                      "url": "https://www.flightaware.com/live/fleet/WIA/cancelled"
+                    },
+                    "… 63 more"
+                  ],
+                  "totals": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flightaware/v1/delays": {
+      "get": {
+        "operationId": "flightawareDelays",
+        "summary": "FlightAware airport delays",
+        "description": "Airports currently reporting delays worldwide: airport, delay type (departure, arrival), average delay in minutes, trend and the full status text. The list is empty when no airport reports delays.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-delays",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 2,
+                  "delays": [
+                    {
+                      "airport": {
+                        "name": "San Francisco Int'l",
+                        "location": "San Francisco, CA",
+                        "icao": "KSFO",
+                        "iata": null
+                      },
+                      "delay_type": "departure",
+                      "average_minutes": 31,
+                      "trend": "increasing",
+                      "text": "San Francisco Int'l (KSFO) is currently experiencing departure delays an average of 31 minutes (and increasing)."
+                    },
+                    {
+                      "airport": {
+                        "name": "Anchorage Intl",
+                        "location": "Anchorage, AK",
+                        "icao": "PANC",
+                        "iata": null
+                      },
+                      "delay_type": "arrival",
+                      "average_minutes": 32,
+                      "trend": "decreasing",
+                      "text": "Anchorage Intl (PANC) is currently experiencing arrival delays for airborne aircraft an average of 32 minutes (and decreasing)."
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flightaware/v1/flight": {
+      "get": {
+        "operationId": "flightawareFlight",
+        "summary": "FlightAware flight status and track",
+        "description": "One flight as FlightAware shows it: status, airline, origin and destination airports with gates and terminals, scheduled, estimated and actual gate and runway times, taxi times, aircraft type and engines, altitude, speed, heading and position while airborne, distance flown and remaining, the filed route with planned speed, altitude and fuel burn, the inbound flight, photos, and the same flight number's recent and upcoming flights. `track=true` adds the full position track and route waypoints. Without a date the page's current or next flight is returned; a flight link or `flight_id` picks one leg.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-flight",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "ident",
+            "in": "query",
+            "required": false,
+            "description": "Flight number (ICAO like `UAL1` or IATA like `UA1`) or an aircraft registration (`N12114`). Required unless `url` or `flight_id` is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "UAL1"
+          },
+          {
+            "name": "flight_id",
+            "in": "query",
+            "required": false,
+            "description": "A FlightAware flight id from another answer (e.g. `UAL1-1793604984-airline-266p:0`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A flightaware.com/live/flight/... link (including a dated history link).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "track",
+            "in": "query",
+            "required": false,
+            "description": "true adds the position track and route waypoints.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "flight_id": "UAL1-1793692162-airline-491p:0",
+                  "ident": "UAL1",
+                  "display_ident": "UAL1",
+                  "iata_ident": "UA1",
+                  "friendly_ident": "United 1",
+                  "atc_ident": null,
+                  "status": "airborne",
+                  "cancelled": false,
+                  "diverted": false,
+                  "blocked": false,
+                  "airline": {
+                    "name": "United Air Lines Inc.",
+                    "short_name": "United",
+                    "icao": "UAL",
+                    "iata": "UA",
+                    "callsign": "United",
+                    "url": "https://www.united.com/"
+                  },
+                  "origin": {
+                    "name": "San Francisco Int'l",
+                    "location": "San Francisco, CA",
+                    "icao": "KSFO",
+                    "iata": "SFO",
+                    "alt_ident": null,
+                    "timezone": "America/Los_Angeles",
+                    "latitude": 37.6188,
+                    "longitude": -122.3754,
+                    "terminal": "I",
+                    "gate": "G5",
+                    "delays": [
+                      {
+                        "type": "departure delays",
+                        "time": "an average of 31 minutes (and increasing)",
+                        "reason": null
+                      }
+                    ]
+                  },
+                  "destination": {
+                    "name": "Changi",
+                    "location": "Singapore",
+                    "icao": "WSSS",
+                    "iata": "SIN",
+                    "alt_ident": "SIN",
+                    "timezone": "Asia/Singapore",
+                    "latitude": 1.3592,
+                    "longitude": 103.9893,
+                    "terminal": "2",
+                    "gate": null,
+                    "delays": null
+                  },
+                  "gate_departure": {
+                    "scheduled": "2026-11-06T06:40:00Z",
+                    "estimated": "2026-11-06T06:40:00Z",
+                    "actual": "2026-11-06T06:38:00Z"
+                  },
+                  "takeoff": {
+                    "scheduled": "2026-11-06T06:50:00Z",
+                    "estimated": "2026-11-06T07:17:00Z",
+                    "actual": "2026-11-06T07:17:00Z"
+                  },
+                  "landing": {
+                    "scheduled": "2026-11-06T23:10:00Z",
+                    "estimated": "2026-11-06T22:48:00Z",
+                    "actual": null
+                  },
+                  "gate_arrival": {
+                    "scheduled": "2026-11-07T00:01:00Z",
+                    "estimated": "2026-11-06T22:58:00Z",
+                    "actual": null
+                  },
+                  "taxi_out_minutes": null,
+                  "taxi_in_minutes": null,
+                  "average_delays_seconds": {
+                    "departure": 709,
+                    "arrival": -485
+                  },
+                  "aircraft": {
+                    "type": "B789",
+                    "type_name": "Boeing 787-9 Dreamliner (twin-jet)",
+                    "manufacturer": "Boeing",
+                    "model": "787-9 Dreamliner",
+                    "engine_count": 2,
+                    "engine_type": "jet",
+                    "registration": null,
+                    "hex": null,
+                    "heavy": false,
+                    "lifeguard": false,
+                    "owner_type": null,
+                    "owner_location": null
+                  },
+                  "altitude_ft": 34000,
+                  "altitude_change": null,
+                  "groundspeed_kt": 473,
+                  "heading": 243,
+                  "position": null,
+                  "position_time": "2026-11-06T09:15:53Z",
+                  "distance_mi": {
+                    "elapsed": 919,
+                    "remaining": 6693,
+                    "actual": null
+                  },
+                  "flight_plan": {
+                    "route": "GNNRR3 BEBOP R464 BAART R464 BILLO 2900N/15000W 2800N/15500W 2700N/16000W 2600N/17000W 2600N/18000E 2500N/17000E 2300N/16000E 2200N/15000E 2…",
+                    "speed_kt": 486,
+                    "altitude_ft": 34000,
+                    "direct_distance_mi": 7342,
+                    "planned_distance_mi": null,
+                    "departure": "2026-11-06T06:50:00Z",
+                    "ete_seconds": 58800,
+                    "fuel_burn_gallons": 26000,
+                    "fuel_burn_pounds": 170000
+                  },
+                  "inbound_flight_id": "UAL949-1793691006-airline-1982p:0",
+                  "links": {
+                    "flight": "https://www.flightaware.com/live/flight/UAL1/history/20261106/0650Z/KSFO/WSSS",
+                    "track_log": "https://www.flightaware.com/live/flight/UAL1/history/20261106/0650Z/KSFO/WSSS/tracklog",
+                    "history": "https://www.flightaware.com/live/flight/UAL1/history"
+                  },
+                  "photos": [
+                    {
+                      "image": "https://photos.flightaware.com/photos/retriever/0afd378966a5a2275bda71dda43c1021eb34d8c4",
+                      "url": "https://www.flightaware.com/photos/view/2269049-bb08b30c2048af2a7e047114d4e5a4b5a995ba7f"
+                    },
+                    {
+                      "image": "https://photos.flightaware.com/photos/retriever/89b5fb01501467c0947b819cef750eb4692cb25f",
+                      "url": "https://www.flightaware.com/photos/view/152792-0677a0d45caedf45ef253e0af8378a8cea3a3cf0"
+                    },
+                    "… 10 more"
+                  ],
+                  "cabin_links": {
+                    "upgrade": "https://www.united.com/en/us/flightstatus/details/1/2026-11-05/SFO/SIN/UA#upgrades-panel",
+                    "standby": "https://www.united.com/en/us/flightstatus/details/1/2026-11-05/SFO/SIN/UA#standby-panel",
+                    "amenities": "https://www.united.com/en/us/flightstatus/details/1/2026-11-05/SFO/SIN/UA#accordionsection0id"
+                  },
+                  "recent_and_upcoming": [
+                    {
+                      "flight_id": "UAL1-1793864821-airline-692p",
+                      "status": null,
+                      "cancelled": false,
+                      "diverted": false,
+                      "origin": {
+                        "name": "San Francisco Int'l",
+                        "location": "San Francisco, CA",
+                        "icao": "KSFO",
+                        "iata": "SFO",
+                        "alt_ident": null,
+                        "timezone": "America/Los_Angeles",
+                        "latitude": 37.6188,
+                        "longitude": -122.3754,
+                        "terminal": "I",
+                        "gate": null,
+                        "delays": null
+                      },
+                      "destination": {
+                        "name": "Changi",
+                        "location": "Singapore",
+                        "icao": "WSSS",
+                        "iata": "SIN",
+                        "alt_ident": "SIN",
+                        "timezone": "Asia/Singapore",
+                        "latitude": 1.3592,
+                        "longitude": 103.9893,
+                        "terminal": "2",
+                        "gate": null,
+                        "delays": null
+                      },
+                      "aircraft_type": "B789",
+                      "aircraft_type_name": "Boeing 787-9 Dreamliner (twin-jet)",
+                      "gate_departure": {
+                        "scheduled": "2026-11-08T06:40:00Z",
+                        "estimated": "2026-11-08T06:40:00Z",
+                        "actual": null
+                      },
+                      "takeoff": {
+                        "scheduled": "2026-11-08T06:50:00Z",
+                        "estimated": "2026-11-08T06:50:00Z",
+                        "actual": null
+                      },
+                      "landing": {
+                        "scheduled": "2026-11-08T23:50:00Z",
+                        "estimated": "2026-11-08T23:50:00Z",
+                        "actual": null
+                      },
+                      "gate_arrival": {
+                        "scheduled": "2026-11-09T00:01:00Z",
+                        "estimated": "2026-11-09T00:00:00Z",
+                        "actual": null
+                      },
+                      "url": "https://www.flightaware.com/live/flight/UAL1/history/20261108/0650Z/KSFO/WSSS"
+                    },
+                    {
+                      "flight_id": "UAL1-1793783695-airline-1052p",
+                      "status": null,
+                      "cancelled": false,
+                      "diverted": false,
+                      "origin": {
+                        "name": "San Francisco Int'l",
+                        "location": "San Francisco, CA",
+                        "icao": "KSFO",
+                        "iata": "SFO",
+                        "alt_ident": null,
+                        "timezone": "America/Los_Angeles",
+                        "latitude": 37.6188,
+                        "longitude": -122.3754,
+                        "terminal": "I",
+                        "gate": "G3",
+                        "delays": null
+                      },
+                      "destination": {
+                        "name": "Changi",
+                        "location": "Singapore",
+                        "icao": "WSSS",
+                        "iata": "SIN",
+                        "alt_ident": "SIN",
+                        "timezone": "Asia/Singapore",
+                        "latitude": 1.3592,
+                        "longitude": 103.9893,
+                        "terminal": "2",
+                        "gate": null,
+                        "delays": null
+                      },
+                      "aircraft_type": "B789",
+                      "aircraft_type_name": "Boeing 787-9 Dreamliner (twin-jet)",
+                      "gate_departure": {
+                        "scheduled": "2026-11-07T06:40:00Z",
+                        "estimated": "2026-11-07T06:40:00Z",
+                        "actual": null
+                      },
+                      "takeoff": {
+                        "scheduled": "2026-11-07T06:50:00Z",
+                        "estimated": "2026-11-07T06:50:00Z",
+                        "actual": null
+                      },
+                      "landing": {
+                        "scheduled": "2026-11-07T23:50:00Z",
+                        "estimated": "2026-11-07T23:50:00Z",
+                        "actual": null
+                      },
+                      "gate_arrival": {
+                        "scheduled": "2026-11-08T00:01:00Z",
+                        "estimated": "2026-11-08T00:00:00Z",
+                        "actual": null
+                      },
+                      "url": "https://www.flightaware.com/live/flight/UAL1/history/20261107/0650Z/KSFO/WSSS"
+                    },
+                    "… 12 more"
+                  ],
+                  "url": "https://www.flightaware.com/live/flight/UAL1",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flightaware/v1/flight/history": {
+      "get": {
+        "operationId": "flightawareFlightHistory",
+        "summary": "FlightAware flight number history",
+        "description": "The last 14 days and the next scheduled flights of a flight number or registration: date, aircraft type, origin and destination, departure and arrival times (local, with estimated marks), duration or status, filed route and the link to each leg (use it as `url` on /flightaware/v1/flight).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-flight-history",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "ident",
+            "in": "query",
+            "required": true,
+            "description": "Flight number (`UAL1`, `UA1`) or registration (`N12114`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "UAL1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "ident": "UAL1",
+                  "count": 16,
+                  "flights": [
+                    {
+                      "date": "06-Nov-2026",
+                      "aircraft_type": "B789",
+                      "origin": {
+                        "name": "San Francisco Int'l",
+                        "location": "San Francisco, CA",
+                        "icao": "KSFO",
+                        "iata": null
+                      },
+                      "destination": {
+                        "name": "Changi",
+                        "location": "Singapore",
+                        "icao": "WSSS",
+                        "iata": "SIN"
+                      },
+                      "departure": "10:50PM PST",
+                      "arrival": "07:50AM +08 (+2)",
+                      "departure_estimated": true,
+                      "arrival_estimated": true,
+                      "duration": null,
+                      "status": "Scheduled",
+                      "planned_route": "GNNRR3 ALCOA BUTEN BOSKE 3500N/14000W 3200N/15000W 3000N/16000W 2800N/17000W 2700N/18000E 2500N/17000E 2400N/16000E 2100N/15000E 1900N/14000…",
+                      "url": "https://www.flightaware.com/live/flight/UAL1/history/20261107/0650Z/KSFO/WSSS"
+                    },
+                    {
+                      "date": "05-Nov-2026",
+                      "aircraft_type": "B789",
+                      "origin": {
+                        "name": "San Francisco Int'l",
+                        "location": "San Francisco, CA",
+                        "icao": "KSFO",
+                        "iata": null
+                      },
+                      "destination": {
+                        "name": "Changi",
+                        "location": "Singapore",
+                        "icao": "WSSS",
+                        "iata": "SIN"
+                      },
+                      "departure": "11:17PM PST",
+                      "arrival": "06:48AM +08 (+2)",
+                      "departure_estimated": false,
+                      "arrival_estimated": true,
+                      "duration": null,
+                      "status": "En Route",
+                      "planned_route": null,
+                      "url": "https://www.flightaware.com/live/flight/UAL1/history/20261106/0650Z/KSFO/WSSS"
+                    },
+                    "… 14 more"
+                  ],
+                  "note": "the last 14 days and the next scheduled flights, as FlightAware shows them logged out; times are local to each airport",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flightaware/v1/operator/flights": {
+      "get": {
+        "operationId": "flightawareOperatorFlights",
+        "summary": "FlightAware airborne flights of an airline",
+        "description": "Every airborne flight of an airline (20 per page): flight number, flight id, aircraft type, origin, destination, departure time and estimated arrival. Sort by any column. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-operator-flights",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "description": "Airline ICAO code, e.g. `UAL`, `BAW`, `DAL`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "UAL"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort column.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ident",
+                "type",
+                "origin",
+                "destination",
+                "departure",
+                "arrival"
+              ]
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Sort direction.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Row offset, a multiple of 20.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "code": "UAL",
+                  "heading": "Airborne United \"United\" (UAL) Aircraft",
+                  "offset": 0,
+                  "sort": "ident",
+                  "order": "asc",
+                  "count": 20,
+                  "flights": [
+                    {
+                      "ident": "UAL1",
+                      "operator": "United \"United\" (Chicago, Illinois)",
+                      "flight_id": "UAL1-1793692162-airline-491p:0",
+                      "url": "https://www.flightaware.com/live/flight/id/UAL1-1793692162-airline-491p%3a0",
+                      "aircraft_type": "B789",
+                      "aircraft_type_name": "Boeing 787-9 Dreamliner (twin-jet)",
+                      "origin": {
+                        "name": "San Francisco Int'l",
+                        "location": "San Francisco, CA",
+                        "icao": "KSFO",
+                        "iata": null
+                      },
+                      "destination": {
+                        "name": "Changi",
+                        "location": "Singapore",
+                        "icao": "WSSS",
+                        "iata": "SIN"
+                      },
+                      "departure": "Thu 11:17PM PST",
+                      "estimated_arrival": "Sat 06:48AM +08"
+                    },
+                    {
+                      "ident": "UAL100",
+                      "operator": "United \"United\" (Chicago, Illinois)",
+                      "flight_id": "UAL100-1793744921-schedule-389p:18",
+                      "url": "https://www.flightaware.com/live/flight/id/UAL100-1793744921-schedule-389p%3a18",
+                      "aircraft_type": "B789",
+                      "aircraft_type_name": "Boeing 787-9 Dreamliner (twin-jet)",
+                      "origin": {
+                        "name": "Kingsford Smith Intl",
+                        "location": "Sydney, NSW",
+                        "icao": "YSSY",
+                        "iata": "SYD"
+                      },
+                      "destination": {
+                        "name": "Houston Bush Int'ctl",
+                        "location": "Houston, TX",
+                        "icao": "KIAH",
+                        "iata": null
+                      },
+                      "departure": "Fri 10:17AM AEDT",
+                      "estimated_arrival": "Fri 08:01AM CST"
+                    },
+                    "… 18 more"
+                  ],
+                  "next_offset": 20,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flightaware/v1/route": {
+      "get": {
+        "operationId": "flightawareRoute",
+        "summary": "FlightAware flights between two airports",
+        "description": "The flight finder: nonstop and one-stop flights between two airports today and tomorrow, with airline, flight number, flight id, aircraft type, status, departure and arrival day and time (local) and the link to each flight.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-route",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "origin",
+            "in": "query",
+            "required": true,
+            "description": "Origin airport code, e.g. `KSFO` or `SFO`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "KSFO"
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": true,
+            "description": "Destination airport code, e.g. `KJFK` or `JFK`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "KJFK"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "origin": "KSFO",
+                  "destination": "KJFK",
+                  "count": 73,
+                  "flights": [
+                    {
+                      "ident": "ASA40",
+                      "flight_id": "ASA40-1793777553-airline-1040p",
+                      "airline": "Alaska Airlines",
+                      "operator": "Alaska Airlines \"Alaska\"",
+                      "airline_logo": "https://www.flightaware.com/images/airline_logos/24px/ASA.png",
+                      "aircraft_type": "B739",
+                      "status": "Scheduled (in 21 hours 41 minutes)",
+                      "origin": "SFO",
+                      "destination": "JFK",
+                      "origin_icao": "KSFO",
+                      "destination_icao": "KJFK",
+                      "departure_day": "Fri",
+                      "departure": "11:00PM PST",
+                      "arrival_day": "Sat",
+                      "arrival": "07:39AM EST",
+                      "layover": null,
+                      "connection": null,
+                      "url": "https://www.flightaware.com/live/flight/id/ASA40-1793777553-airline-1040p"
+                    },
+                    {
+                      "ident": "JBU616",
+                      "flight_id": "JBU616-1793782579-fa-561p",
+                      "airline": "JetBlue",
+                      "operator": "JetBlue \"JetBlue\"",
+                      "airline_logo": "https://www.flightaware.com/images/airline_logos/24px/JBU.png",
+                      "aircraft_type": "A320",
+                      "status": "Scheduled (in 21 hours 37 minutes)",
+                      "origin": "SFO",
+                      "destination": "JFK",
+                      "origin_icao": "KSFO",
+                      "destination_icao": "KJFK",
+                      "departure_day": "Fri",
+                      "departure": "10:56PM PST",
+                      "arrival_day": "Sat",
+                      "arrival": "07:24AM EST",
+                      "layover": null,
+                      "connection": null,
+                      "url": "https://www.flightaware.com/live/flight/id/JBU616-1793782579-fa-561p"
+                    },
+                    "… 71 more"
+                  ],
+                  "note": "nonstop and one-stop flights between the two airports today and tomorrow, as the public flight finder lists them; times are local",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/flightaware/v1/search": {
+      "get": {
+        "operationId": "flightawareSearch",
+        "summary": "FlightAware airport and flight search",
+        "description": "Type-ahead search: airports by name, city or code (ICAO, IATA, name, city, country, operations count) or flight numbers and registrations by prefix.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/flightaware-search",
+        "tags": [
+          "FlightAware"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search text (2-60 characters).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "heathrow"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "What to search.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "airport",
+                "flight"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "heathrow",
+                  "type": "airport",
+                  "count": 1,
+                  "results": [
+                    {
+                      "icao": "EGLL",
+                      "iata": "LHR",
+                      "name": "Heathrow",
+                      "city": "London",
+                      "location": "London, United Kingdom",
+                      "country": "United Kingdom",
+                      "country_code": "GB",
+                      "operations": 18899,
+                      "description": "Heathrow (London)",
+                      "url": "https://www.flightaware.com/live/airport/EGLL"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

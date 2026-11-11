@@ -1,0 +1,1313 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Wikiloc",
+    "version": "1.0.0",
+    "description": "The Wikiloc API from API.SH: public Wikiloc data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Wikiloc",
+      "description": "4 endpoints (travel & events)",
+      "x-slug": "wikiloc",
+      "x-domains": [
+        "wikiloc.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wikiloc/v1/explore": {
+      "get": {
+        "operationId": "wikilocExplore",
+        "summary": "Wikiloc best trails by place",
+        "description": "Wikiloc's best-trails page for a country, region or area, for all activities or one: title, number of trails, rating and number of ratings, the country and region codes to use with `/wikiloc/v1/search` (`search`, on the all-activities page), breadcrumbs, trails (name, link, activity, distance, elevation gain, difficulty, author, photos, description), popular places (summits, lakes, viewpoints...), sub-areas and activities. Activity pages page through every trail of the place: pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikiloc-explore",
+        "tags": [
+          "Wikiloc"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "description": "Country slug as in wikiloc.com/trails/outdoor/<country>, e.g. `united-states`, `spain`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "united-states"
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "description": "Region slug, e.g. `utah`, `catalonia`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "utah"
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "required": false,
+            "description": "Area slug inside the region, e.g. `zion-lodge` (from `subareas`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activity",
+            "in": "query",
+            "required": false,
+            "description": "Activity slug: outdoor (all, default), hiking, mountain-biking, walking, cycling, running, trail-running, and the site's others (see `activities`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (activity pages), from 1.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://www.wikiloc.com/trails/outdoor/united-states/utah",
+                  "title": "The best trails in Utah",
+                  "activity": "outdoor",
+                  "total_trails": 5865,
+                  "rating": null,
+                  "ratings": null,
+                  "search": {
+                    "country": "US",
+                    "region": "US.UT"
+                  },
+                  "breadcrumbs": [
+                    {
+                      "name": "Explore",
+                      "url": "https://www.wikiloc.com/trails/outdoor"
+                    },
+                    {
+                      "name": "United States",
+                      "url": "https://www.wikiloc.com/trails/outdoor/united-states"
+                    },
+                    "… 1 more"
+                  ],
+                  "page": 1,
+                  "next_page": null,
+                  "trails": [
+                    {
+                      "id": 20188851,
+                      "name": "Arches - Devils garden - UT",
+                      "url": "https://www.wikiloc.com/hiking-trails/arches-devils-garden-ut-20188851",
+                      "activity": "Hiking",
+                      "distance_km": 9.3,
+                      "distance_mi": 5.78,
+                      "elevation_gain_m": 291,
+                      "elevation_gain_ft": 955,
+                      "difficulty": "difficult",
+                      "rating": null,
+                      "author": {
+                        "id": 2903202,
+                        "name": "nisoep"
+                      },
+                      "photo": "https://s2.wklcdn.com/image_96/2903202/20188856/12623273.180x180.jpg"
+                    },
+                    {
+                      "id": 74577070,
+                      "name": "Adams Canyon Trail",
+                      "url": "https://www.wikiloc.com/hiking-trails/adams-canyon-trail-74577070",
+                      "activity": "Hiking",
+                      "distance_km": 34.68,
+                      "distance_mi": 21.55,
+                      "elevation_gain_m": 699,
+                      "elevation_gain_ft": 2293,
+                      "difficulty": "difficult",
+                      "rating": null,
+                      "author": {
+                        "id": 2619595,
+                        "name": "Lucas gasco"
+                      },
+                      "photo": "https://s2.wklcdn.com/image_87/2619595/74577073/48870503.180x180.jpg"
+                    },
+                    "… 10 more"
+                  ],
+                  "popular_places": [
+                    {
+                      "name": "Angels Landing",
+                      "type": "Summit",
+                      "description": "Summit near Washington, Utah",
+                      "url": "https://www.wikiloc.com/waypoints/f25B38/angels-landing",
+                      "image": "https://s1.wklcdn.com/image_4/140406/8225318/4790536Master.jpg",
+                      "locality": "Washington",
+                      "region": "Utah",
+                      "country": "United States"
+                    },
+                    {
+                      "name": "Pine Tree Arch Viewpoint",
+                      "type": "Panorama",
+                      "description": "Panorama near Grand, Utah",
+                      "url": "https://www.wikiloc.com/waypoints/ACUZ4w/pine-tree-arch-viewpoint",
+                      "image": "https://s1.wklcdn.com/image_14/424500/27358317/17466781Master.jpg",
+                      "locality": "Grand",
+                      "region": "Utah",
+                      "country": "United States"
+                    },
+                    "… 3 more"
+                  ],
+                  "subareas": [],
+                  "activities": [
+                    {
+                      "name": "Hiking",
+                      "slug": "hiking",
+                      "url": "https://www.wikiloc.com/trails/hiking/united-states/utah"
+                    },
+                    {
+                      "name": "Mountain Bike",
+                      "slug": "mountain-biking",
+                      "url": "https://www.wikiloc.com/trails/mountain-biking/united-states/utah"
+                    },
+                    "… 30 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wikiloc/v1/place": {
+      "get": {
+        "operationId": "wikilocPlace",
+        "summary": "Wikiloc place",
+        "description": "A popular place on Wikiloc (a summit, lake, waterfall, viewpoint...): name, type, nearest town, elevation, number of contributors, photos, locality, region, country, breadcrumbs and its top trails (name, link, activity, near, distance, elevation gain, difficulty, author, photos). Wikiloc lists a place's top 3 trails to visitors who are not signed in; `/wikiloc/v1/search` with the place's name or a point finds more.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikiloc-place",
+        "tags": [
+          "Wikiloc"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A place code (as in wikiloc.com/waypoints/f25B38/...) or that link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "f25B38"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "f25B38",
+                  "name": "Angels Landing",
+                  "url": "https://www.wikiloc.com/waypoints/f25B38/angels-landing",
+                  "type": "Summit",
+                  "near": "Washington, Utah",
+                  "latitude": null,
+                  "longitude": null,
+                  "elevation_m": 1764,
+                  "elevation_ft": 5787,
+                  "contributors": 15,
+                  "images": [
+                    "https://s1.wklcdn.com/image_4/140406/8225318/4790536Master.jpg",
+                    "https://s0.wklcdn.com/image_4/140406/8225318/4786299Master.jpg",
+                    "… 1 more"
+                  ],
+                  "locality": "Washington",
+                  "region": "Utah",
+                  "country": "United States",
+                  "description": null,
+                  "breadcrumbs": [
+                    {
+                      "name": "Explore",
+                      "url": "https://www.wikiloc.com/trails/outdoor"
+                    },
+                    {
+                      "name": "United States",
+                      "url": "https://www.wikiloc.com/trails/outdoor/united-states"
+                    },
+                    "… 2 more"
+                  ],
+                  "top_trails": [
+                    {
+                      "id": 12078067,
+                      "name": "ZION CANYON (Emerald Pools - Angels Landing)",
+                      "url": "https://www.wikiloc.com/hiking-trails/zion-canyon-emerald-pools-angels-landing-12078067",
+                      "activity": "Hiking",
+                      "near": "Zion Lodge, Utah (United States)",
+                      "distance_km": 9.67,
+                      "distance_mi": 6.01,
+                      "elevation_gain_m": 640,
+                      "elevation_gain_ft": 2100,
+                      "difficulty": "easy",
+                      "author": {
+                        "id": 310035,
+                        "name": "INNISFREE"
+                      },
+                      "photos": [
+                        "https://s2.wklcdn.com/image_10/310035/12078067/7401965.jpg",
+                        "https://s2.wklcdn.com/image_10/310035/12078067/7401977.jpg",
+                        "… 1 more"
+                      ],
+                      "description": "Ruta realizada el 5/05/2015\nEn nuestro viaje realizado por los Estados Unidos para recorrer el país de costa a costa durante un mes, partien…"
+                    },
+                    {
+                      "id": 170087515,
+                      "name": "Zion National Park - Angels Landing - Utah",
+                      "url": "https://www.wikiloc.com/hiking-trails/zion-national-park-angels-landing-utah-170087515",
+                      "activity": "Hiking",
+                      "near": "Zion Lodge, Utah (United States)",
+                      "distance_km": 11.44,
+                      "distance_mi": 7.11,
+                      "elevation_gain_m": 3451,
+                      "elevation_gain_ft": 11322,
+                      "difficulty": "difficult",
+                      "author": {
+                        "id": 6963663,
+                        "name": "BeataWojna"
+                      },
+                      "photos": [
+                        "https://s2.wklcdn.com/image_232/6963663/170087516/106271150.jpg",
+                        "https://s1.wklcdn.com/image_232/6963663/170087517/106271152.jpg",
+                        "… 1 more"
+                      ],
+                      "description": "Difícil aunque no tan difícil como lo presentan en algunas descripciones. Sin duda vale la pena hacerlo. Un día antes hay que pedir permiso …"
+                    },
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wikiloc/v1/search": {
+      "get": {
+        "operationId": "wikilocSearch",
+        "summary": "Wikiloc trail search",
+        "description": "GPS trails on Wikiloc (wikiloc.com) by text, by area (a point and radius, or a bounding box) and by country or region, 24 per page. Each trail: `id`, `name`, `url`, `activity`, `near`, `latitude`, `longitude`, `distance_km`, `distance_mi`, `elevation_gain_m`, `elevation_gain_ft`, `difficulty`, `rating`, `ratings`, `trailrank`, `trending`, `author`, `photos` and `raw`. Also `total`. Wikiloc applies activity, length, elevation, difficulty and sort filters only for signed-in members, so they are not offered here. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikiloc-search",
+        "tags": [
+          "Wikiloc"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Text in the trail name or description, e.g. `angels landing`. Optional when an area, country or region is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "angels landing"
+          },
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Latitude of a centre point (with `lng`).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": false,
+            "description": "Longitude of the centre point.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "radius_km",
+            "in": "query",
+            "required": false,
+            "description": "Radius around the point in km (1-500, default 10).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "south",
+            "in": "query",
+            "required": false,
+            "description": "Bounding box: southern latitude (with west, north, east).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "west",
+            "in": "query",
+            "required": false,
+            "description": "Bounding box: western longitude.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "north",
+            "in": "query",
+            "required": false,
+            "description": "Bounding box: northern latitude.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "east",
+            "in": "query",
+            "required": false,
+            "description": "Bounding box: eastern longitude.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Two-letter country code, e.g. `US`, `ES`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "description": "A region code such as `US.UT` (Utah) or `ES.CT` (Catalonia); `/wikiloc/v1/explore` returns it as `search.region`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, from 1.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "applied_filters": {
+                    "q": "angels landing"
+                  },
+                  "page": 1,
+                  "limit": 24,
+                  "total": 384,
+                  "count": 24,
+                  "next_page": 2,
+                  "trails": [
+                    {
+                      "id": 12078067,
+                      "name": "ZION CANYON (Emerald Pools - Angels Landing)",
+                      "url": "https://www.wikiloc.com/hiking-trails/zion-canyon-emerald-pools-angels-landing-12078067",
+                      "activity": "Hiking",
+                      "activity_id": 1,
+                      "near": "Zion Lodge, Utah (United States)",
+                      "latitude": 37.252373,
+                      "longitude": -112.956126,
+                      "distance_km": 9.67,
+                      "distance_mi": 6.01,
+                      "elevation_gain_m": 640,
+                      "elevation_gain_ft": 2100,
+                      "difficulty": "easy",
+                      "rating": 4.5,
+                      "ratings": 2,
+                      "trailrank": 96,
+                      "trending": false,
+                      "author": {
+                        "id": 310035,
+                        "name": "INNISFREE",
+                        "avatar": "https://s0.wklcdn.com/image_10/310035/photo.jpg?1645738570136"
+                      },
+                      "photos": [
+                        "https://s2.wklcdn.com/image_10/310035/12078067/7401965.jpg",
+                        "https://s2.wklcdn.com/image_10/310035/12078067/7401977.jpg",
+                        "… 4 more"
+                      ]
+                    },
+                    {
+                      "id": 30372960,
+                      "name": "Zion N.Park i Angels Landing",
+                      "url": "https://www.wikiloc.com/hiking-trails/zion-n-park-i-angels-landing-30372960",
+                      "activity": "Hiking",
+                      "activity_id": 1,
+                      "near": "Zion Lodge, Utah (United States)",
+                      "latitude": 37.250999,
+                      "longitude": -112.958453,
+                      "distance_km": 10.86,
+                      "distance_mi": 6.75,
+                      "elevation_gain_m": 1631,
+                      "elevation_gain_ft": 5351,
+                      "difficulty": "moderate",
+                      "rating": null,
+                      "ratings": 0,
+                      "trailrank": 56,
+                      "trending": false,
+                      "author": {
+                        "id": 1195391,
+                        "name": "Quimreberte",
+                        "avatar": "https://s2.wklcdn.com/image_39/1195391/photo.jpg?1593951521504"
+                      },
+                      "photos": [
+                        "https://s0.wklcdn.com/image_39/1195391/30372961/19455456.jpg",
+                        "https://s2.wklcdn.com/image_39/1195391/30372962/19455464.jpg",
+                        "… 4 more"
+                      ]
+                    },
+                    "… 22 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wikiloc/v1/trail": {
+      "get": {
+        "operationId": "wikilocTrail",
+        "summary": "Wikiloc trail",
+        "description": "One Wikiloc trail: name (and its English translation), activity, breadcrumb places, nearest place, distance, route type, loop flag, elevation gain, loss, max and min (metres and feet), difficulty, TrailRank, moving and total time, number of points, upload and recording dates, start and end points, rating and number of ratings, claps, views, downloads, description, author, waypoints (name, type, position, elevation, time, photos), photos and every review and comment (author, date, stars, text). With `geometry=true` also the full recorded line as `[longitude, latitude, altitude_m, time_ms]` points.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wikiloc-trail",
+        "tags": [
+          "Wikiloc"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A wikiloc.com trail link (fastest) or a trail id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.wikiloc.com/hiking-trails/esmeralda-pools-trail-220263144"
+          },
+          {
+            "name": "geometry",
+            "in": "query",
+            "required": false,
+            "description": "true: also return the trail's line.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": 220263144,
+                  "name": "Esmeralda Pools Trail",
+                  "name_translated": "Emerald Pools Trail",
+                  "url": "https://www.wikiloc.com/hiking-trails/esmeralda-pools-trail-220263144",
+                  "activity": "hiking",
+                  "places": [
+                    {
+                      "name": "The best Hiking trails in United States",
+                      "url": "https://www.wikiloc.com/trails/hiking/united-states"
+                    },
+                    {
+                      "name": "Utah",
+                      "url": "https://www.wikiloc.com/trails/hiking/united-states/utah"
+                    },
+                    "… 1 more"
+                  ],
+                  "near": "Zion Lodge, Utah (United States)",
+                  "distance_km": 5.6,
+                  "distance_mi": 3.48,
+                  "route_type": "One Way",
+                  "loop": false,
+                  "elevation_gain_m": 245,
+                  "elevation_gain_ft": 804,
+                  "elevation_loss_m": 244,
+                  "elevation_loss_ft": 801,
+                  "max_elevation_m": 1482,
+                  "max_elevation_ft": 4863,
+                  "min_elevation_m": 1280,
+                  "min_elevation_ft": 4198,
+                  "difficulty": "easy",
+                  "trailrank": 99,
+                  "moving_time_min": 103,
+                  "total_time_min": 148,
+                  "points": 931,
+                  "uploaded": "July 1, 2025",
+                  "recorded": "July 2025",
+                  "recorded_at": "2025-07-01T16:03:20.911Z",
+                  "start": {
+                    "latitude": 37.251716,
+                    "longitude": -112.956061
+                  },
+                  "end": {
+                    "latitude": 37.258983,
+                    "longitude": -112.951407
+                  },
+                  "rating": 5,
+                  "ratings": 40,
+                  "rating_details": {
+                    "information": null,
+                    "easy_to_follow": null,
+                    "scenery": null
+                  },
+                  "claps": 39,
+                  "views": 723,
+                  "downloads": 31,
+                  "description": "Emerald Pools Trail – Un paseo imprescindible en Zion National Park \n \nEl Emerald Pools Trail, conocido en español como el sendero de las Pi…",
+                  "author": {
+                    "id": 1778696,
+                    "name": "posets63",
+                    "url": "https://www.wikiloc.com/wikiloc/user.do?id=1778696"
+                  },
+                  "created_at": "2025-07-01T20:32+0200",
+                  "published_at": "2025-07-01T21:13+0200",
+                  "modified_at": "2025-07-10T02:07+0200",
+                  "…": "7 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

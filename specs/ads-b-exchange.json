@@ -1,0 +1,2002 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: ADS-B Exchange",
+    "version": "1.0.0",
+    "description": "The ADS-B Exchange API from API.SH: public ADS-B Exchange data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "ADS-B Exchange",
+      "description": "7 endpoints (travel & events)",
+      "x-slug": "ads-b-exchange",
+      "x-domains": [
+        "adsbexchange.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/adsbexchange/v1/aircraft": {
+      "get": {
+        "operationId": "adsbexchangeAircraft",
+        "summary": "ADS-B Exchange live aircraft by hex, registration or callsign",
+        "description": "The live state of one aircraft: position, barometric and GPS altitude, ground and air speeds, track and headings, vertical rates, squawk, emergency status, category, selected altitude and heading, QNH, winds and temperatures when broadcast, data source (ADS-B, MLAT, TIS-B...), military flag, signal quality and how long ago it was seen. Answers 404 when the aircraft is not being tracked now.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adsbexchange-aircraft",
+        "tags": [
+          "ADS-B Exchange"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "hex",
+            "in": "query",
+            "required": false,
+            "description": "ICAO 24-bit address (6 hex characters).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "42584b"
+          },
+          {
+            "name": "registration",
+            "in": "query",
+            "required": false,
+            "description": "Registration, e.g. `G-XLEA`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "callsign",
+            "in": "query",
+            "required": false,
+            "description": "Callsign as broadcast, e.g. `BAW117`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": {
+                    "hex": "42584b"
+                  },
+                  "time": "2026-11-06T09:04:42.001Z",
+                  "total": 1,
+                  "offset": 0,
+                  "count": 1,
+                  "aircraft": [
+                    {
+                      "hex": "42584b",
+                      "callsign": null,
+                      "registration": "TWR",
+                      "aircraft_type": "TWR",
+                      "latitude": 51.470575,
+                      "longitude": -0.447044,
+                      "on_ground": true,
+                      "altitude_baro_ft": null,
+                      "altitude_geom_ft": null,
+                      "ground_speed_kt": 0,
+                      "indicated_airspeed_kt": null,
+                      "true_airspeed_kt": null,
+                      "mach": null,
+                      "track_deg": null,
+                      "true_heading_deg": null,
+                      "magnetic_heading_deg": null,
+                      "roll_deg": null,
+                      "track_rate": null,
+                      "vertical_rate_baro_fpm": null,
+                      "vertical_rate_geom_fpm": null,
+                      "squawk": null,
+                      "emergency": null,
+                      "category": null,
+                      "selected_altitude_ft": null,
+                      "selected_altitude_fms_ft": null,
+                      "selected_heading_deg": null,
+                      "qnh_hpa": null,
+                      "wind_direction_deg": null,
+                      "wind_speed_kt": null,
+                      "outside_air_temp_c": null,
+                      "total_air_temp_c": null,
+                      "source": "adsb_icao_nt",
+                      "military": false,
+                      "interesting": false,
+                      "nic": 11,
+                      "nac_p": 11,
+                      "nac_v": null,
+                      "sil": 2,
+                      "sda": null,
+                      "adsb_version": 0,
+                      "…": "5 more fields"
+                    }
+                  ],
+                  "next_offset": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/adsbexchange/v1/area": {
+      "get": {
+        "operationId": "adsbexchangeArea",
+        "summary": "ADS-B Exchange live aircraft in an area",
+        "description": "Every aircraft tracked now in a circle (sorted by distance, with `distance_nm`) or a lat/lon box, with altitude, type, squawk, callsign and military filters. Each aircraft carries the full live state. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adsbexchange-area",
+        "tags": [
+          "ADS-B Exchange"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": false,
+            "description": "Circle centre latitude.",
+            "schema": {
+              "type": "number"
+            },
+            "example": "51.47"
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": false,
+            "description": "Circle centre longitude.",
+            "schema": {
+              "type": "number"
+            },
+            "example": "-0.45"
+          },
+          {
+            "name": "radius_nm",
+            "in": "query",
+            "required": false,
+            "description": "Circle radius in nautical miles (1-250, default 25).",
+            "schema": {
+              "type": "number"
+            },
+            "example": "30"
+          },
+          {
+            "name": "box",
+            "in": "query",
+            "required": false,
+            "description": "A box instead of a circle: `south,north,west,east` in degrees.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_altitude_ft",
+            "in": "query",
+            "required": false,
+            "description": "Only aircraft at or above this barometric altitude (feet).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_altitude_ft",
+            "in": "query",
+            "required": false,
+            "description": "Only aircraft at or below this altitude (feet).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "military",
+            "in": "query",
+            "required": false,
+            "description": "true: military aircraft only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "squawk",
+            "in": "query",
+            "required": false,
+            "description": "Only aircraft squawking this code (4 octal digits).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "callsign_prefix",
+            "in": "query",
+            "required": false,
+            "description": "Only callsigns starting with this (e.g. `BAW`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Only this ICAO aircraft type (e.g. `A320`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Aircraft per page (1-500, default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Skip this many aircraft.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "area": {
+                    "lat": 51.47,
+                    "lon": -0.45,
+                    "radius_nm": 30
+                  },
+                  "applied_filters": {},
+                  "sort": "distance",
+                  "time": "2026-11-06T09:07:00.501Z",
+                  "total": 106,
+                  "offset": 0,
+                  "count": 100,
+                  "aircraft": [
+                    {
+                      "hex": "42584b",
+                      "callsign": null,
+                      "registration": "TWR",
+                      "aircraft_type": "TWR",
+                      "latitude": 51.47057,
+                      "longitude": -0.447043,
+                      "on_ground": true,
+                      "altitude_baro_ft": null,
+                      "altitude_geom_ft": null,
+                      "ground_speed_kt": 0,
+                      "indicated_airspeed_kt": null,
+                      "true_airspeed_kt": null,
+                      "mach": null,
+                      "track_deg": null,
+                      "true_heading_deg": null,
+                      "magnetic_heading_deg": null,
+                      "roll_deg": null,
+                      "track_rate": null,
+                      "vertical_rate_baro_fpm": null,
+                      "vertical_rate_geom_fpm": null,
+                      "squawk": null,
+                      "emergency": null,
+                      "category": null,
+                      "selected_altitude_ft": null,
+                      "selected_altitude_fms_ft": null,
+                      "selected_heading_deg": null,
+                      "qnh_hpa": null,
+                      "wind_direction_deg": null,
+                      "wind_speed_kt": null,
+                      "outside_air_temp_c": null,
+                      "total_air_temp_c": null,
+                      "source": "adsb_icao_nt",
+                      "military": false,
+                      "interesting": false,
+                      "nic": 11,
+                      "nac_p": 11,
+                      "nac_v": null,
+                      "sil": 2,
+                      "sda": null,
+                      "adsb_version": 0,
+                      "…": "6 more fields"
+                    },
+                    {
+                      "hex": "a4c5d8",
+                      "callsign": "JBU1621",
+                      "registration": "N4064J",
+                      "aircraft_type": "A21N",
+                      "latitude": 51.469155,
+                      "longitude": -0.446949,
+                      "on_ground": true,
+                      "altitude_baro_ft": null,
+                      "altitude_geom_ft": null,
+                      "ground_speed_kt": 0,
+                      "indicated_airspeed_kt": null,
+                      "true_airspeed_kt": null,
+                      "mach": null,
+                      "track_deg": null,
+                      "true_heading_deg": 267.2,
+                      "magnetic_heading_deg": null,
+                      "roll_deg": null,
+                      "track_rate": null,
+                      "vertical_rate_baro_fpm": null,
+                      "vertical_rate_geom_fpm": null,
+                      "squawk": "5462",
+                      "emergency": "none",
+                      "category": "A3",
+                      "selected_altitude_ft": null,
+                      "selected_altitude_fms_ft": null,
+                      "selected_heading_deg": null,
+                      "qnh_hpa": null,
+                      "wind_direction_deg": null,
+                      "wind_speed_kt": null,
+                      "outside_air_temp_c": null,
+                      "total_air_temp_c": null,
+                      "source": "adsb_icao",
+                      "military": false,
+                      "interesting": false,
+                      "nic": 8,
+                      "nac_p": 9,
+                      "nac_v": 1,
+                      "sil": 3,
+                      "sda": 2,
+                      "adsb_version": 2,
+                      "…": "6 more fields"
+                    },
+                    "… 98 more"
+                  ],
+                  "next_offset": 100,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/adsbexchange/v1/closest": {
+      "get": {
+        "operationId": "adsbexchangeClosest",
+        "summary": "ADS-B Exchange closest aircraft to a point",
+        "description": "The aircraft closest to a point within a radius, with its distance and full live state; the same filters as /adsbexchange/v1/area.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adsbexchange-closest",
+        "tags": [
+          "ADS-B Exchange"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "description": "Latitude.",
+            "schema": {
+              "type": "number"
+            },
+            "example": "51.47"
+          },
+          {
+            "name": "lon",
+            "in": "query",
+            "required": true,
+            "description": "Longitude.",
+            "schema": {
+              "type": "number"
+            },
+            "example": "-0.45"
+          },
+          {
+            "name": "radius_nm",
+            "in": "query",
+            "required": false,
+            "description": "Search radius in nautical miles (1-500, default 100).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "min_altitude_ft",
+            "in": "query",
+            "required": false,
+            "description": "Only aircraft at or above this barometric altitude (feet).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_altitude_ft",
+            "in": "query",
+            "required": false,
+            "description": "Only aircraft at or below this altitude (feet).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "military",
+            "in": "query",
+            "required": false,
+            "description": "true: military aircraft only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "squawk",
+            "in": "query",
+            "required": false,
+            "description": "Only aircraft squawking this code (4 octal digits).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "callsign_prefix",
+            "in": "query",
+            "required": false,
+            "description": "Only callsigns starting with this (e.g. `BAW`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Only this ICAO aircraft type (e.g. `A320`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "point": {
+                    "lat": 51.47,
+                    "lon": -0.45
+                  },
+                  "radius_nm": 100,
+                  "applied_filters": {},
+                  "time": "2026-11-06T09:09:45.001Z",
+                  "aircraft": {
+                    "hex": "44008f",
+                    "callsign": "AUA33QJ",
+                    "registration": "OE-LZR",
+                    "aircraft_type": "A20N",
+                    "latitude": 51.468384,
+                    "longitude": -0.44979,
+                    "on_ground": true,
+                    "altitude_baro_ft": null,
+                    "altitude_geom_ft": null,
+                    "ground_speed_kt": 0.2,
+                    "indicated_airspeed_kt": null,
+                    "true_airspeed_kt": null,
+                    "mach": null,
+                    "track_deg": null,
+                    "true_heading_deg": 0,
+                    "magnetic_heading_deg": null,
+                    "roll_deg": null,
+                    "track_rate": null,
+                    "vertical_rate_baro_fpm": null,
+                    "vertical_rate_geom_fpm": null,
+                    "squawk": null,
+                    "emergency": null,
+                    "category": "A3",
+                    "selected_altitude_ft": null,
+                    "selected_altitude_fms_ft": null,
+                    "selected_heading_deg": null,
+                    "qnh_hpa": null,
+                    "wind_direction_deg": null,
+                    "wind_speed_kt": null,
+                    "outside_air_temp_c": null,
+                    "total_air_temp_c": null,
+                    "source": "adsb_icao",
+                    "military": false,
+                    "interesting": false,
+                    "nic": 8,
+                    "nac_p": 8,
+                    "nac_v": null,
+                    "sil": 2,
+                    "sda": null,
+                    "adsb_version": 0,
+                    "…": "6 more fields"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/adsbexchange/v1/military": {
+      "get": {
+        "operationId": "adsbexchangeMilitary",
+        "summary": "ADS-B Exchange live military aircraft",
+        "description": "Every military aircraft tracked now worldwide, with the full live state; optional altitude, squawk, callsign and type filters. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adsbexchange-military",
+        "tags": [
+          "ADS-B Exchange"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "min_altitude_ft",
+            "in": "query",
+            "required": false,
+            "description": "Only aircraft at or above this barometric altitude (feet).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_altitude_ft",
+            "in": "query",
+            "required": false,
+            "description": "Only aircraft at or below this altitude (feet).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "squawk",
+            "in": "query",
+            "required": false,
+            "description": "Only aircraft squawking this code (4 octal digits).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "callsign_prefix",
+            "in": "query",
+            "required": false,
+            "description": "Only callsigns starting with this (e.g. `BAW`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Only this ICAO aircraft type (e.g. `A320`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Aircraft per page (1-500, default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Skip this many aircraft.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "applied_filters": {},
+                  "time": "2026-11-06T09:12:03.501Z",
+                  "total": 215,
+                  "offset": 0,
+                  "count": 100,
+                  "aircraft": [
+                    {
+                      "hex": "ae6c20",
+                      "callsign": "HRCLS61",
+                      "registration": "170284",
+                      "aircraft_type": "C30J",
+                      "latitude": 21.243322,
+                      "longitude": -158.319194,
+                      "on_ground": false,
+                      "altitude_baro_ft": 1850,
+                      "altitude_geom_ft": 2075,
+                      "ground_speed_kt": 231.7,
+                      "indicated_airspeed_kt": null,
+                      "true_airspeed_kt": null,
+                      "mach": null,
+                      "track_deg": 62.8,
+                      "true_heading_deg": null,
+                      "magnetic_heading_deg": null,
+                      "roll_deg": null,
+                      "track_rate": null,
+                      "vertical_rate_baro_fpm": null,
+                      "vertical_rate_geom_fpm": -256,
+                      "squawk": "2133",
+                      "emergency": "none",
+                      "category": "A3",
+                      "selected_altitude_ft": 2016,
+                      "selected_altitude_fms_ft": 2016,
+                      "selected_heading_deg": 49.9,
+                      "qnh_hpa": 1019.2,
+                      "wind_direction_deg": null,
+                      "wind_speed_kt": null,
+                      "outside_air_temp_c": null,
+                      "total_air_temp_c": null,
+                      "source": "adsb_icao",
+                      "military": true,
+                      "interesting": false,
+                      "nic": 9,
+                      "nac_p": 9,
+                      "nac_v": 2,
+                      "sil": 3,
+                      "sda": 2,
+                      "adsb_version": 2,
+                      "…": "5 more fields"
+                    },
+                    {
+                      "hex": "ae5655",
+                      "callsign": "COLT98",
+                      "registration": "12-20444",
+                      "aircraft_type": "H60",
+                      "latitude": 20.643082,
+                      "longitude": -156.461302,
+                      "on_ground": false,
+                      "altitude_baro_ft": 1250,
+                      "altitude_geom_ft": 1500,
+                      "ground_speed_kt": 123.6,
+                      "indicated_airspeed_kt": null,
+                      "true_airspeed_kt": null,
+                      "mach": null,
+                      "track_deg": 174.4,
+                      "true_heading_deg": null,
+                      "magnetic_heading_deg": null,
+                      "roll_deg": null,
+                      "track_rate": null,
+                      "vertical_rate_baro_fpm": 0,
+                      "vertical_rate_geom_fpm": null,
+                      "squawk": "1200",
+                      "emergency": "none",
+                      "category": "A7",
+                      "selected_altitude_ft": 1376,
+                      "selected_altitude_fms_ft": null,
+                      "selected_heading_deg": 168,
+                      "qnh_hpa": 1017.6,
+                      "wind_direction_deg": null,
+                      "wind_speed_kt": null,
+                      "outside_air_temp_c": null,
+                      "total_air_temp_c": null,
+                      "source": "adsb_icao",
+                      "military": true,
+                      "interesting": false,
+                      "nic": 8,
+                      "nac_p": 11,
+                      "nac_v": 4,
+                      "sil": 3,
+                      "sda": 2,
+                      "adsb_version": 2,
+                      "…": "5 more fields"
+                    },
+                    "… 98 more"
+                  ],
+                  "next_offset": 100,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/adsbexchange/v1/squawk": {
+      "get": {
+        "operationId": "adsbexchangeSquawk",
+        "summary": "ADS-B Exchange aircraft squawking a code",
+        "description": "Every aircraft worldwide squawking one transponder code now: 7700 (emergency, default), 7600 (radio failure), 7500 (hijack) or any other code. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adsbexchange-squawk",
+        "tags": [
+          "ADS-B Exchange"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "description": "Squawk code (4 octal digits), default 7700.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "7000"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Aircraft per page (1-500, default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Skip this many aircraft.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "squawk": "7000",
+                  "time": "2026-11-06T09:13:59.501Z",
+                  "total": 203,
+                  "offset": 0,
+                  "count": 100,
+                  "aircraft": [
+                    {
+                      "hex": "491117",
+                      "callsign": "RVP271",
+                      "registration": "CS-DHW",
+                      "aircraft_type": "P208",
+                      "latitude": 39.236252,
+                      "longitude": -8.063368,
+                      "on_ground": false,
+                      "altitude_baro_ft": 1000,
+                      "altitude_geom_ft": 1450,
+                      "ground_speed_kt": 94.3,
+                      "indicated_airspeed_kt": null,
+                      "true_airspeed_kt": null,
+                      "mach": null,
+                      "track_deg": 302,
+                      "true_heading_deg": null,
+                      "magnetic_heading_deg": null,
+                      "roll_deg": null,
+                      "track_rate": null,
+                      "vertical_rate_baro_fpm": null,
+                      "vertical_rate_geom_fpm": 640,
+                      "squawk": "7000",
+                      "emergency": "none",
+                      "category": "A1",
+                      "selected_altitude_ft": null,
+                      "selected_altitude_fms_ft": null,
+                      "selected_heading_deg": null,
+                      "qnh_hpa": null,
+                      "wind_direction_deg": null,
+                      "wind_speed_kt": null,
+                      "outside_air_temp_c": null,
+                      "total_air_temp_c": null,
+                      "source": "adsb_icao",
+                      "military": false,
+                      "interesting": false,
+                      "nic": 9,
+                      "nac_p": 10,
+                      "nac_v": 2,
+                      "sil": 3,
+                      "sda": 2,
+                      "adsb_version": 2,
+                      "…": "5 more fields"
+                    },
+                    {
+                      "hex": "491114",
+                      "callsign": "RVP148",
+                      "registration": "CS-DHT",
+                      "aircraft_type": "P208",
+                      "latitude": 39.123093,
+                      "longitude": -8.049635,
+                      "on_ground": false,
+                      "altitude_baro_ft": 1900,
+                      "altitude_geom_ft": 2275,
+                      "ground_speed_kt": 81.1,
+                      "indicated_airspeed_kt": null,
+                      "true_airspeed_kt": null,
+                      "mach": null,
+                      "track_deg": 141,
+                      "true_heading_deg": null,
+                      "magnetic_heading_deg": null,
+                      "roll_deg": null,
+                      "track_rate": null,
+                      "vertical_rate_baro_fpm": null,
+                      "vertical_rate_geom_fpm": -192,
+                      "squawk": "7000",
+                      "emergency": "none",
+                      "category": "A1",
+                      "selected_altitude_ft": null,
+                      "selected_altitude_fms_ft": null,
+                      "selected_heading_deg": null,
+                      "qnh_hpa": null,
+                      "wind_direction_deg": null,
+                      "wind_speed_kt": null,
+                      "outside_air_temp_c": null,
+                      "total_air_temp_c": null,
+                      "source": "adsb_icao",
+                      "military": false,
+                      "interesting": false,
+                      "nic": 9,
+                      "nac_p": 10,
+                      "nac_v": 2,
+                      "sil": 3,
+                      "sda": 2,
+                      "adsb_version": 2,
+                      "…": "5 more fields"
+                    },
+                    "… 98 more"
+                  ],
+                  "next_offset": 100,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/adsbexchange/v1/trace": {
+      "get": {
+        "operationId": "adsbexchangeTrace",
+        "summary": "ADS-B Exchange aircraft track today",
+        "description": "An aircraft's position history for the current UTC day: time, position, altitude, ground speed, track, vertical rates, airspeed, roll, source, new-leg marks, and callsign and squawk where they changed; `recent=true` returns only the last minutes. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adsbexchange-trace",
+        "tags": [
+          "ADS-B Exchange"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "hex",
+            "in": "query",
+            "required": true,
+            "description": "ICAO 24-bit address (6 hex characters).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "42584b"
+          },
+          {
+            "name": "recent",
+            "in": "query",
+            "required": false,
+            "description": "true: only the most recent part of the track.",
+            "schema": {
+              "type": "boolean"
+            },
+            "example": "true"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Points per page (1-5000, default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Skip this many points.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "hex": "42584b",
+                  "registration": "TWR",
+                  "aircraft_type": "TWR",
+                  "description": null,
+                  "year": null,
+                  "military": false,
+                  "start": "2026-11-06T02:09:18.510Z",
+                  "recent_only": true,
+                  "total": 92,
+                  "offset": 0,
+                  "count": 92,
+                  "points": [
+                    {
+                      "time": "2026-11-06T07:14:28Z",
+                      "latitude": 51.47057,
+                      "longitude": -0.447043,
+                      "on_ground": true,
+                      "altitude_baro_ft": null,
+                      "ground_speed_kt": 0,
+                      "track_deg": null,
+                      "vertical_rate_fpm": null,
+                      "source": "adsb_icao_nt",
+                      "altitude_geom_ft": null,
+                      "vertical_rate_geom_fpm": null,
+                      "indicated_airspeed_kt": null,
+                      "roll_deg": null,
+                      "new_leg": false,
+                      "stale": false,
+                      "callsign": null,
+                      "squawk": null
+                    },
+                    {
+                      "time": "2026-11-06T07:15:47Z",
+                      "latitude": 51.47057,
+                      "longitude": -0.447043,
+                      "on_ground": true,
+                      "altitude_baro_ft": null,
+                      "ground_speed_kt": 0,
+                      "track_deg": null,
+                      "vertical_rate_fpm": null,
+                      "source": "adsb_icao_nt",
+                      "altitude_geom_ft": null,
+                      "vertical_rate_geom_fpm": null,
+                      "indicated_airspeed_kt": null,
+                      "roll_deg": null,
+                      "new_leg": false,
+                      "stale": false,
+                      "callsign": null,
+                      "squawk": null
+                    },
+                    "… 90 more"
+                  ],
+                  "next_offset": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/adsbexchange/v1/type": {
+      "get": {
+        "operationId": "adsbexchangeType",
+        "summary": "ADS-B Exchange live aircraft of one type",
+        "description": "Every aircraft of one ICAO type tracked now worldwide, with the full live state. Pass `next_offset` back as `offset`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/adsbexchange-type",
+        "tags": [
+          "ADS-B Exchange"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "description": "ICAO type designator, e.g. `A388`, `B744`, `C17`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "A388"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Aircraft per page (1-500, default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Skip this many aircraft.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "type": "A388",
+                  "time": "2026-11-06T09:16:42.000Z",
+                  "total": 56,
+                  "offset": 0,
+                  "count": 56,
+                  "aircraft": [
+                    {
+                      "hex": "3c65ab",
+                      "callsign": "DLH459",
+                      "registration": "D-AIMK",
+                      "aircraft_type": "A388",
+                      "latitude": 55.390182,
+                      "longitude": -102.819268,
+                      "on_ground": false,
+                      "altitude_baro_ft": 37000,
+                      "altitude_geom_ft": 36800,
+                      "ground_speed_kt": 528.5,
+                      "indicated_airspeed_kt": null,
+                      "true_airspeed_kt": null,
+                      "mach": null,
+                      "track_deg": 43.1,
+                      "true_heading_deg": null,
+                      "magnetic_heading_deg": null,
+                      "roll_deg": null,
+                      "track_rate": null,
+                      "vertical_rate_baro_fpm": 0,
+                      "vertical_rate_geom_fpm": null,
+                      "squawk": "3275",
+                      "emergency": "none",
+                      "category": "A5",
+                      "selected_altitude_ft": 36992,
+                      "selected_altitude_fms_ft": null,
+                      "selected_heading_deg": 35.2,
+                      "qnh_hpa": 1013.6,
+                      "wind_direction_deg": null,
+                      "wind_speed_kt": null,
+                      "outside_air_temp_c": null,
+                      "total_air_temp_c": null,
+                      "source": "adsb_icao",
+                      "military": false,
+                      "interesting": false,
+                      "nic": 8,
+                      "nac_p": 10,
+                      "nac_v": 1,
+                      "sil": 3,
+                      "sda": 2,
+                      "adsb_version": 2,
+                      "…": "5 more fields"
+                    },
+                    {
+                      "hex": "8963eb",
+                      "callsign": "UAE8ER",
+                      "registration": "A6-EON",
+                      "aircraft_type": "A388",
+                      "latitude": 55.6,
+                      "longitude": -43.0667,
+                      "on_ground": false,
+                      "altitude_baro_ft": 36000,
+                      "altitude_geom_ft": null,
+                      "ground_speed_kt": null,
+                      "indicated_airspeed_kt": null,
+                      "true_airspeed_kt": null,
+                      "mach": null,
+                      "track_deg": 242.7,
+                      "true_heading_deg": null,
+                      "magnetic_heading_deg": null,
+                      "roll_deg": null,
+                      "track_rate": null,
+                      "vertical_rate_baro_fpm": null,
+                      "vertical_rate_geom_fpm": null,
+                      "squawk": null,
+                      "emergency": null,
+                      "category": null,
+                      "selected_altitude_ft": null,
+                      "selected_altitude_fms_ft": null,
+                      "selected_heading_deg": null,
+                      "qnh_hpa": null,
+                      "wind_direction_deg": null,
+                      "wind_speed_kt": null,
+                      "outside_air_temp_c": null,
+                      "total_air_temp_c": null,
+                      "source": "adsc",
+                      "military": false,
+                      "interesting": false,
+                      "nic": 0,
+                      "nac_p": null,
+                      "nac_v": null,
+                      "sil": null,
+                      "sda": null,
+                      "adsb_version": null,
+                      "…": "5 more fields"
+                    },
+                    "… 54 more"
+                  ],
+                  "next_offset": null,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

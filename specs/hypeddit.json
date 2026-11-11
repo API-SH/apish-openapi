@@ -1,0 +1,1441 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Hypeddit",
+    "version": "1.0.0",
+    "description": "The Hypeddit API from API.SH: public Hypeddit data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Hypeddit",
+      "description": "5 endpoints (media & music)",
+      "x-slug": "hypeddit",
+      "x-domains": [
+        "hypeddit.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hypeddit/v1/hot-list": {
+      "get": {
+        "operationId": "hypedditHotList",
+        "summary": "Hypeddit Hot or Not player's hot list",
+        "description": "A Hot or Not player's hot picks, 5 per page: rank, short id and link of the download page, platform, source track id and the embedded player link. Pass `next_page` back as `page`; null on the last page. `total_pages` as the site shows it. Unknown lists answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hypeddit-hot-list",
+        "tags": [
+          "Hypeddit"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The hot list id (from /hypeddit/v1/hot-or-not `hot_list_id`) or its hypeddit.com/playlist/<id> URL.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "d9j1o5"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1 for the first. Pass back `next_page`.",
+            "schema": {
+              "type": "integer",
+              "default": "1"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "d9j1o5",
+                  "url": "https://hypeddit.com/playlist/d9j1o5",
+                  "page": 1,
+                  "total_pages": 12,
+                  "count": 5,
+                  "tracks": [
+                    {
+                      "rank": 1,
+                      "uid": "nqEdN3jhIlpMnjybMo9b",
+                      "url": "https://hypeddit.com/track/sc/nqEdN3jhIlpMnjybMo9b",
+                      "platform": "soundcloud",
+                      "source_track_id": "soundcloud:tracks:289448631",
+                      "source_embed_url": "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/289448631&color=F43010&auto_play=false&hide_related=false&show_artw…",
+                      "type": "soundcloud"
+                    },
+                    {
+                      "rank": 2,
+                      "uid": "g1vkhz",
+                      "url": "https://hypeddit.com/track/g1vkhz",
+                      "platform": "soundcloud",
+                      "source_track_id": "soundcloud:tracks:2095998510",
+                      "source_embed_url": "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/2095998510&color=F43010&auto_play=false&hide_related=false&show_art…",
+                      "type": "soundcloud"
+                    },
+                    "… 3 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hypeddit/v1/hot-or-not": {
+      "get": {
+        "operationId": "hypedditHotOrNot",
+        "summary": "Hypeddit Hot or Not leaderboard and track queue",
+        "description": "The Hot or Not game on Hypeddit: the leaderboard (rank, player name, score, avatar, the player's hot list id and link, Spotify profile) and the tracks queued for rating in the chosen genre (position, id, short id, page link, kind, platform, source track link and id, artwork, playlist and smart-link flags, destination link, promoted flag, plus `raw`). The queue changes from visit to visit; open a player's picks with /hypeddit/v1/hot-list.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hypeddit-hot-or-not",
+        "tags": [
+          "Hypeddit"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "genre",
+            "in": "query",
+            "required": false,
+            "description": "all, a genre, or a genre group (group-*), as in the site's genre filter. Genre names such as Deep House are accepted too.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "group-dance-electronic",
+                "afro-house",
+                "bass",
+                "bass-house",
+                "breaks",
+                "chill-out",
+                "deep-house",
+                "drum-bass",
+                "dubstep",
+                "electro-house",
+                "electronica",
+                "future-house",
+                "glitch-hop",
+                "hard-dance",
+                "hardcore-hard-techno",
+                "house",
+                "indie-dance-nu-disco",
+                "progressive-house",
+                "psy-trance",
+                "tech-house",
+                "techno",
+                "trance",
+                "trap",
+                "trip-hop",
+                "group-hip-hop-r-and-b",
+                "funk-rb",
+                "disco",
+                "funk",
+                "hip-hop",
+                "soul",
+                "group-pop-rock",
+                "acoustic",
+                "alternative",
+                "pop-rock",
+                "country",
+                "folk",
+                "indie",
+                "k-pop",
+                "metal",
+                "punk",
+                "rock",
+                "singer-songwriter",
+                "world",
+                "group-other",
+                "blues",
+                "christian",
+                "classical",
+                "dancehall",
+                "dub",
+                "gospel",
+                "jazz",
+                "latin",
+                "reggae-dub",
+                "reggaeton",
+                "other"
+              ],
+              "default": "all"
+            },
+            "example": "house"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "genre": "techno",
+                  "genre_name": "Techno",
+                  "url": "https://hypeddit.com/hot-or-not/techno",
+                  "leaderboard_count": 10,
+                  "leaderboard": [
+                    {
+                      "rank": 1,
+                      "name": "Bruno",
+                      "score": 666,
+                      "avatar": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=2288928714542230&height=50&width=50&ext=1794634176&hash=Afv1cEL3583Ue6Z63uLEz…",
+                      "hot_list_id": null,
+                      "hot_list_url": null,
+                      "spotify_profile_url": null
+                    },
+                    {
+                      "rank": 2,
+                      "name": "J-SEO",
+                      "score": 336,
+                      "avatar": "https://scontent-tpe1-1.xx.fbcdn.net/v/t39.30808-1/712845510_28054542280801905_9060224871080741560_n.jpg?stp=dst-jpg_s320x320_tt6&_nc_cat=10…",
+                      "hot_list_id": "d9j1o5",
+                      "hot_list_url": "https://hypeddit.com/playlist/d9j1o5",
+                      "spotify_profile_url": "https://open.spotify.com/user/1270763472"
+                    },
+                    "… 8 more"
+                  ],
+                  "count": 127,
+                  "tracks": [
+                    {
+                      "position": 1,
+                      "id": 2289442,
+                      "uid": "tn4g7g",
+                      "url": "https://hypeddit.com/track/tn4g7g",
+                      "kind": "download_gate",
+                      "platform": "soundcloud",
+                      "source_url": "https://soundcloud.com/johnny-funk/prospa-cloonee-free-your-mind",
+                      "source_track_id": "soundcloud:tracks:2389997463",
+                      "artwork": "https://hypeddit-gates-prod.s3.amazonaws.com/tn4g7g_compressed_artwork.webp",
+                      "is_playlist": false,
+                      "is_music_link": false,
+                      "destination_url": null,
+                      "promoted": true
+                    },
+                    {
+                      "position": 2,
+                      "id": 2333450,
+                      "uid": "5ke82t",
+                      "url": "https://hypeddit.com/track/5ke82t",
+                      "kind": "download_gate",
+                      "platform": "soundcloud",
+                      "source_url": "https://on.soundcloud.com/g94n8QMffMy9lbP8NK",
+                      "source_track_id": "soundcloud:tracks:2399334612",
+                      "artwork": "https://hypeddit-gates-prod.s3.amazonaws.com/5ke82t_compressed_artwork.webp",
+                      "is_playlist": false,
+                      "is_music_link": false,
+                      "destination_url": null,
+                      "promoted": true
+                    },
+                    "… 125 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hypeddit/v1/music": {
+      "get": {
+        "operationId": "hypedditMusic",
+        "summary": "Hypeddit Top 100 and New Releases charts",
+        "description": "The charts on hypeddit.com/music: Top 100 or New Releases, for free downloads (download gates) or streams (smart links), overall or for one genre or genre group. Each track: rank, id, short id, title, artist, page link, short link, kind (download gate or smart link), platform (SoundCloud, Spotify, YouTube...), source track link and id, artwork, download count or click count, creation date, genre ids, playlist flag, removed and download-limit flags, destination link, file format, duration and sample rate, plus `raw` with the site's record. Promoted tracks the chart shows come in `promoted`. Each chart is one list of up to 100 tracks (the site has no further pages); `limit` keeps the first N.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hypeddit-music",
+        "tags": [
+          "Hypeddit"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "list",
+            "in": "query",
+            "required": false,
+            "description": "top (Top 100 chart) or new (New Releases).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "top",
+                "new"
+              ],
+              "default": "top"
+            },
+            "example": "top"
+          },
+          {
+            "name": "chart",
+            "in": "query",
+            "required": false,
+            "description": "downloads (free download gates) or streams (streaming smart links).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "downloads",
+                "streams"
+              ],
+              "default": "downloads"
+            },
+            "example": "downloads"
+          },
+          {
+            "name": "genre",
+            "in": "query",
+            "required": false,
+            "description": "all, a genre, or a genre group (group-*), as in the site's genre filter. Genre names such as Deep House are accepted too.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "group-dance-electronic",
+                "afro-house",
+                "bass",
+                "bass-house",
+                "breaks",
+                "chill-out",
+                "deep-house",
+                "drum-bass",
+                "dubstep",
+                "electro-house",
+                "electronica",
+                "future-house",
+                "glitch-hop",
+                "hard-dance",
+                "hardcore-hard-techno",
+                "house",
+                "indie-dance-nu-disco",
+                "progressive-house",
+                "psy-trance",
+                "tech-house",
+                "techno",
+                "trance",
+                "trap",
+                "trip-hop",
+                "group-hip-hop-r-and-b",
+                "funk-rb",
+                "disco",
+                "funk",
+                "hip-hop",
+                "soul",
+                "group-pop-rock",
+                "acoustic",
+                "alternative",
+                "pop-rock",
+                "country",
+                "folk",
+                "indie",
+                "k-pop",
+                "metal",
+                "punk",
+                "rock",
+                "singer-songwriter",
+                "world",
+                "group-other",
+                "blues",
+                "christian",
+                "classical",
+                "dancehall",
+                "dub",
+                "gospel",
+                "jazz",
+                "latin",
+                "reggae-dub",
+                "reggaeton",
+                "other"
+              ],
+              "default": "all"
+            },
+            "example": "house"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Keep the first N tracks (1-100).",
+            "schema": {
+              "type": "integer",
+              "default": "100"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "list": "top",
+                  "chart": "downloads",
+                  "genre": "house",
+                  "genre_name": "House",
+                  "limit": 100,
+                  "url": "https://hypeddit.com/charts/downloads/genre/house",
+                  "count": 100,
+                  "tracks": [
+                    {
+                      "rank": 1,
+                      "id": 2261888,
+                      "uid": "h9l8y5",
+                      "title": "Pump Up The Jam x Lose My Breath (Mentol's Version)",
+                      "artist": "Technotronic x Destiny's Child",
+                      "url": "https://hypeddit.com/track/h9l8y5",
+                      "short_url": null,
+                      "kind": "download_gate",
+                      "platform": "soundcloud",
+                      "source_url": "https://soundcloud.com/mentolmusic/pumpupthejamxlosemybreath",
+                      "source_track_id": "soundcloud:tracks:2370290693",
+                      "artwork": "https://hypeddit-gates-prod.s3.amazonaws.com/h9l8y5_compressed_artwork.webp",
+                      "downloads": 260,
+                      "clicks": null,
+                      "created_at": null,
+                      "genre": null,
+                      "artist_id": null,
+                      "is_playlist": false,
+                      "removed": false,
+                      "download_limit_reached": false,
+                      "destination_url": null,
+                      "file_format": "mp3",
+                      "duration_seconds": 252,
+                      "sample_rate": 44100
+                    },
+                    {
+                      "rank": 2,
+                      "id": 2314783,
+                      "uid": "s6dx1o",
+                      "title": "Justin Bieber - Beauty And A Beat (Moonlght Ibiza Remix)",
+                      "artist": "MOONLGHT",
+                      "url": "https://hypeddit.com/track/s6dx1o",
+                      "short_url": null,
+                      "kind": "download_gate",
+                      "platform": "soundcloud",
+                      "source_url": "https://soundcloud.com/musicbymoonlght/beautyandabeatmoonlght",
+                      "source_track_id": "soundcloud:tracks:2416223928",
+                      "artwork": "https://hypeddit-gates-prod.s3.amazonaws.com/s6dx1o_compressed_artwork.webp",
+                      "downloads": 147,
+                      "clicks": null,
+                      "created_at": null,
+                      "genre": null,
+                      "artist_id": null,
+                      "is_playlist": false,
+                      "removed": false,
+                      "download_limit_reached": false,
+                      "destination_url": null,
+                      "file_format": "zip",
+                      "duration_seconds": null,
+                      "sample_rate": null
+                    },
+                    "… 98 more"
+                  ],
+                  "promoted_count": 10,
+                  "promoted": [
+                    {
+                      "id": 2053767,
+                      "uid": "atf0so",
+                      "title": "LOLLIPOP",
+                      "artist": null,
+                      "url": "https://hypeddit.com/track/atf0so",
+                      "short_url": null,
+                      "kind": "download_gate",
+                      "platform": "soundcloud",
+                      "source_url": "https://soundcloud.com/facexcontrol/facexcontrol-lollipop",
+                      "source_track_id": "soundcloud:tracks:2215945091",
+                      "artwork": "https://hypeddit-gates-prod.s3.amazonaws.com/atf0so_compressed_artwork.webp",
+                      "downloads": null,
+                      "clicks": null,
+                      "created_at": "2026-01-08T08:43:57Z",
+                      "genre": {
+                        "id": 11,
+                        "group_id": 1
+                      },
+                      "artist_id": 890929,
+                      "is_playlist": false,
+                      "removed": false,
+                      "download_limit_reached": false,
+                      "destination_url": null,
+                      "file_format": null,
+                      "duration_seconds": 210.1,
+                      "sample_rate": 44100
+                    },
+                    {
+                      "id": 2321916,
+                      "uid": "37kldw",
+                      "title": "Hi Madness",
+                      "artist": null,
+                      "url": "https://hypeddit.com/track/37kldw",
+                      "short_url": null,
+                      "kind": "download_gate",
+                      "platform": "soundcloud",
+                      "source_url": "https://soundcloud.com/freak-noize/hi-mandnnes-freaknoize-original-mix",
+                      "source_track_id": "soundcloud:tracks:975293650",
+                      "artwork": "https://hypeddit-gates-prod.s3.amazonaws.com/37kldw_compressed_artwork.webp",
+                      "downloads": null,
+                      "clicks": null,
+                      "created_at": "2026-10-21T19:11:53Z",
+                      "genre": {
+                        "id": 46,
+                        "group_id": 1
+                      },
+                      "artist_id": 1059211,
+                      "is_playlist": false,
+                      "removed": false,
+                      "download_limit_reached": false,
+                      "destination_url": null,
+                      "file_format": null,
+                      "duration_seconds": 420.7,
+                      "sample_rate": 44100
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hypeddit/v1/samples": {
+      "get": {
+        "operationId": "hypedditSamples",
+        "summary": "Hypeddit sounds and samples",
+        "description": "The free sound and sample packs on hypeddit.com/sounds-and-samples: position, name (style), new flag, id, short id and link of the download page, platform, source track id and the embedded player link. Open a pack's download steps with /hypeddit/v1/track.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hypeddit-samples",
+        "tags": [
+          "Hypeddit"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "url": "https://hypeddit.com/sounds-and-samples",
+                  "count": 9,
+                  "packs": [
+                    {
+                      "position": 1,
+                      "name": "LAID BACK FUTURE POP",
+                      "is_new": true,
+                      "id": 244749,
+                      "order": 2,
+                      "type": "soundcloud",
+                      "uid": "21uj0m",
+                      "url": "https://hypeddit.com/track/21uj0m",
+                      "platform": "soundcloud",
+                      "source_track_id": "soundcloud:tracks:461049102",
+                      "source_embed_url": "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/461049102&color=F43010&auto_play=false&hide_related=false&show_artw…"
+                    },
+                    {
+                      "position": 2,
+                      "name": "FUTURE RNB",
+                      "is_new": false,
+                      "id": 205480,
+                      "order": 3,
+                      "type": "soundcloud",
+                      "uid": null,
+                      "url": "https://hypeddit.com/track/sc/jcv8av",
+                      "platform": "soundcloud",
+                      "source_track_id": "soundcloud:tracks:369649112",
+                      "source_embed_url": "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/369649112&color=F43010&auto_play=false&hide_related=false&show_artw…"
+                    },
+                    "… 7 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hypeddit/v1/track": {
+      "get": {
+        "operationId": "hypedditTrack",
+        "summary": "Hypeddit track (download gate, smart link or artist page)",
+        "description": "One Hypeddit page: a free download gate, a smart link or an artist page (kind artist_page: fans sign up for the artist's future releases). Returns short id, id, kind, link, title, artist, page title, description, artwork, genre, source track link and id, duration, playlist flag, unlimited-downloads and skippable-steps flags, the steps that unlock the download (email, SoundCloud, Spotify, Instagram, YouTube...) with the profiles and tracks each step asks to follow, like, repost or save, the artist's social links, streaming links (platform, link, button), preview audio and waveform links, and a link to more music of the genre. Metadata only: it does not complete a gate or download the file. Unknown links answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hypeddit-track",
+        "tags": [
+          "Hypeddit"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A Hypeddit track or link URL (hypeddit.com/track/<id>, hypeddit.com/<id>, hypeddit.com/<artist>, hypeddit.com/<artist>/<slug>, hyp.ee links). Send url or id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://hypeddit.com/track/oadh8q"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "The short id of a track page, e.g. oadh8q. Send url or id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "uid": "oadh8q",
+                  "id": 2326042,
+                  "kind": "download_gate",
+                  "url": "https://hypeddit.com/track/oadh8q",
+                  "title": "Yeah Yeah Yeahs - Heads Will Roll (A-Trak Remix) [pspsps EDIT]",
+                  "artist": "pspsps",
+                  "page_title": "Free Download [Bass House]: pspsps - Yeah Yeah Yeahs - Heads Will Roll (A-Trak Remix) [pspsps EDIT]",
+                  "description": "Grab your free download of Yeah Yeah Yeahs - Heads Will Roll (A-Trak Remix) [pspsps EDIT] by pspsps on Hypeddit",
+                  "artwork": "https://hypeddit-gates-prod.s3.amazonaws.com/oadh8q_compressed_artwork.webp",
+                  "genre": "Bass House",
+                  "source_url": "https://soundcloud.com/pspsps/headswillroll",
+                  "source_track_id": "soundcloud:tracks:2427137025",
+                  "duration_seconds": 250,
+                  "file_duration_seconds": 250.9,
+                  "is_playlist": false,
+                  "unlimited_downloads": true,
+                  "skippable_steps": false,
+                  "step_keys": [
+                    "email",
+                    "sc"
+                  ],
+                  "steps": [
+                    {
+                      "step": "email",
+                      "order": 1,
+                      "label": "Email address",
+                      "actions": [],
+                      "note": "By providing your email address, you agree that your email address will be shared with the author of this download and that you may receive …",
+                      "fields": [
+                        "First name",
+                        "Email address"
+                      ],
+                      "skippable": false
+                    },
+                    {
+                      "step": "sc",
+                      "order": 2,
+                      "label": "SoundCloud",
+                      "actions": [
+                        {
+                          "action": "follow",
+                          "label": "Follow pspsps",
+                          "url": "https://soundcloud.com/pspsps?utm_medium=api&utm_campaign=social_sharing&utm_source=id_280533",
+                          "name": "pspsps",
+                          "platform": "soundcloud"
+                        },
+                        {
+                          "action": "comment",
+                          "label": "Comment On My Track",
+                          "url": "https://soundcloud.com/pspsps/headswillroll",
+                          "name": "Yeah Yeah Yeahs - Heads Will Roll (A-Trak Remix) [pspsps EDIT]",
+                          "platform": "soundcloud"
+                        }
+                      ],
+                      "skippable": false
+                    }
+                  ],
+                  "social_links": [
+                    {
+                      "platform": "instagram",
+                      "url": "https://www.instagram.com/pspspsmusic/"
+                    },
+                    {
+                      "platform": "spotify",
+                      "url": "https://open.spotify.com/artist/3kH3yAdiybOBjA6uaw8VVF?si=7zaoBbLkQOGxAoHeqL02aQ"
+                    },
+                    "… 3 more"
+                  ],
+                  "streaming_links": [],
+                  "preview_audio_url": "https://hypeddit-gates-prod.s3.amazonaws.com/oadh8q_preview?response-content-type=audio%2Fmpeg&response-content-disposition=filename%3D%22oa…",
+                  "waveform_url": "https://hypeddit-gates-prod.s3.amazonaws.com/oadh8q_peak",
+                  "more_from_genre_url": "https://hypeddit.com/music/genre/bass-house",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

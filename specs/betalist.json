@@ -1,0 +1,1566 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: BetaList",
+    "version": "1.0.0",
+    "description": "The BetaList API from API.SH: public BetaList data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "BetaList",
+      "description": "8 endpoints (jobs & b2b)",
+      "x-slug": "betalist",
+      "x-domains": [
+        "betalist.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/betalist/v1/maker": {
+      "get": {
+        "operationId": "betalistMaker",
+        "summary": "BetaList maker profile",
+        "description": "A maker's public BetaList profile: display name, username, avatar, bio, profile links (such as X), the startups they made (with total) and the startups they follow (with total). Makers are listed on each startup in /betalist/v1/startup.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/betalist-maker",
+        "tags": [
+          "BetaList"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "description": "BetaList username (e.g. DottChen) or the betalist.com/@<username> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "DottChen"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/betalist/v1/region": {
+      "get": {
+        "operationId": "betalistRegion",
+        "summary": "BetaList startups by country",
+        "description": "Startups from one country or continent on BetaList, newest first: slug, name, tagline, link, id, logo and boosted / TestFlight flags. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/betalist-region",
+        "tags": [
+          "BetaList"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "required": true,
+            "description": "Country or continent slug (e.g. india, brazil, germany, europe) or its betalist.com/regions link. See /betalist/v1/regions.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "india"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page (1-based). Pass next_page back; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "region": "india",
+                  "name": "India",
+                  "url": "https://betalist.com/regions/india",
+                  "page": 1,
+                  "count": 20,
+                  "next_page": 2,
+                  "startups": [
+                    {
+                      "slug": "floik",
+                      "name": "Floik",
+                      "tagline": "Create interactive demos, explainer videos, how-to guides",
+                      "url": "https://betalist.com/startups/floik",
+                      "id": 97209,
+                      "logo": "https://resize.imagekit.co/r75Qkylcc-0TqaGTbS06OGSNNg9mmT5YQsPzG8oNkL0/s:40:40/dpr:2/plain/s3://betalist-production/g5niwhjg3h54fw0oz2bsk5r2…",
+                      "boosted": false,
+                      "testflight": false
+                    },
+                    {
+                      "slug": "paperr",
+                      "name": "Paperr",
+                      "tagline": "Blazing Fast, SEO-friendly blog in minutes",
+                      "url": "https://betalist.com/startups/paperr",
+                      "id": 95368,
+                      "logo": "https://resize.imagekit.co/6FTmYtOG-p-0_Jn9cMVw4xjuRrziLAZ1NBBldsKc_K4/s:40:40/dpr:2/plain/s3://betalist-production/6ceqou4ec4t78c3z62ll3gqa…",
+                      "boosted": true,
+                      "testflight": false
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/betalist/v1/regions": {
+      "get": {
+        "operationId": "betalistRegions",
+        "summary": "BetaList regions",
+        "description": "Every BetaList region: continents (slug, name, link) with their countries (slug, name, flag, link). Use a slug in /betalist/v1/region.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/betalist-regions",
+        "tags": [
+          "BetaList"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 7,
+                  "continents": [
+                    {
+                      "slug": "africa",
+                      "name": "Africa",
+                      "url": "https://betalist.com/regions/africa",
+                      "count": 56,
+                      "countries": [
+                        {
+                          "slug": "algeria",
+                          "name": "Algeria",
+                          "flag": "🇩🇿",
+                          "url": "https://betalist.com/regions/algeria"
+                        },
+                        {
+                          "slug": "angola",
+                          "name": "Angola",
+                          "flag": "🇦🇴",
+                          "url": "https://betalist.com/regions/angola"
+                        },
+                        "… 54 more"
+                      ]
+                    },
+                    {
+                      "slug": "antarctica",
+                      "name": "Antarctica",
+                      "url": "https://betalist.com/regions/antarctica",
+                      "count": 4,
+                      "countries": [
+                        {
+                          "slug": "bouvet-island",
+                          "name": "Bouvet Island (Bouvetoya)",
+                          "flag": "🇧🇻",
+                          "url": "https://betalist.com/regions/bouvet-island"
+                        },
+                        {
+                          "slug": "french-southern-territories",
+                          "name": "French Southern Territories",
+                          "flag": "🇹🇫",
+                          "url": "https://betalist.com/regions/french-southern-territories"
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    "… 5 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/betalist/v1/search": {
+      "get": {
+        "operationId": "betalistSearch",
+        "summary": "Search BetaList startups",
+        "description": "Startups on BetaList matching a query (slug, name, tagline, link, id, logo, flags), plus the matching topics on page 1. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/betalist-search",
+        "tags": [
+          "BetaList"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search words (e.g. crm, invoicing, ai agents).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "crm"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page (1-based). Pass next_page back; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "crm",
+                  "page": 1,
+                  "count": 20,
+                  "next_page": 2,
+                  "topics": [
+                    {
+                      "slug": "sales/crm-integration",
+                      "name": "Crm Integration",
+                      "url": "https://betalist.com/browse/sales/crm-integration"
+                    },
+                    {
+                      "slug": "sales/social-crm",
+                      "name": "Social CRM",
+                      "url": "https://betalist.com/browse/sales/social-crm"
+                    },
+                    "… 1 more"
+                  ],
+                  "startups": [
+                    {
+                      "slug": "jobwell",
+                      "name": "Jobwell",
+                      "tagline": "Take control of your job search",
+                      "url": "https://betalist.com/startups/jobwell",
+                      "id": 52976,
+                      "logo": "https://resize.imagekit.co/0g6_rJAvGQBgdQGL08ghUswa3xlmPB0Pr_92mCPvnI0/s:40:40/dpr:2/plain/s3://betalist-production/sjkv0328wjm6iezqdzhrda91…",
+                      "boosted": false,
+                      "testflight": false
+                    },
+                    {
+                      "slug": "aloware",
+                      "name": "Aloware",
+                      "tagline": "Modern Contact Center for Sales & Support Teams",
+                      "url": "https://betalist.com/startups/aloware",
+                      "id": 68341,
+                      "logo": "https://resize.imagekit.co/80l_Etzudvv69sqzTfNmILeIX9jwpi1YRTHgT_obF_8/s:40:40/dpr:2/plain/s3://betalist-production/p1za0nv0okrsd6xlnlud27c4…",
+                      "boosted": true,
+                      "testflight": false
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/betalist/v1/startup": {
+      "get": {
+        "operationId": "betalistStartup",
+        "summary": "BetaList startup",
+        "description": "One startup on BetaList: name, tagline, full description, logo, share image, screenshots, videos, website, the date it was featured, its makers (display name, username, profile link and avatar; full profiles in /betalist/v1/maker), its topics and similar startups.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/betalist-startup",
+        "tags": [
+          "BetaList"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "Startup slug (e.g. merlin) or its betalist.com/startups/<slug> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "merlin"
+          },
+          {
+            "name": "website",
+            "in": "query",
+            "required": false,
+            "description": "false: skip looking up the website link (a little faster).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "merlin",
+                  "id": 195521,
+                  "url": "https://betalist.com/startups/merlin",
+                  "name": "Merlin",
+                  "tagline": "Bring AI agents into Slack, Linear, and GitHub to get work done",
+                  "description": "Merlin brings AI agents into the collaboration tools your team already uses. It runs on your team's own machines and uses your existing Clau…",
+                  "logo": "https://cdn.betalist.com/uo6wnix7j3xjvld2w9av9vryx4f8",
+                  "image": "https://resize.imagekit.co/MoQfSzsoVuF1pxfuaVO0HflImsiDolZ7aqOXWXb9XVI/plain/s3://betalist-production/skg1keaps1aawv7gmi9ozsgm4i9b",
+                  "screenshots": [
+                    "https://resize.imagekit.co/ZLRVXCVZmAexW7zEs7TtxJxdUpPYFFFfNIUXDDyt9w0/h:300/dpr:2/bg:ffffff/plain/s3://betalist-production/skg1keaps1aawv7g…",
+                    "https://resize.imagekit.co/aGq1ml26jaUhetjZzRe7yTcj3Z5lNWPxLE6dcdmd23k/h:300/dpr:2/bg:ffffff/plain/s3://betalist-production/s4sz33acqku9wtd9…",
+                    "… 3 more"
+                  ],
+                  "videos": [],
+                  "website": "https://usemerlin.ai/",
+                  "featured_on": "2026-11-05",
+                  "featured_label": "November 5, 2026",
+                  "makers": [
+                    {
+                      "name": "Dott",
+                      "username": "DottChen",
+                      "url": "https://betalist.com/@DottChen",
+                      "avatar": "https://resize.imagekit.co/HHrKvufKTWl99p1qjJLS97siaQV9tZWlegKbpm72N_g/s:100:100/plain/s3://betalist-production/xx3rq23k78g3dpdj7fxq8jg7pb36"
+                    }
+                  ],
+                  "topics": [
+                    {
+                      "slug": "dev-tools/developer-tools",
+                      "name": "Developer Tools",
+                      "url": "https://betalist.com/browse/dev-tools/developer-tools"
+                    },
+                    {
+                      "slug": "productivity/collaboration",
+                      "name": "Collaboration",
+                      "url": "https://betalist.com/browse/productivity/collaboration"
+                    },
+                    "… 3 more"
+                  ],
+                  "similar": [
+                    {
+                      "slug": "slackpal",
+                      "name": "Palfred",
+                      "tagline": "An AI teammate in Slack that connects 3,000+ tools",
+                      "url": "https://betalist.com/startups/slackpal",
+                      "id": 150161,
+                      "logo": "https://resize.imagekit.co/tESAX8Co89iPRLY-A1lGuEqmaBGVQHlclg5T_t6gvoI/s:40:40/dpr:2/plain/s3://betalist-production/122ce16fcexltjt1ok0yj6gr…",
+                      "boosted": false,
+                      "testflight": false
+                    },
+                    {
+                      "slug": "yappjam",
+                      "name": "YappJam",
+                      "tagline": "Run one live AI session where your team designs, builds, and ships",
+                      "url": "https://betalist.com/startups/yappjam",
+                      "id": 182021,
+                      "logo": "https://resize.imagekit.co/CwJ7IuWzJcGVjghXoOa_ZANRoOlG1eENEG3fUg-Ue3w/s:40:40/dpr:2/plain/s3://betalist-production/zq20mr1t44tywc4gq1n8yfyv…",
+                      "boosted": false,
+                      "testflight": false
+                    },
+                    "… 6 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/betalist/v1/startups": {
+      "get": {
+        "operationId": "betalistStartups",
+        "summary": "BetaList startup feed",
+        "description": "The BetaList daily feed of newly featured startups (newest day first, with the day each was featured) or the TestFlight list (apps in public beta). Each startup has slug, name, tagline, link, id, logo and boosted / TestFlight flags. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/betalist-startups",
+        "tags": [
+          "BetaList"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "list",
+            "in": "query",
+            "required": false,
+            "description": "latest (the daily feed, default) or testflight.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "latest",
+                "testflight"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page (1-based). Pass next_page back; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "list": "latest",
+                  "page": 1,
+                  "count": 50,
+                  "next_page": 2,
+                  "startups": [
+                    {
+                      "slug": "regimen",
+                      "name": "Regimen",
+                      "tagline": "Manage oncology regimens, charts, and infusion logs in one place",
+                      "url": "https://betalist.com/startups/regimen",
+                      "id": 195967,
+                      "logo": "https://resize.imagekit.co/_ESLEM7z5cQrwf1QBlXJ0nJnkECzj-LkP3gUbZp4Qbs/s:40:40/dpr:2/plain/s3://betalist-production/ee6gp8ree2lqtyd0ibib6lyi…",
+                      "boosted": false,
+                      "testflight": false,
+                      "featured_on": "2026-11-06",
+                      "featured_label": "Today November 6th"
+                    },
+                    {
+                      "slug": "datavyx",
+                      "name": "Datavyx",
+                      "tagline": "Manage changing facts in natural language and get precise answers",
+                      "url": "https://betalist.com/startups/datavyx",
+                      "id": 200194,
+                      "logo": "https://resize.imagekit.co/NZAY-OKpPxGgZiGOjxRpImaAmGltnq0QkXMg2WzJ6gU/s:40:40/dpr:2/plain/s3://betalist-production/s2dd4qz45mbfgjd91kvyeus3…",
+                      "boosted": true,
+                      "testflight": true,
+                      "featured_on": "2026-11-06",
+                      "featured_label": "Today November 6th"
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/betalist/v1/topic": {
+      "get": {
+        "operationId": "betalistTopic",
+        "summary": "BetaList startups by topic",
+        "description": "Startups in one BetaList topic, newest first: slug, name, tagline, link, id, logo and boosted / TestFlight flags. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/betalist-topic",
+        "tags": [
+          "BetaList"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "topic",
+            "in": "query",
+            "required": true,
+            "description": "category/topic slug (e.g. ai/generative-ai) or its betalist.com/browse link. See /betalist/v1/topics.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ai/generative-ai"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page (1-based). Pass next_page back; it is null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "topic": "ai/generative-ai",
+                  "name": "Generative Ai",
+                  "url": "https://betalist.com/browse/ai/generative-ai",
+                  "page": 1,
+                  "count": 20,
+                  "next_page": 2,
+                  "startups": [
+                    {
+                      "slug": "influgen",
+                      "name": "Influgen",
+                      "tagline": "AI influencers with a team creating and posting content for you",
+                      "url": "https://betalist.com/startups/influgen",
+                      "id": 195943,
+                      "logo": "https://resize.imagekit.co/tPeqwgpA2nCQLB00AR2lHiN4OIe6EmvIBVHYAjguyPA/s:40:40/dpr:2/plain/s3://betalist-production/o55f8vzatckma3x4vbvgehdh…",
+                      "boosted": false,
+                      "testflight": false
+                    },
+                    {
+                      "slug": "aicomicbuilder",
+                      "name": "AIComicBuilder",
+                      "tagline": "Turn ideas into polished comics with AI-powered art and story tools",
+                      "url": "https://betalist.com/startups/aicomicbuilder",
+                      "id": 195495,
+                      "logo": "https://resize.imagekit.co/XlkgiB_N6N84QcVpaiOs05sfE0q8sP63n2EkGTS-UB4/s:40:40/dpr:2/plain/s3://betalist-production/vta2asveta676wibqxr8db1f…",
+                      "boosted": true,
+                      "testflight": false
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/betalist/v1/topics": {
+      "get": {
+        "operationId": "betalistTopics",
+        "summary": "BetaList categories and topics",
+        "description": "Every BetaList category (name, emoji, topic count, link) with its topics (slug, name, link), or one category's topics with `category`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/betalist-topics",
+        "tags": [
+          "BetaList"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category slug (e.g. ai, dev-tools, finance): only that category's topics.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 22,
+                  "categories": [
+                    {
+                      "slug": "ai",
+                      "name": "AI",
+                      "emoji": "🤖",
+                      "topic_count": 22,
+                      "url": "https://betalist.com/browse/ai",
+                      "topics": [
+                        {
+                          "slug": "ai/ai-assistant",
+                          "category": "ai",
+                          "name": "AI Assistant",
+                          "url": "https://betalist.com/browse/ai/ai-assistant",
+                          "image": null
+                        },
+                        {
+                          "slug": "ai/ai-chat",
+                          "category": "ai",
+                          "name": "AI Chat",
+                          "url": "https://betalist.com/browse/ai/ai-chat",
+                          "image": null
+                        },
+                        "… 14 more"
+                      ]
+                    },
+                    {
+                      "slug": "commerce",
+                      "name": "Commerce",
+                      "emoji": "🛒",
+                      "topic_count": 86,
+                      "url": "https://betalist.com/browse/commerce",
+                      "topics": [
+                        {
+                          "slug": "commerce/app-discovery",
+                          "category": "commerce",
+                          "name": "App Discovery",
+                          "url": "https://betalist.com/browse/commerce/app-discovery",
+                          "image": null
+                        },
+                        {
+                          "slug": "commerce/app-stores",
+                          "category": "commerce",
+                          "name": "App Stores",
+                          "url": "https://betalist.com/browse/commerce/app-stores",
+                          "image": null
+                        },
+                        "… 14 more"
+                      ]
+                    },
+                    "… 20 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

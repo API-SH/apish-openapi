@@ -1,0 +1,2093 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: UFC",
+    "version": "1.0.0",
+    "description": "The UFC API from API.SH: public UFC data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "UFC",
+      "description": "8 endpoints (sports)",
+      "x-slug": "ufc",
+      "x-domains": [
+        "ufc.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ufc/v1/athlete": {
+      "get": {
+        "operationId": "ufcAthlete",
+        "summary": "UFC athlete",
+        "description": "A fighter's profile: division, record, tags (rank, title holder, status), bio (age, height, weight, reach, leg reach, place of birth, team, style, Octagon debut), highlights (win streak, wins by KO/submission, first-round finishes), career stats (significant strikes landed/attempted, per minute, absorbed, defense, takedowns and accuracy, submission average, knockdown average, average fight time), significant strikes by position and target, win methods and latest fights (opponent, result, round, time, method, event and fight id). The fight history comes 3 fights a page, newest first: pass `fights_next_page` back as `fights_page` for older fights (null on the last page).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/ufc-athlete",
+        "tags": [
+          "UFC"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "Athlete slug from ufc.com, events or rankings (e.g. islam-makhachev, alex-pereira).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "islam-makhachev"
+          },
+          {
+            "name": "fights_page",
+            "in": "query",
+            "required": false,
+            "description": "Page of the fight history, 1-30 (3 fights a page; default 1). Pass `fights_next_page` here.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "slug": "jon-jones",
+                  "name": "Jon Jones",
+                  "nickname": "Bones",
+                  "division": "Heavyweight Division",
+                  "record": "28-1-0 (W-L-D)",
+                  "tags": [
+                    "Heavyweight Division",
+                    "Active"
+                  ],
+                  "rankings": [],
+                  "bio": {
+                    "status": "Active",
+                    "place_of_birth": "Rochester, United States",
+                    "trains_at": "Team Jones",
+                    "age": "38",
+                    "height": "76.00",
+                    "weight": "237.60",
+                    "octagon_debut": "Aug. 9, 2008",
+                    "reach": "84.50",
+                    "leg_reach": "45.00"
+                  },
+                  "highlights": {
+                    "wins_by_knockout": 11,
+                    "wins_by_submission": 7
+                  },
+                  "stats": {
+                    "sig_strikes_landed": 1564,
+                    "sig_strikes_attempted": 2655,
+                    "takedowns_landed": 36,
+                    "takedowns_attempted": 98,
+                    "sig_str_landed_per_min": 4.38,
+                    "sig_str_absorbed_per_min": 2.24,
+                    "takedown_avg_per_15_min": 1.89,
+                    "submission_avg_per_15_min": 0.46,
+                    "sig_str_defense": 64,
+                    "takedown_defense": 95,
+                    "knockdown_avg": 0.25,
+                    "average_fight_time": "14:52",
+                    "striking_accuracy_percent": 59,
+                    "takedown_accuracy_percent": 37
+                  },
+                  "sig_strikes_by_position": {
+                    "standing": {
+                      "count": 1012,
+                      "percent": 65
+                    },
+                    "clinch": {
+                      "count": 250,
+                      "percent": 16
+                    },
+                    "ground": {
+                      "count": 302,
+                      "percent": 19
+                    }
+                  },
+                  "win_methods": {
+                    "ko_tko": {
+                      "count": 11,
+                      "percent": 39
+                    },
+                    "dec": {
+                      "count": 10,
+                      "percent": 36
+                    },
+                    "sub": {
+                      "count": 7,
+                      "percent": 25
+                    }
+                  },
+                  "sig_strikes_by_target": {
+                    "head": {
+                      "percent": 49,
+                      "count": 759
+                    },
+                    "leg": {
+                      "percent": 27,
+                      "count": 430
+                    }
+                  },
+                  "image": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-10/JONES_JON_L.png?itok=ZKUJM0wq",
+                  "recent_fights": [
+                    {
+                      "date": "Nov. 16, 2024",
+                      "opponent": {
+                        "slug": "stipe-miocic",
+                        "name": "Miocic"
+                      },
+                      "result": "win",
+                      "round": 3,
+                      "time": "4:29",
+                      "method": "KO/TKO",
+                      "event_slug": "ufc-309",
+                      "fight_id": 11684
+                    },
+                    {
+                      "date": "Mar. 4, 2023",
+                      "opponent": {
+                        "slug": "ciryl-gane",
+                        "name": "Gane"
+                      },
+                      "result": "win",
+                      "round": 1,
+                      "time": "2:04",
+                      "method": "SUB",
+                      "event_slug": "ufc-285",
+                      "fight_id": 10328
+                    },
+                    "… 1 more"
+                  ],
+                  "fights_page": 1,
+                  "fights_next_page": 2,
+                  "url": "https://www.ufc.com/athlete/jon-jones",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/ufc/v1/athletes": {
+      "get": {
+        "operationId": "ufcAthletes",
+        "summary": "UFC athletes",
+        "description": "Every athlete on ufc.com, A to Z, or those matching a name: name, nickname, division, record (wins, losses, draws), social links, photo, slug and profile link (use the slug with /ufc/v1/athlete). About 11 per page; `total` is the number of athletes. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/ufc-athletes",
+        "tags": [
+          "UFC"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Name to search for; omit for the full A-Z roster.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "jones"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "jones",
+                  "page": 1,
+                  "total": 1,
+                  "count": 1,
+                  "next_page": null,
+                  "athletes": [
+                    {
+                      "name": "Jocelyn Jones-Lybarger",
+                      "nickname": null,
+                      "division": "Women's Strawweight",
+                      "record": "6-4-0 (W-L-D)",
+                      "wins": 6,
+                      "losses": 4,
+                      "draws": 0,
+                      "social": [
+                        {
+                          "platform": "twitter",
+                          "url": "https://twitter.com/mmajocelyn"
+                        },
+                        {
+                          "platform": "instagram",
+                          "url": "https://instagram.com/mmajocelyn"
+                        }
+                      ],
+                      "image": "https://ufc.com/images/styles/teaser/s3/image/fighter_images/Jocelyn_Jones_Lybarger/JONES-LYBARGER_JOCELYN.png?VersionId=MAvCMgWDTIgTBJRiwbQ…",
+                      "slug": "jocelyn-jones-lybarger",
+                      "url": "https://www.ufc.com/athlete/jocelyn-jones-lybarger"
+                    }
+                  ],
+                  "url": "https://www.ufc.com/athletes/all?search=jones",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/ufc/v1/event": {
+      "get": {
+        "operationId": "ufcEvent",
+        "summary": "UFC event fight card and results",
+        "description": "An event's full fight card in order: card segment and broadcaster, weight class and limit, title fight and belts, scheduled rounds, referee, result (method, round, time, ending strike, target and position, submission, judges' scores, fight of the night) and both fighters (record, nickname, born, fighting out of, age, stance, height, reach, weigh-in, outcome, bonuses, profile link), plus venue and status (live round when the event is on).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/ufc-event",
+        "tags": [
+          "UFC"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "Event slug from `/ufc/v1/events` or the ufc.com URL (e.g. ufc-300).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "ufc-300"
+          },
+          {
+            "name": "event_id",
+            "in": "query",
+            "required": false,
+            "description": "Or the numeric event id returned by this route.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "event_id": 1192,
+                  "name": "UFC 300: Pereira vs. Hill",
+                  "start_time": "2024-04-13T22:00Z",
+                  "timezone": "GMT-07:00",
+                  "status": "Final",
+                  "organization": "Ultimate Fighting Championship",
+                  "location": {
+                    "venue": "T-Mobile Arena",
+                    "city": "Las Vegas",
+                    "state": "Nevada",
+                    "country": "USA"
+                  },
+                  "live": null,
+                  "slug": "ufc-300",
+                  "url": "https://www.ufc.com/event/ufc-300",
+                  "fight_count": 13,
+                  "fights": [
+                    {
+                      "fight_id": 11234,
+                      "order": 1,
+                      "status": "Final",
+                      "card_segment": "Main",
+                      "card_segment_start": "2024-04-14T02:00Z",
+                      "broadcaster": "PPV",
+                      "weight_class": "Light Heavyweight",
+                      "weight_limit": "186-205",
+                      "catch_weight": null,
+                      "title_fight": true,
+                      "accolades": [
+                        "UFC Light Heavyweight Title"
+                      ],
+                      "rounds_scheduled": 5,
+                      "rule_set": "5 Rnd (5-5-5-5-5)",
+                      "referee": "Jason Herzog",
+                      "result": {
+                        "method": "KO/TKO",
+                        "round": 1,
+                        "time": "3:14",
+                        "ending_strike": "Punch",
+                        "ending_target": "Head",
+                        "ending_position": "At Distance",
+                        "ending_submission": null,
+                        "notes": null,
+                        "fight_of_the_night": false,
+                        "scores": []
+                      },
+                      "fighters": [
+                        {
+                          "fighter_id": 3546,
+                          "name": "Alex Pereira",
+                          "nickname": "Poatan",
+                          "corner": "Red",
+                          "outcome": "Win",
+                          "record": {
+                            "…": "4 fields"
+                          },
+                          "born": "Sao Bernardo do Campo, Sao Paulo, Brazil",
+                          "fighting_out_of": "Sao Paulo, Sao Paulo, Brazil",
+                          "country_code": "BRA",
+                          "date_of_birth": "1987-07-07",
+                          "age": 39,
+                          "stance": "Orthodox",
+                          "height_in": 76,
+                          "reach_in": 79,
+                          "weight_lb": 251,
+                          "weigh_in_lb": 205,
+                          "weight_classes": [
+                            "Heavyweight",
+                            "Light Heavyweight"
+                          ],
+                          "bonuses": {
+                            "…": "3 fields"
+                          },
+                          "slug": "alex-pereira",
+                          "url": "https://www.ufc.com/athlete/alex-pereira"
+                        },
+                        {
+                          "fighter_id": 3349,
+                          "name": "Jamahal Hill",
+                          "nickname": "Sweet Dreams",
+                          "corner": "Blue",
+                          "outcome": "Loss",
+                          "record": {
+                            "…": "4 fields"
+                          },
+                          "born": "Chicago, Illinois, USA",
+                          "fighting_out_of": "Grand Rapids, Michigan, USA",
+                          "country_code": "USA",
+                          "date_of_birth": "1991-05-19",
+                          "age": 35,
+                          "stance": "Southpaw",
+                          "height_in": 76,
+                          "reach_in": 79,
+                          "weight_lb": 205,
+                          "weigh_in_lb": 205,
+                          "weight_classes": [
+                            "Light Heavyweight"
+                          ],
+                          "bonuses": {
+                            "…": "3 fields"
+                          },
+                          "slug": "jamahal-hill",
+                          "url": "https://www.ufc.com/athlete/jamahal-hill"
+                        }
+                      ]
+                    },
+                    {
+                      "fight_id": 11160,
+                      "order": 2,
+                      "status": "Final",
+                      "card_segment": "Main",
+                      "card_segment_start": "2024-04-14T02:00Z",
+                      "broadcaster": "PPV",
+                      "weight_class": "Women's Strawweight",
+                      "weight_limit": "106-115",
+                      "catch_weight": null,
+                      "title_fight": true,
+                      "accolades": [
+                        "UFC Women's Strawweight Title"
+                      ],
+                      "rounds_scheduled": 5,
+                      "rule_set": "5 Rnd (5-5-5-5-5)",
+                      "referee": "Jason Herzog",
+                      "result": {
+                        "method": "Decision - Unanimous",
+                        "round": 5,
+                        "time": "5:00",
+                        "ending_strike": null,
+                        "ending_target": null,
+                        "ending_position": null,
+                        "ending_submission": null,
+                        "notes": null,
+                        "fight_of_the_night": false,
+                        "scores": [
+                          {
+                            "…": "2 fields"
+                          },
+                          {
+                            "…": "2 fields"
+                          },
+                          "… 1 more"
+                        ]
+                      },
+                      "fighters": [
+                        {
+                          "fighter_id": 3099,
+                          "name": "Zhang Weili",
+                          "nickname": "Magnum",
+                          "corner": "Red",
+                          "outcome": "Win",
+                          "record": {
+                            "…": "4 fields"
+                          },
+                          "born": "Hebei, China",
+                          "fighting_out_of": "Beijing, China",
+                          "country_code": "CHN",
+                          "date_of_birth": "1989-08-13",
+                          "age": 37,
+                          "stance": "Switch",
+                          "height_in": 64,
+                          "reach_in": 63,
+                          "weight_lb": 115,
+                          "weigh_in_lb": 115,
+                          "weight_classes": [
+                            "Women's Flyweight",
+                            "Women's Strawweight"
+                          ],
+                          "bonuses": {
+                            "…": "3 fields"
+                          },
+                          "slug": "zhang-weili",
+                          "url": "https://www.ufc.com/athlete/zhang-weili"
+                        },
+                        {
+                          "fighter_id": 3010,
+                          "name": "Yan Xiaonan",
+                          "nickname": null,
+                          "corner": "Blue",
+                          "outcome": "Loss",
+                          "record": {
+                            "…": "4 fields"
+                          },
+                          "born": "Liaoning, China",
+                          "fighting_out_of": "Beijing, China",
+                          "country_code": "CHN",
+                          "date_of_birth": "1989-06-16",
+                          "age": 37,
+                          "stance": "Orthodox",
+                          "height_in": 65,
+                          "reach_in": 63,
+                          "weight_lb": 115,
+                          "weigh_in_lb": 115,
+                          "weight_classes": [
+                            "Women's Strawweight"
+                          ],
+                          "bonuses": {
+                            "…": "3 fields"
+                          },
+                          "slug": "xiaonan-yan",
+                          "url": "https://www.ufc.com/athlete/xiaonan-yan"
+                        }
+                      ]
+                    },
+                    "… 11 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/ufc/v1/events": {
+      "get": {
+        "operationId": "ufcEvents",
+        "summary": "UFC events",
+        "description": "Upcoming or past UFC events: slug (use it with `/ufc/v1/event`), headline, main card, prelims and early prelims start times, venue, city, region and country, with the total count. Pass `next_page` back as `page` for older events; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/ufc-events",
+        "tags": [
+          "UFC"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "upcoming (default) or past.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "upcoming",
+                "past"
+              ],
+              "default": "upcoming"
+            },
+            "example": "past"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page of past events (8 per page).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "status": "past",
+                  "page": 1,
+                  "total": null,
+                  "count": 8,
+                  "next_page": 2,
+                  "events": [
+                    {
+                      "slug": "ufc-fight-night-october-31-2026",
+                      "headline": "Moicano vs Nolan",
+                      "main_card": "2026-11-01T00:00:00.000Z",
+                      "prelims": "2026-10-31T21:00:00.000Z",
+                      "early_prelims": null,
+                      "date_text": "Son, Nov. 1 / 1:00 AM CET",
+                      "venue": "Meta APEX",
+                      "city": "Las Vegas",
+                      "region": "NV",
+                      "country": "United States",
+                      "url": "https://www.ufc.com/event/ufc-fight-night-october-31-2026"
+                    },
+                    {
+                      "slug": "ufc-333",
+                      "headline": "Volkanovski vs Evloev",
+                      "main_card": "2026-10-24T18:00:00.000Z",
+                      "prelims": "2026-10-24T16:00:00.000Z",
+                      "early_prelims": "2026-10-24T14:00:00.000Z",
+                      "date_text": "Sam, Okt. 24 / 8:00 PM CEST",
+                      "venue": "Etihad Arena",
+                      "city": null,
+                      "region": "Abu Dhabi",
+                      "country": "United Arab Emirates",
+                      "url": "https://www.ufc.com/event/ufc-333"
+                    },
+                    "… 6 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/ufc/v1/fight": {
+      "get": {
+        "operationId": "ufcFight",
+        "summary": "UFC fight stats",
+        "description": "Official stats of one fight: the fight and result as in `/ufc/v1/event`, and for each fighter totals and round-by-round knockdowns, total and significant strikes (attempted/landed by head, body, leg, distance, clinch, ground), accuracy, takedowns, submission attempts, reversals and control time.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/ufc-fight",
+        "tags": [
+          "UFC"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "fight_id",
+            "in": "query",
+            "required": true,
+            "description": "Fight id from `/ufc/v1/event` (11234 = Pereira v Hill, UFC 300).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "11234"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "fight_id": 11234,
+                  "order": 1,
+                  "status": "Final",
+                  "card_segment": "Main",
+                  "card_segment_start": "2024-04-14T02:00Z",
+                  "broadcaster": "PPV",
+                  "weight_class": "Light Heavyweight",
+                  "weight_limit": "186-205",
+                  "catch_weight": null,
+                  "title_fight": true,
+                  "accolades": [
+                    "UFC Light Heavyweight Title"
+                  ],
+                  "rounds_scheduled": 5,
+                  "rule_set": "5 Rnd (5-5-5-5-5)",
+                  "referee": "Jason Herzog",
+                  "result": {
+                    "method": "KO/TKO",
+                    "round": 1,
+                    "time": "3:14",
+                    "ending_strike": "Punch",
+                    "ending_target": "Head",
+                    "ending_position": "At Distance",
+                    "ending_submission": null,
+                    "notes": null,
+                    "fight_of_the_night": false,
+                    "scores": []
+                  },
+                  "fighters": [
+                    {
+                      "fighter_id": 3546,
+                      "name": "Alex Pereira",
+                      "nickname": "Poatan",
+                      "corner": "Red",
+                      "outcome": "Win",
+                      "record": {
+                        "wins": 13,
+                        "losses": 4,
+                        "draws": 0,
+                        "no_contests": 0
+                      },
+                      "born": "Sao Bernardo do Campo, Sao Paulo, Brazil",
+                      "fighting_out_of": "Sao Paulo, Sao Paulo, Brazil",
+                      "country_code": "BRA",
+                      "date_of_birth": "1987-07-07",
+                      "age": 39,
+                      "stance": "Orthodox",
+                      "height_in": 76,
+                      "reach_in": 79,
+                      "weight_lb": 251,
+                      "weigh_in_lb": 205,
+                      "weight_classes": [
+                        "Heavyweight",
+                        "Light Heavyweight"
+                      ],
+                      "bonuses": {
+                        "ko_of_the_night": false,
+                        "submission_of_the_night": false,
+                        "performance_of_the_night": false
+                      },
+                      "slug": "alex-pereira",
+                      "url": "https://www.ufc.com/athlete/alex-pereira"
+                    },
+                    {
+                      "fighter_id": 3349,
+                      "name": "Jamahal Hill",
+                      "nickname": "Sweet Dreams",
+                      "corner": "Blue",
+                      "outcome": "Loss",
+                      "record": {
+                        "wins": 12,
+                        "losses": 4,
+                        "draws": 0,
+                        "no_contests": 1
+                      },
+                      "born": "Chicago, Illinois, USA",
+                      "fighting_out_of": "Grand Rapids, Michigan, USA",
+                      "country_code": "USA",
+                      "date_of_birth": "1991-05-19",
+                      "age": 35,
+                      "stance": "Southpaw",
+                      "height_in": 76,
+                      "reach_in": 79,
+                      "weight_lb": 205,
+                      "weigh_in_lb": 205,
+                      "weight_classes": [
+                        "Light Heavyweight"
+                      ],
+                      "bonuses": {
+                        "ko_of_the_night": false,
+                        "submission_of_the_night": false,
+                        "performance_of_the_night": false
+                      },
+                      "slug": "jamahal-hill",
+                      "url": "https://www.ufc.com/athlete/jamahal-hill"
+                    }
+                  ],
+                  "official_stats": true,
+                  "event": {
+                    "event_id": 1192,
+                    "name": "UFC 300: Pereira vs. Hill",
+                    "start_time": "2024-04-13T22:00Z"
+                  },
+                  "totals": [
+                    {
+                      "fighter_id": 3546,
+                      "name": "Alex Pereira",
+                      "knockdowns": 1,
+                      "total_strikes_attempted": 30,
+                      "total_strikes_landed": 24,
+                      "total_head_strikes_attempted": 15,
+                      "total_head_strikes_landed": 12,
+                      "total_body_strikes_attempted": 6,
+                      "total_body_strikes_landed": 6,
+                      "total_leg_strikes_attempted": 9,
+                      "total_leg_strikes_landed": 6,
+                      "total_clinch_strikes_attempted": 0,
+                      "total_clinch_strikes_landed": 0,
+                      "total_ground_strikes_attempted": 14,
+                      "total_ground_strikes_landed": 11,
+                      "sig_strikes_attempted": 30,
+                      "sig_strikes_landed": 24,
+                      "sig_strikes_accuracy": 80,
+                      "sig_head_strikes_attempted": 15,
+                      "sig_head_strikes_landed": 12,
+                      "sig_body_strikes_attempted": 6,
+                      "sig_body_strikes_landed": 6,
+                      "sig_leg_strikes_attempted": 9,
+                      "sig_leg_strikes_landed": 6,
+                      "sig_distance_strikes_attempted": 16,
+                      "sig_distance_strikes_landed": 13,
+                      "sig_clinch_strikes_attempted": 0,
+                      "sig_clinch_strikes_landed": 0,
+                      "sig_ground_strikes_attempted": 14,
+                      "sig_ground_strikes_landed": 11,
+                      "sig_distance_head_strikes_attempted": 1,
+                      "sig_distance_head_strikes_landed": 1,
+                      "sig_distance_body_strikes_attempted": 6,
+                      "sig_distance_body_strikes_landed": 6,
+                      "sig_distance_leg_strikes_attempted": 9,
+                      "sig_distance_leg_strikes_landed": 6,
+                      "sig_clinch_head_strikes_attempted": 0,
+                      "sig_clinch_head_strikes_landed": 0,
+                      "sig_clinch_body_strikes_attempted": 0,
+                      "sig_clinch_body_strikes_landed": 0,
+                      "…": "27 more fields"
+                    },
+                    {
+                      "fighter_id": 3349,
+                      "name": "Jamahal Hill",
+                      "knockdowns": 0,
+                      "total_strikes_attempted": 22,
+                      "total_strikes_landed": 12,
+                      "total_head_strikes_attempted": 7,
+                      "total_head_strikes_landed": 1,
+                      "total_body_strikes_attempted": 6,
+                      "total_body_strikes_landed": 3,
+                      "total_leg_strikes_attempted": 9,
+                      "total_leg_strikes_landed": 8,
+                      "total_clinch_strikes_attempted": 0,
+                      "total_clinch_strikes_landed": 0,
+                      "total_ground_strikes_attempted": 0,
+                      "total_ground_strikes_landed": 0,
+                      "sig_strikes_attempted": 22,
+                      "sig_strikes_landed": 12,
+                      "sig_strikes_accuracy": 54.55,
+                      "sig_head_strikes_attempted": 7,
+                      "sig_head_strikes_landed": 1,
+                      "sig_body_strikes_attempted": 6,
+                      "sig_body_strikes_landed": 3,
+                      "sig_leg_strikes_attempted": 9,
+                      "sig_leg_strikes_landed": 8,
+                      "sig_distance_strikes_attempted": 22,
+                      "sig_distance_strikes_landed": 12,
+                      "sig_clinch_strikes_attempted": 0,
+                      "sig_clinch_strikes_landed": 0,
+                      "sig_ground_strikes_attempted": 0,
+                      "sig_ground_strikes_landed": 0,
+                      "sig_distance_head_strikes_attempted": 7,
+                      "sig_distance_head_strikes_landed": 1,
+                      "sig_distance_body_strikes_attempted": 6,
+                      "sig_distance_body_strikes_landed": 3,
+                      "sig_distance_leg_strikes_attempted": 9,
+                      "sig_distance_leg_strikes_landed": 8,
+                      "sig_clinch_head_strikes_attempted": 0,
+                      "sig_clinch_head_strikes_landed": 0,
+                      "sig_clinch_body_strikes_attempted": 0,
+                      "sig_clinch_body_strikes_landed": 0,
+                      "…": "27 more fields"
+                    }
+                  ],
+                  "rounds": [
+                    {
+                      "fighter_id": 3546,
+                      "name": "Alex Pereira",
+                      "rounds": [
+                        {
+                          "round_number": 1,
+                          "knockdowns": 1,
+                          "total_strikes_attempted": 30,
+                          "total_strikes_landed": 24,
+                          "total_head_strikes_attempted": 15,
+                          "total_head_strikes_landed": 12,
+                          "total_body_strikes_attempted": 6,
+                          "total_body_strikes_landed": 6,
+                          "total_leg_strikes_attempted": 9,
+                          "total_leg_strikes_landed": 6,
+                          "total_clinch_strikes_attempted": 0,
+                          "total_clinch_strikes_landed": 0,
+                          "total_ground_strikes_attempted": 14,
+                          "total_ground_strikes_landed": 11,
+                          "sig_strikes_attempted": 30,
+                          "sig_strikes_landed": 24,
+                          "sig_strikes_accuracy": 80,
+                          "sig_head_strikes_attempted": 15,
+                          "sig_head_strikes_landed": 12,
+                          "sig_body_strikes_attempted": 6,
+                          "sig_body_strikes_landed": 6,
+                          "sig_leg_strikes_attempted": 9,
+                          "sig_leg_strikes_landed": 6,
+                          "sig_distance_strikes_attempted": 16,
+                          "sig_distance_strikes_landed": 13,
+                          "sig_clinch_strikes_attempted": 0,
+                          "sig_clinch_strikes_landed": 0,
+                          "sig_ground_strikes_attempted": 14,
+                          "sig_ground_strikes_landed": 11,
+                          "sig_distance_head_strikes_attempted": 1,
+                          "sig_distance_head_strikes_landed": 1,
+                          "sig_distance_body_strikes_attempted": 6,
+                          "sig_distance_body_strikes_landed": 6,
+                          "sig_distance_leg_strikes_attempted": 9,
+                          "sig_distance_leg_strikes_landed": 6,
+                          "sig_clinch_head_strikes_attempted": 0,
+                          "sig_clinch_head_strikes_landed": 0,
+                          "sig_clinch_body_strikes_attempted": 0,
+                          "sig_clinch_body_strikes_landed": 0,
+                          "sig_clinch_leg_strikes_attempted": 0,
+                          "…": "26 more fields"
+                        }
+                      ]
+                    },
+                    {
+                      "fighter_id": 3349,
+                      "name": "Jamahal Hill",
+                      "rounds": [
+                        {
+                          "round_number": 1,
+                          "knockdowns": 0,
+                          "total_strikes_attempted": 22,
+                          "total_strikes_landed": 12,
+                          "total_head_strikes_attempted": 7,
+                          "total_head_strikes_landed": 1,
+                          "total_body_strikes_attempted": 6,
+                          "total_body_strikes_landed": 3,
+                          "total_leg_strikes_attempted": 9,
+                          "total_leg_strikes_landed": 8,
+                          "total_clinch_strikes_attempted": 0,
+                          "total_clinch_strikes_landed": 0,
+                          "total_ground_strikes_attempted": 0,
+                          "total_ground_strikes_landed": 0,
+                          "sig_strikes_attempted": 22,
+                          "sig_strikes_landed": 12,
+                          "sig_strikes_accuracy": 54.55,
+                          "sig_head_strikes_attempted": 7,
+                          "sig_head_strikes_landed": 1,
+                          "sig_body_strikes_attempted": 6,
+                          "sig_body_strikes_landed": 3,
+                          "sig_leg_strikes_attempted": 9,
+                          "sig_leg_strikes_landed": 8,
+                          "sig_distance_strikes_attempted": 22,
+                          "sig_distance_strikes_landed": 12,
+                          "sig_clinch_strikes_attempted": 0,
+                          "sig_clinch_strikes_landed": 0,
+                          "sig_ground_strikes_attempted": 0,
+                          "sig_ground_strikes_landed": 0,
+                          "sig_distance_head_strikes_attempted": 7,
+                          "sig_distance_head_strikes_landed": 1,
+                          "sig_distance_body_strikes_attempted": 6,
+                          "sig_distance_body_strikes_landed": 3,
+                          "sig_distance_leg_strikes_attempted": 9,
+                          "sig_distance_leg_strikes_landed": 8,
+                          "sig_clinch_head_strikes_attempted": 0,
+                          "sig_clinch_head_strikes_landed": 0,
+                          "sig_clinch_body_strikes_attempted": 0,
+                          "sig_clinch_body_strikes_landed": 0,
+                          "sig_clinch_leg_strikes_attempted": 0,
+                          "…": "26 more fields"
+                        }
+                      ]
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/ufc/v1/news": {
+      "get": {
+        "operationId": "ufcNews",
+        "summary": "UFC news and videos",
+        "description": "UFC.com's latest stories and videos, newest first: headline, teaser, category, how long ago, type (news or video), image and link.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/ufc-news",
+        "tags": [
+          "UFC"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Only stories or only videos (default all).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "news",
+                "video"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page (about 12 items a page).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "page": 1,
+                  "type": "all",
+                  "count": 13,
+                  "next_page": 2,
+                  "items": [
+                    {
+                      "title": "Monthly Report | October 2026",
+                      "teaser": "Highlighting The Standout Action From Inside The Octagon Over The Previous Month",
+                      "category": "Fight Coverage",
+                      "age": "7 hours ago",
+                      "type": "news",
+                      "url": "https://www.ufc.com/news/monthly-report-october-2026",
+                      "image": "/s3/files/styles/brand_page_big_grid_image_mobile_x1/s3/2026-11/110326-hero-petr-yan_GettyImages-2301822613.jpg?itok=YLRRghri"
+                    },
+                    {
+                      "title": "Fighters On The Rise | UFC Fight Night: Cortes…",
+                      "teaser": "Identifying Three Emerging Names To Track This Weekend As The Action Stays In Las Vegas",
+                      "category": "Athletes",
+                      "age": "7 hours ago",
+                      "type": "news",
+                      "url": "https://www.ufc.com/news/fighters-rise-ufc-fight-night-cortes-acosta-vs-walker",
+                      "image": "https://ufc.com/images/styles/brand_page_grid_image_mobile_x1/s3/2026-11/110326-hero-elijah-smith_GettyImages-2266541922.jpg?itok=b_uaam7h"
+                    },
+                    "… 11 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/ufc/v1/rankings": {
+      "get": {
+        "operationId": "ufcRankings",
+        "summary": "UFC rankings",
+        "description": "Official UFC rankings: men's and women's pound-for-pound and every division with its champion and ranked contenders (rank, name, slug, movement).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/ufc-rankings",
+        "tags": [
+          "UFC"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 13,
+                  "divisions": [
+                    {
+                      "division": "Men's Pound-for-Pound",
+                      "champion": {
+                        "name": "Islam Makhachev",
+                        "slug": "islam-makhachev",
+                        "label": "Top Rank"
+                      },
+                      "ranked": [
+                        {
+                          "rank": 1,
+                          "name": "Islam Makhachev",
+                          "slug": "islam-makhachev",
+                          "change": null
+                        },
+                        {
+                          "rank": 2,
+                          "name": "Alexander Volkanovski",
+                          "slug": "alexander-volkanovski",
+                          "change": null
+                        },
+                        "… 13 more"
+                      ]
+                    },
+                    {
+                      "division": "Peso-mosca",
+                      "champion": {
+                        "name": "Joshua Van",
+                        "slug": "joshua-van",
+                        "label": null
+                      },
+                      "ranked": [
+                        {
+                          "rank": 1,
+                          "name": "Alexandre Pantoja",
+                          "slug": "alexandre-pantoja",
+                          "change": null
+                        },
+                        {
+                          "rank": 2,
+                          "name": "Manel Kape",
+                          "slug": "manel-kape",
+                          "change": null
+                        },
+                        "… 13 more"
+                      ]
+                    },
+                    "… 11 more"
+                  ],
+                  "url": "https://www.ufc.com/rankings",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/ufc/v1/stats/leaders": {
+      "get": {
+        "operationId": "ufcStatsLeaders",
+        "summary": "UFC record book",
+        "description": "UFC's official record book: for each category (wins, finishes, KO/TKO and submission wins, win streak, title fight wins, bonuses, fight time, control time, strikes, takedowns, ...) the top 10 fighters with rank, name, athlete link and value.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/ufc-stats-leaders",
+        "tags": [
+          "UFC"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "description": "Career records (default), single-fight, single-round or event records, or combined fight and round records.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "career",
+                "fight",
+                "round",
+                "event",
+                "fight-comb",
+                "round-comb"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "scope": "career",
+                  "url": "https://statleaders.ufc.com/en/career",
+                  "count": 32,
+                  "categories": [
+                    {
+                      "category": "Total Fights",
+                      "note": " ",
+                      "leaders": [
+                        {
+                          "rank": 1,
+                          "fighter": "Jim Miller",
+                          "athlete_url": "https://www.ufc.com/athlete/Jim-Miller",
+                          "slug": "jim-miller",
+                          "value": "47"
+                        },
+                        {
+                          "rank": 2,
+                          "fighter": "Andrei Arlovski",
+                          "athlete_url": "https://www.ufc.com/athlete/Andrei-Arlovski",
+                          "slug": "andrei-arlovski",
+                          "value": "42"
+                        },
+                        "… 9 more"
+                      ]
+                    },
+                    {
+                      "category": "Wins",
+                      "note": " ",
+                      "leaders": [
+                        {
+                          "rank": 1,
+                          "fighter": "Jim Miller",
+                          "athlete_url": "https://www.ufc.com/athlete/Jim-Miller",
+                          "slug": "jim-miller",
+                          "value": "28"
+                        },
+                        {
+                          "rank": 2,
+                          "fighter": "Charles Oliveira",
+                          "athlete_url": "https://www.ufc.com/athlete/Charles-Oliveira",
+                          "slug": "charles-oliveira",
+                          "value": "25"
+                        },
+                        "… 8 more"
+                      ]
+                    },
+                    "… 30 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

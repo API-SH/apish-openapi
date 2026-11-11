@@ -1,0 +1,1285 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Blibli",
+    "version": "1.0.0",
+    "description": "The Blibli API from API.SH: public Blibli data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Blibli",
+      "description": "3 endpoints (e-commerce)",
+      "x-slug": "blibli",
+      "x-domains": [
+        "blibli.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blibli/v1/product": {
+      "get": {
+        "operationId": "blibliProduct",
+        "summary": "Blibli product details",
+        "description": "One Blibli product: SKU, item SKU, name, link, product code, EAN, price, list price and discount (IDR), stock, installment offer, brand (official flag), merchant (name, official flag, location, warehouses, review score, positive-review and on-time rates, badge, review count, join date, logo, store link), rating and review count, categories, specifications, variant options, description, tags, images, and the site's record in `raw`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/blibli-product",
+        "tags": [
+          "Blibli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Product SKU or product link (https://www.blibli.com/p/.../ps--APF-70017-00969).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "APF-70017-00969"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "APF-70017-00969",
+                  "item_sku": "APF-70017-00969-00001",
+                  "name": "iPhone 18 Pro Max",
+                  "url": "https://www.blibli.com/p/iphone-18-pro-max/ps--APF-70017-00969?pickupPointCode=PP-3381860&ds=APF-70017-00969-00001",
+                  "product_code": "MTA-185382087",
+                  "ean": "195951412429",
+                  "price": 29999000,
+                  "list_price": 29999000,
+                  "discount": 0,
+                  "currency": "IDR",
+                  "stock": 116,
+                  "installment": {
+                    "interest": 0,
+                    "startFrom": 1249958,
+                    "freeInstallmentLabel": "Cicilan 0%"
+                  },
+                  "brand": {
+                    "name": "Apple",
+                    "code": "apple",
+                    "official": false,
+                    "url": "https://www.blibli.com/brand/apple"
+                  },
+                  "merchant": {
+                    "code": "APF-70017",
+                    "name": "Blibli - Apple Authorized Reseller Flagship Store",
+                    "official": true,
+                    "location": "Gudang Blibli",
+                    "warehouses": [
+                      "Kota Bekasi"
+                    ],
+                    "rating": 4.9,
+                    "positive_review_pct": 99,
+                    "on_time_pct": 100,
+                    "badge": "DIAMOND",
+                    "review_count": 49017,
+                    "joined": "2022-08-10T09:13:33.443Z",
+                    "logo": "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/mlogo/APF-70017-b7f32972-90a0-48a3-8f96-9c3a59c77e9e.png",
+                    "url": "https://www.blibli.com/merchant/blibli-apple-authorized-reseller-flagship-store/APF-70017"
+                  },
+                  "rating": 4.8,
+                  "review_count": 887,
+                  "categories": [
+                    {
+                      "level": 1,
+                      "id": "54593",
+                      "name": "Handphone & Tablet",
+                      "url": "/c1/handphone-tablet/54593"
+                    },
+                    {
+                      "level": 2,
+                      "id": "HA-1000002",
+                      "name": "Handphone",
+                      "url": "/c2/handphone/HA-1000002"
+                    },
+                    "… 1 more"
+                  ],
+                  "attributes": [
+                    {
+                      "name": "Warna",
+                      "type": "IMAGE",
+                      "values": [
+                        {
+                          "image": "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/thumbnail/catalog-image/MTA-185382087/apple_full03_n23jjtkr.webp",
+                          "value": "Black"
+                        },
+                        {
+                          "image": "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/thumbnail/catalog-image/MTA-185382087/apple_full33_nwtb9o9f.webp",
+                          "value": "Glacier"
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    {
+                      "name": "Kapasitas",
+                      "type": "BUTTON",
+                      "values": [
+                        {
+                          "value": "256 GB"
+                        },
+                        {
+                          "value": "512 GB"
+                        },
+                        "… 2 more"
+                      ]
+                    }
+                  ],
+                  "options": [
+                    {
+                      "id": "is--APF-70017-00969-00007_PP-3381860",
+                      "selected": false,
+                      "available": false,
+                      "attributes": [
+                        {
+                          "name": "Warna",
+                          "value": "Glacier",
+                          "label": "Warna"
+                        },
+                        {
+                          "name": "Kapasitas",
+                          "value": "512 GB",
+                          "label": "Kapasitas"
+                        }
+                      ],
+                      "pickupPointCode": "PP-3381860",
+                      "tags": []
+                    },
+                    {
+                      "id": "is--APF-70017-00969-00008_PP-3381860",
+                      "selected": false,
+                      "available": false,
+                      "attributes": [
+                        {
+                          "name": "Warna",
+                          "value": "Burgundy",
+                          "label": "Warna"
+                        },
+                        {
+                          "name": "Kapasitas",
+                          "value": "512 GB",
+                          "label": "Kapasitas"
+                        }
+                      ],
+                      "pickupPointCode": "PP-3381860",
+                      "tags": []
+                    },
+                    "… 14 more"
+                  ],
+                  "description": null,
+                  "tags": [
+                    "RETURNABLE",
+                    "AVAILABLE",
+                    "… 4 more"
+                  ],
+                  "images": [
+                    "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/full/catalog-image/MTA-185382087/apple_full03_n23jjtkr.webp",
+                    "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/full/catalog-image/MTA-185382087/apple_full12_hbagjkhc.webp",
+                    "… 6 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/blibli/v1/reviews": {
+      "get": {
+        "operationId": "blibliReviews",
+        "summary": "Blibli product reviews",
+        "description": "A product's reviews in the site's order: id, rating, text, reviewer name as shown, verified-buyer flag, date, likes, purchased variant, photos and the seller's reply when present, with totals. Filter by star rating. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/blibli-reviews",
+        "tags": [
+          "Blibli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Product SKU or link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "APF-70017-00969"
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews with this star rating (1-5).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page (default and max 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (from 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "product_id": "APF-70017-00969",
+                  "page": 1,
+                  "total": 400,
+                  "total_pages": 20,
+                  "count": 20,
+                  "reviews": [
+                    {
+                      "id": "05c62d3f-cd43-4364-9402-69e753c7b57f",
+                      "rating": 5,
+                      "text": "first time beli di blibli dan so far puas banget 🫶🏻 barang sampai dengan aman, packing oke dan produk sesuai pesanan. warna glacier emg cant…",
+                      "author": "Nurul",
+                      "verified_buyer": true,
+                      "date": "2026-10-20T04:50:47.026Z",
+                      "likes": 0,
+                      "variants": [
+                        {
+                          "name": "Kapasitas",
+                          "value": "256 GB"
+                        },
+                        {
+                          "name": "Warna",
+                          "value": "Glacier"
+                        }
+                      ],
+                      "images": [
+                        "https://www.static-src.com/product-review/full/2026/11/1793508391612616011468..jpeg",
+                        "https://www.static-src.com/product-review/full/2026/11/1793508391666215765480..jpeg"
+                      ],
+                      "reply": null
+                    },
+                    {
+                      "id": "28847c0f-d2be-49ea-b688-4d3848050844",
+                      "rating": 5,
+                      "text": "Kualitas kamera bagus Banyak fitur canggih Kualitas kamera bagus Kualitas kamera bagus Kualitas kamera bagus Kualitas kamera bagus Banyak fi…",
+                      "author": "R***g",
+                      "verified_buyer": true,
+                      "date": "2026-10-19T07:02:22.900Z",
+                      "likes": 0,
+                      "variants": [
+                        {
+                          "name": "Kapasitas",
+                          "value": "256 GB"
+                        },
+                        {
+                          "name": "Warna",
+                          "value": "Glacier"
+                        }
+                      ],
+                      "images": [
+                        "https://www.static-src.com/product-review/full/2026/10/1792393395213-158283129.jpeg",
+                        "https://www.static-src.com/product-review/full/2026/10/1792393395210407062035..jpeg",
+                        "… 1 more"
+                      ],
+                      "reply": null
+                    },
+                    "… 18 more"
+                  ],
+                  "next_page": 2,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/blibli/v1/search": {
+      "get": {
+        "operationId": "blibliSearch",
+        "summary": "Blibli product search",
+        "description": "Search Blibli (Indonesian marketplace) with the site's sorts and filters: price range, brand, category, rating, store location, color, size, promo, seller type, delivery option, Blibli services, discount, warranty type and official stores only. Each product: SKU, item SKU, name, link, price, list price, discount, price text (IDR), rating, review count, seller rating, brand, category, merchant code, store location, status, number of variants, tags (free shipping, 0% installments...), images, and the site's original record in `raw`. Page 1 also returns sponsored products and the filter groups with their values (feed `value` back as the filter's `param`). Up to 60 per page. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/blibli-search",
+        "tags": [
+          "Blibli"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "description": "Search text.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "iphone"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default relevance).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "best_selling",
+                "price_asc",
+                "price_desc",
+                "popular",
+                "newest"
+              ]
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price in IDR.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Highest price in IDR.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Brand name(s) as in the brand filter, e.g. Apple; comma-separated.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Category id(s) from the category filter, e.g. 54593.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "required": false,
+            "description": "Minimum rating value from the rating filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Store location value(s) from the location filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "required": false,
+            "description": "Color value(s) from the color filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "description": "Size value(s) from the size filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "promo",
+            "in": "query",
+            "required": false,
+            "description": "Promo value(s) from the promo filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seller",
+            "in": "query",
+            "required": false,
+            "description": "Seller type value(s) from the seller filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "delivery",
+            "in": "query",
+            "required": false,
+            "description": "Delivery option value(s) from the delivery filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "service",
+            "in": "query",
+            "required": false,
+            "description": "Blibli service value(s) from the service filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "discount",
+            "in": "query",
+            "required": false,
+            "description": "Discount value(s) from the discount filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "warranty_type",
+            "in": "query",
+            "required": false,
+            "description": "Warranty type value(s) from the warranty filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "official",
+            "in": "query",
+            "required": false,
+            "description": "Official stores only.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page (default 40, max 60).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (from 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "keyword": "iphone",
+                  "page": 1,
+                  "total": 660,
+                  "total_pages": 17,
+                  "count": 40,
+                  "items": [
+                    {
+                      "id": "APF-70017-00969",
+                      "item_sku": "APF-70017-00969-00001",
+                      "name": "iPhone 18 Pro Max",
+                      "url": "https://www.blibli.com/p/iphone-18-pro-max/ps--APF-70017-00969?ds=APF-70017-00969-00001&source=SEARCH&sid=fc55991254f94d0a",
+                      "price": 29999000,
+                      "list_price": 29999000,
+                      "discount": 0,
+                      "price_text": "Rp29.999.000",
+                      "price_range": false,
+                      "currency": "IDR",
+                      "rating": 4.8,
+                      "review_count": 886,
+                      "seller_rating": 4.9,
+                      "brand": "Apple",
+                      "category": "Handphone & Tablet",
+                      "merchant_code": "APF-70017",
+                      "location": "Kota Bekasi",
+                      "status": "AVAILABLE",
+                      "variants": 7,
+                      "tags": [
+                        "ZERO_PERCENT_INSTALLMENT",
+                        "REGULAR",
+                        "… 6 more"
+                      ],
+                      "sold_text": "2,9 rb",
+                      "official": true,
+                      "image": "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/medium/catalog-image/MTA-185382087/apple_full03_n23jjtkr.webp",
+                      "images": [
+                        "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/medium/catalog-image/MTA-185382087/apple_full03_n23jjtkr.webp",
+                        "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/medium/catalog-image/MTA-185382087/apple_full12_hbagjkhc.webp",
+                        "… 6 more"
+                      ]
+                    },
+                    {
+                      "id": "APF-70017-00303",
+                      "item_sku": "APF-70017-00303-00001",
+                      "name": "iPhone 15",
+                      "url": "https://www.blibli.com/p/iphone-15/ps--APF-70017-00303?ds=APF-70017-00303-00001&source=SEARCH&sid=fc55991254f94d0a",
+                      "price": 15499000,
+                      "list_price": 16499000,
+                      "discount": 6,
+                      "price_text": "Rp15.499.000",
+                      "price_range": false,
+                      "currency": "IDR",
+                      "rating": 4.9,
+                      "review_count": 3995,
+                      "seller_rating": 4.9,
+                      "brand": "Apple",
+                      "category": "Handphone & Tablet",
+                      "merchant_code": "APF-70017",
+                      "location": "Kota Bekasi",
+                      "status": "AVAILABLE",
+                      "variants": 14,
+                      "tags": [
+                        "ZERO_PERCENT_INSTALLMENT",
+                        "REGULAR",
+                        "… 8 more"
+                      ],
+                      "sold_text": "10,4 rb",
+                      "official": true,
+                      "image": "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/medium/catalog-image/MTA-134607074/apple_iphone_15_full01_seb52bq8.jpg",
+                      "images": [
+                        "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/medium/catalog-image/MTA-134607074/apple_iphone_15_full01_seb52bq8.jpg",
+                        "https://www.static-src.com/wcsstore/Indraprastha/images/catalog/medium/catalog-image/MTA-134607074/apple_iphone_15_full04_igkk2bmm.jpeg",
+                        "… 5 more"
+                      ]
+                    },
+                    "… 38 more"
+                  ],
+                  "sponsored": [],
+                  "filters": [
+                    {
+                      "name": "Tipe kabel",
+                      "param": "cableType",
+                      "type": "MULTIPLE_SELECT",
+                      "values": [
+                        {
+                          "value": "Usb-c To Lightning",
+                          "label": "Usb-c To Lightning",
+                          "count": null
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Slot SIM",
+                      "param": "simSlot",
+                      "type": "MULTIPLE_SELECT",
+                      "values": [
+                        {
+                          "value": "Esim Only",
+                          "label": "Esim Only",
+                          "count": null
+                        }
+                      ]
+                    },
+                    "… 21 more"
+                  ],
+                  "related_keywords": [],
+                  "next_page": 2,
+                  "applied_filters": {
+                    "searchTerm": "iphone",
+                    "page": "1",
+                    "start": "0",
+                    "itemPerPage": "40",
+                    "sort": "0"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

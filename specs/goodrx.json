@@ -1,0 +1,1325 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: GoodRx",
+    "version": "1.0.0",
+    "description": "The GoodRx API from API.SH: public GoodRx data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "GoodRx",
+      "description": "5 endpoints (e-commerce)",
+      "x-slug": "goodrx",
+      "x-domains": [
+        "goodrx.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/goodrx/v1/drug": {
+      "get": {
+        "operationId": "goodrxDrug",
+        "summary": "GoodRx drug details",
+        "description": "A drug on GoodRx: description, drug class, related conditions, similar drugs, every version (label: brand or generic, form, strength, quantities offered, default quantity, schedule, image) and the default version the price page opens with, plus the side-effect and interaction notes.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/goodrx-drug",
+        "tags": [
+          "GoodRx"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "drug",
+            "in": "query",
+            "required": true,
+            "description": "Drug slug from search, or a goodrx.com drug link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lisinopril"
+          },
+          {
+            "name": "notes",
+            "in": "query",
+            "required": false,
+            "description": "Include the side-effect and interaction notes (default true).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "2412",
+                  "name": "Lisinopril",
+                  "slug": "lisinopril",
+                  "url": "https://www.goodrx.com/lisinopril",
+                  "description_html": "Lisinopril (<a href='/prinivil'>Prinivil</a>, <a href='/zestril'>Zestril</a>) is an inexpensive drug used to treat <a href='/hypertension'>h…",
+                  "titles": [
+                    "Lisinopril"
+                  ],
+                  "drug_class": {
+                    "name": "ACE inhibitors",
+                    "slug": "ace-inhibitors"
+                  },
+                  "conditions": [
+                    {
+                      "name": "Heart Attack",
+                      "slug": "heart-attack",
+                      "url": "https://www.goodrx.com/conditions/heart-attack"
+                    },
+                    {
+                      "name": "Heart Failure",
+                      "slug": "heart-failure",
+                      "url": "https://www.goodrx.com/conditions/heart-failure"
+                    },
+                    "… 1 more"
+                  ],
+                  "similar_drugs": [
+                    {
+                      "name": "Accupril",
+                      "slug": "accupril",
+                      "url": "https://www.goodrx.com/accupril"
+                    },
+                    {
+                      "name": "Aceon",
+                      "slug": "aceon",
+                      "url": "https://www.goodrx.com/aceon"
+                    },
+                    "… 12 more"
+                  ],
+                  "labels": [
+                    "prinivil",
+                    "zestril",
+                    "… 1 more"
+                  ],
+                  "forms": [
+                    "tablet"
+                  ],
+                  "default_version": {
+                    "drug_id": "193",
+                    "label": "lisinopril",
+                    "form": "tablet",
+                    "dosage": "20mg",
+                    "quantity": 90
+                  },
+                  "versions_count": 15,
+                  "versions": [
+                    {
+                      "drug_id": "28955",
+                      "label": "Prinivil",
+                      "label_slug": "prinivil",
+                      "label_type": "BRAND",
+                      "form": "tablet",
+                      "form_slug": "tablet",
+                      "dosage": "5mg",
+                      "dosage_slug": "5mg",
+                      "quantities": [
+                        30
+                      ],
+                      "default_quantity": 30,
+                      "unit_singular": "tablet of Prinivil 5mg",
+                      "unit_plural": "tablets of Prinivil 5mg",
+                      "schedule": "6",
+                      "lifecycle": "ON_MARKET",
+                      "image": null
+                    },
+                    {
+                      "drug_id": "4943",
+                      "label": "Prinivil",
+                      "label_slug": "prinivil",
+                      "label_type": "BRAND",
+                      "form": "tablet",
+                      "form_slug": "tablet",
+                      "dosage": "10mg",
+                      "dosage_slug": "10mg",
+                      "quantities": [
+                        30
+                      ],
+                      "default_quantity": 30,
+                      "unit_singular": "tablet of Prinivil 10mg",
+                      "unit_plural": "tablets of Prinivil 10mg",
+                      "schedule": "6",
+                      "lifecycle": "ON_MARKET",
+                      "image": null
+                    },
+                    "… 13 more"
+                  ],
+                  "side_effects_html": "<div class=\"consumer-group\"><p>Along with its needed effects, a medicine may cause some unwanted effects. Although not all of these side eff…",
+                  "interactions_html": "<p>Although certain medicines should not be used together at all, in other cases two different medicines may be used together even if an int…",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/goodrx/v1/lowest-prices": {
+      "get": {
+        "operationId": "goodrxLowestPrices",
+        "summary": "GoodRx lowest prices for several drugs",
+        "description": "The lowest GoodRx price of up to 25 drugs in one call. `found` is false for a name GoodRx has no price for.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/goodrx-lowest-prices",
+        "tags": [
+          "GoodRx"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "drugs",
+            "in": "query",
+            "required": true,
+            "description": "Comma-separated drug names or slugs (up to 25).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lisinopril,atorvastatin,metformin"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 3,
+                  "state": null,
+                  "prices": [
+                    {
+                      "drug": "lisinopril",
+                      "lowest_price": 7.79,
+                      "currency": "USD",
+                      "url": "https://www.goodrx.com/lisinopril",
+                      "found": true
+                    },
+                    {
+                      "drug": "atorvastatin",
+                      "lowest_price": 15.61,
+                      "currency": "USD",
+                      "url": "https://www.goodrx.com/atorvastatin",
+                      "found": true
+                    },
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/goodrx/v1/pharmacies": {
+      "get": {
+        "operationId": "goodrxPharmacies",
+        "summary": "GoodRx popular pharmacies near a ZIP code",
+        "description": "The most popular pharmacy chains near a US ZIP code on GoodRx, ranked, with their ids and logos, and the place the ZIP code resolves to.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/goodrx-pharmacies",
+        "tags": [
+          "GoodRx"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "zip",
+            "in": "query",
+            "required": true,
+            "description": "5-digit US ZIP code.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "94103"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Pharmacies, 1-50 (default 20).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "20"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "zip": "94103",
+                  "location": {
+                    "latitude": 37.774,
+                    "longitude": -122.41,
+                    "city": "San Francisco",
+                    "county": "San Francisco",
+                    "state": "CA",
+                    "zip_code": "94103"
+                  },
+                  "count": 6,
+                  "pharmacies": [
+                    {
+                      "rank": 1,
+                      "pharmacy_id": "3",
+                      "name": "Walgreens",
+                      "logo": "https://www.grxstatic.com/pharmacy_logos/circle_icon/3.png"
+                    },
+                    {
+                      "rank": 2,
+                      "pharmacy_id": "83286",
+                      "name": "Safeway",
+                      "logo": "https://www.grxstatic.com/pharmacy_logos/circle_icon/83286.png"
+                    },
+                    "… 4 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/goodrx/v1/prices": {
+      "get": {
+        "operationId": "goodrxPrices",
+        "summary": "GoodRx pharmacy prices near a ZIP code",
+        "description": "Prescription prices at every pharmacy GoodRx lists near a US ZIP code for one drug version: the lowest price at each pharmacy, the coupon price, retail price, member price, delivery and every pricing option with its campaign, plus the average retail price and estimated cash price. Pick the version with `label`, `form`, `dosage` and `quantity` (values from /goodrx/v1/drug; the site's default version otherwise). Sorted by lowest price.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/goodrx-prices",
+        "tags": [
+          "GoodRx"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "drug",
+            "in": "query",
+            "required": true,
+            "description": "Drug slug from search, or a goodrx.com drug link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lisinopril"
+          },
+          {
+            "name": "zip",
+            "in": "query",
+            "required": true,
+            "description": "5-digit US ZIP code.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10001"
+          },
+          {
+            "name": "label",
+            "in": "query",
+            "required": false,
+            "description": "Brand or generic label slug, e.g. zestril or lisinopril.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "form",
+            "in": "query",
+            "required": false,
+            "description": "Form slug, e.g. tablet.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dosage",
+            "in": "query",
+            "required": false,
+            "description": "Strength slug, e.g. 20mg.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "20mg"
+          },
+          {
+            "name": "quantity",
+            "in": "query",
+            "required": false,
+            "description": "Quantity (default: the version's default quantity).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "30"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "price (default).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "price"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "drug": "Lisinopril",
+                  "drug_slug": "lisinopril",
+                  "drug_id": "193",
+                  "version": {
+                    "label": "lisinopril",
+                    "label_type": "GENERIC",
+                    "form": "tablet",
+                    "dosage": "20mg",
+                    "quantity": 90,
+                    "quantities": [
+                      30,
+                      60,
+                      "… 3 more"
+                    ]
+                  },
+                  "location": {
+                    "latitude": 40.752,
+                    "longitude": -73.995,
+                    "city": "New York",
+                    "county": "New York",
+                    "state": "NY",
+                    "zip_code": "10001"
+                  },
+                  "sort": "price",
+                  "average_retail_price": 30.19,
+                  "estimated_cash_price": 40.91,
+                  "lowest_price": 16.24,
+                  "count": 11,
+                  "pharmacies": [
+                    {
+                      "pharmacy_id": "23355",
+                      "pharmacy": "Stop n Shop",
+                      "seller_type": "PharmacyChain",
+                      "logo": "https://www.grxstatic.com/pharmacy_logos/circle_icon/23355.png",
+                      "price": 16.24,
+                      "price_kind": "coupon",
+                      "coupon_price": 16.24,
+                      "retail_price": 62.35,
+                      "member_price": null,
+                      "options": [
+                        {
+                          "kind": "coupon",
+                          "name": "GoodRx Coupon",
+                          "price": 16.24,
+                          "currency": "USD",
+                          "retail_price": 62.35,
+                          "percent_off_retail": null,
+                          "campaign": null,
+                          "campaign_label": null,
+                          "payment_options": []
+                        }
+                      ],
+                      "prescription": {
+                        "label": "Lisinopril",
+                        "form": "tablet",
+                        "dosage": "20mg",
+                        "quantity": 90,
+                        "summary": "20mg 90 tablets"
+                      }
+                    },
+                    {
+                      "pharmacy_id": "23356",
+                      "pharmacy": "ShopRite",
+                      "seller_type": "PharmacyChain",
+                      "logo": "https://www.grxstatic.com/pharmacy_logos/circle_icon/23356.png",
+                      "price": 17.99,
+                      "price_kind": "coupon",
+                      "coupon_price": 17.99,
+                      "retail_price": 72,
+                      "member_price": 11.74,
+                      "options": [
+                        {
+                          "kind": "gold",
+                          "name": "Gold member price",
+                          "price": 11.74,
+                          "currency": "USD",
+                          "retail_price": 72,
+                          "percent_off_retail": "84%",
+                          "campaign": null,
+                          "campaign_label": null,
+                          "payment_options": []
+                        },
+                        {
+                          "kind": "coupon",
+                          "name": "GoodRx Coupon",
+                          "price": 17.99,
+                          "currency": "USD",
+                          "retail_price": 72,
+                          "percent_off_retail": null,
+                          "campaign": null,
+                          "campaign_label": null,
+                          "payment_options": [
+                            "STRIPE"
+                          ]
+                        }
+                      ],
+                      "prescription": {
+                        "label": "Lisinopril",
+                        "form": "tablet",
+                        "dosage": "20mg",
+                        "quantity": 90,
+                        "summary": "20mg 90 tablets"
+                      }
+                    },
+                    "… 9 more"
+                  ],
+                  "url": "https://www.goodrx.com/lisinopril?form=tablet&dosage=20mg&quantity=90",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/goodrx/v1/search": {
+      "get": {
+        "operationId": "goodrxSearch",
+        "summary": "GoodRx drug search",
+        "description": "The GoodRx search box: brand and generic drugs, conditions and drug classes matching a name or its start. Each result: type, title, name, slug (use it as `drug` on the other GoodRx endpoints), id, promotion text and the page link.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/goodrx-search",
+        "tags": [
+          "GoodRx"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Drug, condition or drug class name, or its start.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lipit"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results, 1-50 (default 10).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "10"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "lipit",
+                  "count": 5,
+                  "results": [
+                    {
+                      "type": "drug",
+                      "title": "Lipitor (brand-name)",
+                      "name": "Lipitor (brand-name)",
+                      "slug": "lipitor",
+                      "id": "2406",
+                      "featured": false,
+                      "promotion": null,
+                      "url": "https://www.goodrx.com/lipitor"
+                    },
+                    {
+                      "type": "drug",
+                      "title": "Lipitor (generic)",
+                      "name": "Lipitor (generic)",
+                      "slug": "lipitor",
+                      "id": "388",
+                      "featured": false,
+                      "promotion": null,
+                      "url": "https://www.goodrx.com/lipitor"
+                    },
+                    "… 3 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

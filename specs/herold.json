@@ -1,0 +1,1062 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Herold",
+    "version": "1.0.0",
+    "description": "The Herold API from API.SH: public Herold data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Herold",
+      "description": "3 endpoints (search & seo)",
+      "x-slug": "herold",
+      "x-domains": [
+        "herold.at"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/herold/v1/business": {
+      "get": {
+        "operationId": "heroldBusiness",
+        "summary": "HEROLD business details",
+        "description": "One business listed on HEROLD (Austria's yellow pages): code and numeric id, name, main category and all categories with links, full address, street, postal code, city, region, country and coordinates, phone numbers, email, website and other contact links, rating and review count, open-now flag and opening hours per day, description, more-information links, company details (founding year, employees), services by group, payment methods, logo and photos, verified flag, and the reviews shown on the page (rating, author, date, text).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/herold-business",
+        "tags": [
+          "Herold"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "The business code from its herold.at link (/gelbe-seiten/<place>/<code>/<name>/), e.g. from `url` in /herold/v1/search results.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "QxGFc"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "The business's herold.at/gelbe-seiten/... link instead of id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "QxGFc",
+                  "herold_id": "793035",
+                  "name": "Wiener Stadtbräu",
+                  "category": "Bierlokale-Pubs",
+                  "categories": [
+                    {
+                      "name": "Restaurant",
+                      "url": "https://www.herold.at/gelbe-seiten/restaurant/"
+                    },
+                    {
+                      "name": "Bierlokale-Pubs",
+                      "url": "https://www.herold.at/gelbe-seiten/bierlokale-pubs/"
+                    }
+                  ],
+                  "address": "Graben 29a 1010 Wien Wien 1 (Innere Stadt) Wien",
+                  "street": "Graben 29a",
+                  "postal_code": "1010",
+                  "city": "Wien",
+                  "region": "Wien",
+                  "country": "AT",
+                  "latitude": 48.20844,
+                  "longitude": 16.37052,
+                  "phone": "+1 555 010 0000",
+                  "phones": [
+                    "+1 555 010 0000"
+                  ],
+                  "email": "name@example.com",
+                  "website": "https://www.stadtbraeu.at",
+                  "other_links": [
+                    {
+                      "name": "Facebook",
+                      "url": "https://www.facebook.com/WienerStadtbraeu/"
+                    }
+                  ],
+                  "rating": 2.5,
+                  "reviews_count": 4,
+                  "open_now": null,
+                  "opening_hours": [
+                    {
+                      "day": "monday",
+                      "times": [
+                        "16:00-24:00"
+                      ],
+                      "closed": false
+                    },
+                    {
+                      "day": "tuesday",
+                      "times": [
+                        "16:00-24:00"
+                      ],
+                      "closed": false
+                    },
+                    "… 5 more"
+                  ],
+                  "description": "Herzlich willkommen beim Wiener Stadtbräu! Das Wiener Stadtbräu bietet Ihnen gehobene Gasthaustradition in authentischer Atmosphäre und mit …",
+                  "more_info": [
+                    {
+                      "text": "Der versteckte Schatz mitten am Wiener Graben.",
+                      "url": "http://www.wiener-stadtbräu.at"
+                    }
+                  ],
+                  "company_details": {},
+                  "services": [
+                    {
+                      "group": "Gastronomie",
+                      "items": [
+                        {
+                          "name": "Küche",
+                          "values": [
+                            "Internationale Küche"
+                          ]
+                        },
+                        {
+                          "name": "Ausstattung",
+                          "values": [
+                            "Gastgarten"
+                          ]
+                        },
+                        "… 1 more"
+                      ]
+                    }
+                  ],
+                  "payment_methods": [
+                    "VISA",
+                    "Mastercard",
+                    "… 4 more"
+                  ],
+                  "logo": "https://a.mktgcdn.com/p/7JXLq6YZToxwLcUY6P-L6u8zniSB-L5DMGS9R104llY/300x300.png",
+                  "image": "https://a.mktgcdn.com/p/7JXLq6YZToxwLcUY6P-L6u8zniSB-L5DMGS9R104llY/300x300.png",
+                  "images": [
+                    "https://www.herold.at/FS/picture/3/5/8/6466853.jpg",
+                    "https://www.herold.at/FS/picture/1/4/0/35890041.png"
+                  ],
+                  "verified": false,
+                  "reviews": [
+                    {
+                      "rating": 1,
+                      "author": "JuliaMaria",
+                      "date": "2014-02-23T17:44:02.000Z",
+                      "text": "War aufgrund einer Empfehlung meiner Freundinn in diesen Lokal, wollte gemütlich mit meinen Mädels essen gehen doch das Essen war fad und vo…",
+                      "id": "63670"
+                    },
+                    {
+                      "rating": 3,
+                      "author": "D B.",
+                      "date": "2011-03-02T15:53:55.000Z",
+                      "text": "Gutes Lokal im Stadtzentrum, Bedienung sehr freundlich, Karte wild durchgemischt von typisch österreichisch bis Spare Ribs usw. Portionen wa…",
+                      "id": "41739"
+                    },
+                    "… 1 more"
+                  ],
+                  "url": "https://www.herold.at/gelbe-seiten/wien/QxGFc/wiener-stadtbraeu/",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/herold/v1/reviews": {
+      "get": {
+        "operationId": "heroldReviews",
+        "summary": "Business reviews",
+        "description": "Every review of a HEROLD business: title, text, author, date, owner reply, the per-category ratings (quality, price, advice...) and their average, plus the category averages over all reviews. 20 a page; pass `next_page` back as `page`, null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/herold-reviews",
+        "tags": [
+          "Herold"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "A herold.at business link (or the code in `id`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.herold.at/gelbe-seiten/wien/MK8c9/in-rothen-haarstudio-und-kaffeebar/"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Business code, e.g. MK8c9.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "oldest",
+                "highest",
+                "lowest"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "MK8c9",
+                  "url": "https://www.herold.at/gelbe-seiten/wien/MK8c9/in-rothen-haarstudio-und-kaffeebar/",
+                  "sort": "newest",
+                  "total": 111,
+                  "page": 1,
+                  "count": 20,
+                  "next_page": 2,
+                  "category_averages": [
+                    {
+                      "category": "Qualität",
+                      "average": 4.82,
+                      "count": 108
+                    },
+                    {
+                      "category": "Preis",
+                      "average": 4.6,
+                      "count": 100
+                    },
+                    "… 7 more"
+                  ],
+                  "reviews": [
+                    {
+                      "id": "1402069",
+                      "title": "Haarschnitt",
+                      "text": "Ich war bei Jacky und sie weiß ganz genau was sie macht. Ich habe eine kurze Erklärung abgegeben und sie hat mich gleich verstanden. Sie hör…",
+                      "author": "Gast: selma.kraus178",
+                      "date": "2025-06-17T13:16:06.000Z",
+                      "owner_reply": null,
+                      "rating": 5,
+                      "ratings": [
+                        {
+                          "category": "Qualität",
+                          "rating": 5
+                        },
+                        {
+                          "category": "Preis",
+                          "rating": 5
+                        },
+                        "… 5 more"
+                      ]
+                    },
+                    {
+                      "id": "1377083",
+                      "title": "Alles Top",
+                      "text": "Ich war heute bei Fr. Andrea. Rundum toller Service. Super nettes Team, das über fachliche Kompetenz und Perfektion verfügt, und Harmonie au…",
+                      "author": "A.Katarina",
+                      "date": "2024-01-12T17:39:17.000Z",
+                      "owner_reply": null,
+                      "rating": 5,
+                      "ratings": [
+                        {
+                          "category": "Qualität",
+                          "rating": 5
+                        },
+                        {
+                          "category": "Preis",
+                          "rating": 5
+                        },
+                        "… 6 more"
+                      ]
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/herold/v1/search": {
+      "get": {
+        "operationId": "heroldSearch",
+        "summary": "Search Austrian businesses",
+        "description": "HEROLD, Austria's yellow pages: businesses by trade or keyword, optionally in a place, with name, id, description, street, postal code, region, phone, email, website, rating, review count, verified flag, logo and page link, 30 per page, and the total. Pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/herold-search",
+        "tags": [
+          "Herold"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Trade or keyword (e.g. restaurant, installateur, zahnarzt, rechtsanwalt).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "restaurant"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "Place as in HEROLD's addresses: a state (wien, niederoesterreich, oberoesterreich, steiermark, tirol, kaernten, salzburg, vorarlberg, burgenland) or a town slug the site uses. All of Austria when empty.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "wien"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "restaurant",
+                  "location": "wien",
+                  "total": 1051,
+                  "page": 1,
+                  "pages": 36,
+                  "count": 30,
+                  "items": [
+                    {
+                      "name": "EF16 Restaurant Weinbar",
+                      "id": "sm4rW",
+                      "herold_id": "708152",
+                      "description": "Authentische Wiener Küche, mediterrane Aromen und exzellente Weine – serviert im stimmungsvollen Innenhof Wiens.",
+                      "street": "Fleischmarkt 16",
+                      "postal_code": "1010",
+                      "city": null,
+                      "region": "Wien",
+                      "country": "AT",
+                      "address": null,
+                      "phone": "+1 555 010 0000",
+                      "email": "name@example.com",
+                      "website": "https://www.ef16.at",
+                      "rating": 4.9,
+                      "reviews": 7,
+                      "verified": true,
+                      "logo": "https://a.mktgcdn.com/p/V-up-hsdHvIwV54L0aLBbeFZKXmVP1kRbl-Jm7_VB_A/600x600.png",
+                      "url": "https://www.herold.at/gelbe-seiten/wien/sm4rW/ef16-restaurant-weinbar/"
+                    },
+                    {
+                      "name": "Chattanooga",
+                      "id": "8HXHF",
+                      "herold_id": "123178",
+                      "description": "Wiener Gastlichkeit am Graben",
+                      "street": "Graben 29a",
+                      "postal_code": "1010",
+                      "city": null,
+                      "region": "Wien",
+                      "country": "AT",
+                      "address": null,
+                      "phone": "+1 555 010 0000",
+                      "email": "name@example.com",
+                      "website": "https://www.chattanooga.at",
+                      "rating": 4,
+                      "reviews": 1,
+                      "verified": true,
+                      "logo": "https://a.mktgcdn.com/p/BNC-tLVArQSVctVWbLmtMM9tFgmGsFNIpnAe2R1dbMY/300x300.png",
+                      "url": "https://www.herold.at/gelbe-seiten/wien/8HXHF/chattanooga/"
+                    },
+                    "… 28 more"
+                  ],
+                  "next_page": 2,
+                  "url": "https://www.herold.at/gelbe-seiten/wien/restaurant/",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

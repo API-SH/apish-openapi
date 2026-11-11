@@ -1,0 +1,1127 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Wuzzuf",
+    "version": "1.0.0",
+    "description": "The Wuzzuf API from API.SH: public Wuzzuf data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Wuzzuf",
+      "description": "3 endpoints (jobs & b2b)",
+      "x-slug": "wuzzuf",
+      "x-domains": [
+        "wuzzuf.net"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wuzzuf/v1/company": {
+      "get": {
+        "operationId": "wuzzufCompany",
+        "summary": "Wuzzuf company profile",
+        "description": "An employer's profile on Wuzzuf: name, logo, cover, description, industries, specialties, website and social links, founding year, verification status, address and perks. Unknown ids answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wuzzuf-company",
+        "tags": [
+          "Wuzzuf"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Company id (`company_id` in job results, e.g. `22617`) or its wuzzuf.net/jobs/careers/<name>-<id> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "22617"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "22617",
+                  "name": "Partner & More",
+                  "url": "https://wuzzuf.net/jobs/careers/Partner---more-Egypt-22617",
+                  "logo": "https://images.wuzzuf-data.net/files/company_logo/Partner---More-Egypt-22617-1621197803.jpg",
+                  "cover": "https://images.wuzzuf-data.net/files/company_covers/5c66628fac87ddd5aa3899720d0e4fea.png",
+                  "description": "PARTNER & MORE is offering a wide variety of services for companies of all scales in the MENA region. We support our customers anywhere thro…",
+                  "industries": [
+                    "Human Resources",
+                    "Management Consulting",
+                    "… 1 more"
+                  ],
+                  "specialties": [],
+                  "website": "https://partner-more.com/",
+                  "social": {},
+                  "founded": 2014,
+                  "status": "Verified",
+                  "address": "16, شارع الخرطوم, مصر الجديدة",
+                  "perks": [],
+                  "hiring_for": null,
+                  "created_at": "2017-02-12T14:14:49",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wuzzuf/v1/job": {
+      "get": {
+        "operationId": "wuzzufJob",
+        "summary": "Wuzzuf job ad",
+        "description": "One job ad on Wuzzuf with its employer's profile: description and requirements (text and HTML), salary when public, location with coordinates, job types, workplace, career level, experience, vacancies, roles, skills, education, application type, views, posted and expiry dates, and `company_profile` (about, industries, website, social links, founding year, address). `latest=true` with search parameters returns the first matching ad. Removed ads answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wuzzuf-job",
+        "tags": [
+          "Wuzzuf"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Job id (`id` in search results) or its wuzzuf.net/jobs/p/... link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`true`: the first ad of a search with the other parameters instead of an id (an example that never expires).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "With `latest=true`: keywords.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "4793b7b3-8dc6-4a13-8228-e63b0bf33013",
+                  "title": "Technical Sales Engineer",
+                  "url": "https://wuzzuf.net/jobs/p/j9fppuiwqog2-technical-sales-engineer-partner-more-cairo-egypt",
+                  "status": "active",
+                  "company": "Partner & More",
+                  "company_id": "22617",
+                  "company_logo": "https://images.wuzzuf-data.net/files/company_logo/Partner---More-Egypt-22617-1621197803.jpg",
+                  "confidential_company": false,
+                  "country": "Egypt",
+                  "country_code": "EG",
+                  "city": "Cairo",
+                  "area": null,
+                  "lat": 30.050759,
+                  "lng": 31.233839,
+                  "job_types": [
+                    "Full Time"
+                  ],
+                  "workplace": "On-site",
+                  "career_level": "Experienced",
+                  "experience_years": {
+                    "min": 1,
+                    "max": 3
+                  },
+                  "vacancies": 5,
+                  "roles": [
+                    "Sales/Retail",
+                    "Engineering - Mechanical/Electrical"
+                  ],
+                  "skills": [
+                    "Engineering",
+                    "Sales"
+                  ],
+                  "education": "Bachelor's Degree",
+                  "gender": null,
+                  "salary": {
+                    "min": 13000,
+                    "max": 25000,
+                    "currency": "EGP",
+                    "period": "Per Month",
+                    "details": "commission",
+                    "paid": true
+                  },
+                  "application_type": "internal",
+                  "apply_url": null,
+                  "views": 53,
+                  "description": "For a leading supplier of industrial spareparts & industrial solutions, an authorised dealer for packaging, filling & injection spareparts m…",
+                  "requirements": "Requirements:\n\n• BSC of Engineering, Mechatronics, Electrical, & Mechanical\n\n• B2B sales exp. in selling machinary spareparts & tools\n\n• com…",
+                  "description_html": "<p>For a leading supplier of industrial spareparts & industrial solutions, an authorised dealer for packaging, filling & injection sparepart…",
+                  "requirements_html": "<p>Requirements:</p><ul><li><p>BSC of Engineering, Mechatronics, Electrical, & Mechanical</p></li><li><p>B2B sales exp. in selling machinary…",
+                  "posted_at": "2026-11-02T10:07:17",
+                  "expires_at": "2027-01-01T10:07:17",
+                  "company_profile": {
+                    "id": "22617",
+                    "name": "Partner & More",
+                    "url": "https://wuzzuf.net/jobs/careers/Partner---more-Egypt-22617",
+                    "logo": "https://images.wuzzuf-data.net/files/company_logo/Partner---More-Egypt-22617-1621197803.jpg",
+                    "cover": "https://images.wuzzuf-data.net/files/company_covers/5c66628fac87ddd5aa3899720d0e4fea.png",
+                    "description": "PARTNER & MORE is offering a wide variety of services for companies of all scales in the MENA region. We support our customers anywhere thro…",
+                    "industries": [
+                      "Human Resources",
+                      "Management Consulting",
+                      "… 1 more"
+                    ],
+                    "specialties": [],
+                    "website": "https://partner-more.com/",
+                    "social": {},
+                    "founded": 2014,
+                    "status": "Verified",
+                    "address": "16, شارع الخرطوم, مصر الجديدة",
+                    "perks": [],
+                    "hiring_for": null,
+                    "created_at": "2017-02-12T14:14:49"
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/wuzzuf/v1/search": {
+      "get": {
+        "operationId": "wuzzufSearch",
+        "summary": "Wuzzuf job search",
+        "description": "Jobs on Wuzzuf (wuzzuf.net, Egypt and the Middle East) for a keyword, with every filter of the site: country, city, area, job type, workplace (on-site, hybrid, remote), career level, job category, posting age and years of experience. `facets` lists each filter's values with counts. Each job: `id`, `title`, `url`, `company`, `company_id`, `company_logo`, `country`, `city`, `area`, `job_types`, `workplace`, `career_level`, `experience_years`, `vacancies`, `roles`, `skills`, `education`, `salary` when public, `description`, `requirements`, `posted_at`, `expires_at` and `raw`. 15 jobs a page; `total` is the site's count. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/wuzzuf-search",
+        "tags": [
+          "Wuzzuf"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords, e.g. `engineer`, `accountant`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "engineer"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country names as in `facets` (e.g. `Egypt`, `Saudi Arabia`), several separated by `|`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "description": "City names as in `facets` (e.g. `Cairo`, `Giza`), several separated by `|`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "required": false,
+            "description": "Area names as in `facets` (e.g. `New Cairo`), several separated by `|`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "job_type",
+            "in": "query",
+            "required": false,
+            "description": "`full_time`, `part_time`, `internship`, `shift_based`, `freelance_project` (several separated by `|`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workplace",
+            "in": "query",
+            "required": false,
+            "description": "`on_site`, `hybrid` or `remote`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "career_level",
+            "in": "query",
+            "required": false,
+            "description": "`Student`, `Entry Level`, `Experienced`, `Manager` or `Senior Management`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Job category as in `facets.category` (e.g. `IT/Software Development`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "posted_within",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs posted within this many days.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "7",
+                "30"
+              ]
+            }
+          },
+          {
+            "name": "experience_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum years of experience.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "experience_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum years of experience.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "engineer",
+                  "applied_filters": {},
+                  "total": 2009,
+                  "page": 1,
+                  "count": 15,
+                  "next_page": 2,
+                  "facets": [
+                    {
+                      "name": "area",
+                      "values": [
+                        {
+                          "value": "New Cairo",
+                          "count": 218
+                        },
+                        {
+                          "value": "6th of October",
+                          "count": 170
+                        },
+                        "… 95 more"
+                      ]
+                    },
+                    {
+                      "name": "country",
+                      "values": [
+                        {
+                          "value": "Egypt",
+                          "count": 1963
+                        },
+                        {
+                          "value": "Saudi Arabia",
+                          "count": 16
+                        },
+                        "… 14 more"
+                      ]
+                    },
+                    "… 6 more"
+                  ],
+                  "jobs": [
+                    {
+                      "id": "4793b7b3-8dc6-4a13-8228-e63b0bf33013",
+                      "title": "Technical Sales Engineer",
+                      "url": "https://wuzzuf.net/jobs/p/j9fppuiwqog2-technical-sales-engineer-partner-more-cairo-egypt",
+                      "status": "active",
+                      "company": "Partner & More",
+                      "company_id": "22617",
+                      "company_logo": null,
+                      "confidential_company": false,
+                      "country": "Egypt",
+                      "country_code": "EG",
+                      "city": "Cairo",
+                      "area": null,
+                      "lat": 30.050759,
+                      "lng": 31.233839,
+                      "job_types": [
+                        "Full Time"
+                      ],
+                      "workplace": "On-site",
+                      "career_level": "Experienced",
+                      "experience_years": {
+                        "min": 1,
+                        "max": 3
+                      },
+                      "vacancies": 5,
+                      "roles": [
+                        "Sales/Retail",
+                        "Engineering - Mechanical/Electrical"
+                      ],
+                      "skills": [
+                        "Engineering",
+                        "Sales"
+                      ],
+                      "education": "Bachelor's Degree",
+                      "gender": null,
+                      "salary": {
+                        "min": 13000,
+                        "max": 25000,
+                        "currency": "EGP",
+                        "period": "Per Month",
+                        "details": "commission",
+                        "paid": true
+                      },
+                      "application_type": "internal",
+                      "apply_url": null,
+                      "views": 53,
+                      "description": "For a leading supplier of industrial spareparts & industrial solutions, an authorised dealer for packaging, filling & injection spareparts m…",
+                      "requirements": "Requirements:\n\n• BSC of Engineering, Mechatronics, Electrical, & Mechanical\n\n• B2B sales exp. in selling machinary spareparts & tools\n\n• com…",
+                      "posted_at": "2026-11-02T10:07:17",
+                      "expires_at": "2027-01-01T10:07:17"
+                    },
+                    {
+                      "id": "83e14ed5-fddf-46f1-9dde-038128ef39e5",
+                      "title": "Electrical Site Engineer",
+                      "url": "https://wuzzuf.net/jobs/p/h0keg7625xwq-electrical-site-engineer-meterika-cairo-egypt",
+                      "status": "active",
+                      "company": "METERIKA",
+                      "company_id": "94165",
+                      "company_logo": null,
+                      "confidential_company": false,
+                      "country": "Egypt",
+                      "country_code": "EG",
+                      "city": "Cairo",
+                      "area": null,
+                      "lat": 30.050759,
+                      "lng": 31.233839,
+                      "job_types": [
+                        "Full Time"
+                      ],
+                      "workplace": "On-site",
+                      "career_level": "Experienced",
+                      "experience_years": {
+                        "min": 2,
+                        "max": 4
+                      },
+                      "vacancies": 2,
+                      "roles": [
+                        "Engineering - Mechanical/Electrical"
+                      ],
+                      "skills": [
+                        "Construction",
+                        "Engineering",
+                        "… 5 more"
+                      ],
+                      "education": "Bachelor's Degree",
+                      "gender": null,
+                      "salary": null,
+                      "application_type": "internal",
+                      "apply_url": null,
+                      "views": 59,
+                      "description": "• Ensures the on-time and on-budget delivery of the mep systems for all projects.\n\n• Manages and coordinates the discharge of electrical con…",
+                      "requirements": "• 2-4 years experience in the construction and fit outs field.\n\n• Bachelor degree in electrical engineering.\n\n• Excellent command of AutoCAD…",
+                      "posted_at": "2026-11-02T13:55:18",
+                      "expires_at": "2027-01-01T13:55:18"
+                    },
+                    "… 13 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

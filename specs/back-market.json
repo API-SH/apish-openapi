@@ -1,0 +1,1298 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Back Market",
+    "version": "1.0.0",
+    "description": "The Back Market API from API.SH: public Back Market data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Back Market",
+      "description": "3 endpoints (e-commerce)",
+      "x-slug": "back-market",
+      "x-domains": [
+        "backmarket.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backmarket/v1/product": {
+      "get": {
+        "operationId": "backmarketProduct",
+        "summary": "Back Market product details",
+        "description": "One Back Market refurbished product (US and Australian shops): title, brand, model, category, colour, price when new, units sold, images, description, what comes with it, SIM and carrier, scores, every option (condition, battery, storage, SIM, colour) with its price, availability and product id, and the best offer for the chosen condition: price, discount against new, warranty, new-battery option, seller (name, city, country, since) and delivery dates.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/backmarket-product",
+        "tags": [
+          "Back Market"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A product id (e.g. 6d4ad966-db97-4d88-b409-b28cc2a0f8c9), a product link, or a model page slug or link (e.g. iphone-13).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "iphone-13"
+          },
+          {
+            "name": "grade",
+            "in": "query",
+            "required": false,
+            "description": "Condition to price the best offer for, a `grade_value` from `options` (e.g. 10 for Excellent).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "us (default) or au.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "us",
+                "au"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "6d4ad966-db97-4d88-b409-b28cc2a0f8c9",
+                  "legacy_id": 337327,
+                  "country": "us",
+                  "title": "iPhone 13 • Unlocked",
+                  "full_title": "iPhone 13 128GB  - Midnight - Unlocked",
+                  "subtitle": "Midnight • 128 GB • Physical SIM + eSIM",
+                  "brand": "Apple",
+                  "model": "iPhone 13",
+                  "type": "Refurbished",
+                  "category": "Smartphones",
+                  "category_id": "2",
+                  "color": "Midnight",
+                  "url": "https://www.backmarket.com/en-us/p/iphone-13-128-gb-midnight-fully-unlocked-gsm-cdma/6d4ad966-db97-4d88-b409-b28cc2a0f8c9",
+                  "parent_slug": "iphone-13",
+                  "price_new": 629,
+                  "currency": "USD",
+                  "units_sold": 2700,
+                  "images": [
+                    "https://d2e6ccujb3mkqf.cloudfront.net/6d4ad966-db97-4d88-b409-b28cc2a0f8c9-1_9f7f700a-395f-4096-9efa-e5cc930a1cc1.jpg",
+                    "https://d2e6ccujb3mkqf.cloudfront.net/6d4ad966-db97-4d88-b409-b28cc2a0f8c9-2_261806cb-389a-48a5-8c78-d09a69ae6ddb.jpg",
+                    "… 4 more"
+                  ],
+                  "description_html": "<p>The <strong>iPhone 13</strong>, released in September 2021, remains a reliable choice for users seeking a balance of performance and usab…",
+                  "comes_with": [
+                    "Compatible charging cable"
+                  ],
+                  "dual_sim": "Physical SIM + eSIM",
+                  "carrier": {
+                    "isDisplayed": true,
+                    "locked": false,
+                    "name": null
+                  },
+                  "scores": [
+                    {
+                      "id": "life_expectancy_score",
+                      "label": "Durability",
+                      "value": 80
+                    },
+                    {
+                      "id": "performances_score",
+                      "label": "Overall performance",
+                      "value": 62.5
+                    },
+                    "… 2 more"
+                  ],
+                  "trade_in_eligible": true,
+                  "out_of_stock": false,
+                  "best_offer": {
+                    "offer_id": "0293018d-6114-47e2-8351-551c30c7554f",
+                    "legacy_id": 2065593,
+                    "sku": "IP13-128GB-BLK-UNL-FAIR",
+                    "price": 225,
+                    "currency": "USD",
+                    "discount_vs_new": 404,
+                    "discount_rate": "64%",
+                    "grade": "ECO",
+                    "grade_value": 12,
+                    "warranty": "1-year warranty",
+                    "new_battery": "available",
+                    "seller_comment": null,
+                    "stock_label": null,
+                    "seller": {
+                      "id": "7b7e170f-ecf6-4e26-8ffd-5264991094b1",
+                      "name": "ItsWorthMore",
+                      "country": "US",
+                      "city": "Sanford",
+                      "state": "FL",
+                      "since": "2019",
+                      "url": "https://www.backmarket.com/en-us/s/itsworthmore/7b7e170f-ecf6-4e26-8ffd-5264991094b1"
+                    },
+                    "shipping": [
+                      {
+                        "type": "free",
+                        "price": null,
+                        "earliest": "2026-11-06T12:00:00-06:00",
+                        "latest": "2026-11-09T12:00:00-06:00"
+                      }
+                    ],
+                    "payment_methods": [
+                      "card",
+                      "affirm",
+                      "… 4 more"
+                    ]
+                  },
+                  "options": [
+                    {
+                      "id": "grades",
+                      "label": "Condition",
+                      "items": [
+                        {
+                          "label": "Fair",
+                          "sublabel": "Visible cosmetic wear.",
+                          "product_id": "6d4ad966-db97-4d88-b409-b28cc2a0f8c9",
+                          "available": true,
+                          "selected": true,
+                          "price": 225,
+                          "grade_value": 12,
+                          "good_deal": false,
+                          "best_deal": false,
+                          "tag": null
+                        },
+                        {
+                          "label": "Good",
+                          "sublabel": "Light to moderate signs of use.",
+                          "product_id": "6d4ad966-db97-4d88-b409-b28cc2a0f8c9",
+                          "available": true,
+                          "selected": false,
+                          "price": 236,
+                          "grade_value": 11,
+                          "good_deal": false,
+                          "best_deal": false,
+                          "tag": null
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    {
+                      "id": "battery",
+                      "label": "Battery",
+                      "items": [
+                        {
+                          "label": "Standard battery",
+                          "sublabel": "Battery that gets you through the day",
+                          "product_id": "6d4ad966-db97-4d88-b409-b28cc2a0f8c9",
+                          "available": true,
+                          "selected": true,
+                          "price": 225,
+                          "grade_value": 12,
+                          "good_deal": false,
+                          "best_deal": false,
+                          "tag": null
+                        },
+                        {
+                          "label": "Long-lasting battery",
+                          "sublabel": "Maximizes screen time for heavy users",
+                          "product_id": "6d4ad966-db97-4d88-b409-b28cc2a0f8c9",
+                          "available": true,
+                          "selected": false,
+                          "price": 258,
+                          "grade_value": 12,
+                          "good_deal": false,
+                          "best_deal": false,
+                          "tag": null
+                        }
+                      ]
+                    },
+                    "… 3 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/backmarket/v1/reviews": {
+      "get": {
+        "operationId": "backmarketReviews",
+        "summary": "Back Market product reviews",
+        "description": "Customer reviews of a Back Market product (US and Australian shops), most relevant first: stars, date, text, language and country, reviewer first name and initial, what was bought and in which condition, purchase date, seller, per-aspect ratings (battery, camera, appearance, shipping …), photos, helpful votes and topics. Pass `next_cursor` back as `cursor`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/backmarket-reviews",
+        "tags": [
+          "Back Market"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A product id, product link, or model page slug (e.g. iphone-13).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "iphone-13"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "`next_cursor` from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "us (default) or au.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "us",
+                "au"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "product_id": "6d4ad966-db97-4d88-b409-b28cc2a0f8c9",
+                  "count": 10,
+                  "reviews": [
+                    {
+                      "id": "aee17ad0-15bf-4ab9-9c1c-df40aa4353af",
+                      "rating": 5,
+                      "date": "2026-07-31",
+                      "text": "Perfect condition and great experience!\n\nMy daughter ordered an iPhone 13 from Back Market, and it arrived in perfect condition. The phone w…",
+                      "language": "en",
+                      "country": "US",
+                      "author": "Jamarcuss J.",
+                      "purchased": "iPhone 13 128GB  - Midnight - Unlocked",
+                      "purchase_date": "2026-07-21",
+                      "purchased_grade": "VERY_GOOD",
+                      "seller": {
+                        "id": "40c4f90f-da29-461f-8cff-dd42cba20abd",
+                        "name": "Reconext",
+                        "slug": "reconext"
+                      },
+                      "helpful_votes": 22,
+                      "topics": [
+                        {
+                          "topic": "CONDITION",
+                          "sentiment": "positive"
+                        },
+                        {
+                          "topic": "PERFORMANCE",
+                          "sentiment": "positive"
+                        },
+                        "… 1 more"
+                      ],
+                      "aspects": [
+                        {
+                          "aspect": "overall_performance",
+                          "rating": 5,
+                          "comment": null
+                        },
+                        {
+                          "aspect": "aesthetic_appearance",
+                          "rating": 5,
+                          "comment": null
+                        },
+                        "… 6 more"
+                      ],
+                      "photos": [
+                        "https://reviews.statics.backmarket.com/review-attachment/YyfGbop2WD6n75sPSctO3sRQ9lhi6LyLQX20aupwlI9v9pnLdTco1fQeWqtEeYlG07f5vA1B1qDXhP2tp7Y…",
+                        "https://reviews.statics.backmarket.com/review-attachment/bWnbAmLDfzY3qikRDcHaWMcHCnlLtTfK6YBVhg2H9be6HKYe56hfrE5Re6naXqOT4WurDWX9pF80i1FA0Bo…"
+                      ],
+                      "translated": null
+                    },
+                    {
+                      "id": "3676324b-10ef-4981-834f-1ab5578b272b",
+                      "rating": 5,
+                      "date": "2026-10-24",
+                      "text": "this is the third product i have bought through back market, and they have all been great, as advertised.  my 8 died so i was forced to get …",
+                      "language": "en",
+                      "country": "US",
+                      "author": "Lu S.",
+                      "purchased": "iPhone 13 128GB  - Midnight - Unlocked",
+                      "purchase_date": "2026-10-12",
+                      "purchased_grade": "FLAWLESS",
+                      "seller": {
+                        "id": "67864e04-0ed4-4c93-999e-8976a6cd104d",
+                        "name": "Tech Exchangee",
+                        "slug": "tech-exchangee"
+                      },
+                      "helpful_votes": 0,
+                      "topics": [
+                        {
+                          "topic": "CONDITION",
+                          "sentiment": "neutral"
+                        },
+                        {
+                          "topic": "SCREEN",
+                          "sentiment": "positive"
+                        },
+                        "… 1 more"
+                      ],
+                      "aspects": [
+                        {
+                          "aspect": "overall_performance",
+                          "rating": 5,
+                          "comment": null
+                        },
+                        {
+                          "aspect": "aesthetic_appearance",
+                          "rating": 5,
+                          "comment": null
+                        },
+                        "… 6 more"
+                      ],
+                      "photos": [
+                        "https://reviews.statics.backmarket.com/review-attachment/Cw8DG0Too9e4hrtxaOuRg9TG3FnTjmLZWhE7OeA11D9SY15kzBY0P5KaiZEJDk7FA8R9Z8EgwO4a3V678z7…"
+                      ],
+                      "translated": null
+                    },
+                    "… 8 more"
+                  ],
+                  "next_cursor": "Pmk6MTAwfmk6Nzl-aTo3NjY0Nzc=",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/backmarket/v1/search": {
+      "get": {
+        "operationId": "backmarketSearch",
+        "summary": "Search Back Market refurbished products",
+        "description": "Back Market refurbished-product search in every Back Market country (see `country`): product id, title, brand, model, category, colour, condition (grade), price, price when new, rating and review count, stock, warranty, seller id, offer id, image, links, durability/performance/camera/screen scores and tags. `facets` lists every filter for the query (brand, model, condition, storage, colour, carrier, year, shipping time and more) with counts and a ready `filter` value; `price_stats` gives the price range. Without `q`, a `filter` or `category` lists everything that matches. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/backmarket-search",
+        "tags": [
+          "Back Market"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search words (optional when a filter or category is given).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "iphone 13"
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "Facet filters as `name:value` from `facets[].values[].filter` (e.g. backbox_grade:10 Excellent); several separated by |.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Only this category (e.g. Smartphones, Laptops, Tablets).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order: relevance (default, best sellers first), price_asc, price_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, up to 60 (default 30).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1 for the first. Pass back `next_page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Market: us, au, uk, fr, de, es, it, nl, be, at, ie, pt, se, fi, gr, sk (default us).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "us",
+                "au",
+                "uk",
+                "fr",
+                "de",
+                "es",
+                "it",
+                "nl",
+                "be",
+                "at",
+                "ie",
+                "pt",
+                "se",
+                "fi",
+                "gr",
+                "sk"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "iphone 13",
+                  "country": "us",
+                  "applied_filters": {
+                    "sort": "relevance",
+                    "filters": [],
+                    "min_price": null,
+                    "max_price": null,
+                    "page": 1,
+                    "limit": 30
+                  },
+                  "total": 40,
+                  "page": 1,
+                  "total_pages": 2,
+                  "next_page": 2,
+                  "count": 30,
+                  "products": [
+                    {
+                      "id": "6d4ad966-db97-4d88-b409-b28cc2a0f8c9",
+                      "legacy_id": 337327,
+                      "title": "iPhone 13 128GB  - Midnight - Unlocked",
+                      "model_title": "iPhone 13 • Unlocked",
+                      "subtitle": "Midnight • 128 GB • Physical SIM + eSIM",
+                      "brand": "Apple",
+                      "model": "iPhone 13",
+                      "category": "Smartphones",
+                      "category_id": 2,
+                      "color": "Midnight",
+                      "grade": "Fair",
+                      "grade_value": 12,
+                      "price": 225,
+                      "price_new": 629,
+                      "currency": "USD",
+                      "rating": 4.39,
+                      "reviews_count": 6206,
+                      "stock": 11,
+                      "warranty_months": 12,
+                      "seller_id": 287,
+                      "offer_id": "0293018d-6114-47e2-8351-551c30c7554f",
+                      "image": "https://d2e6ccujb3mkqf.cloudfront.net/6d4ad966-db97-4d88-b409-b28cc2a0f8c9-1_9f7f700a-395f-4096-9efa-e5cc930a1cc1.jpg",
+                      "url": "https://www.backmarket.com/en-us/p/iphone-13-128-gb-midnight-fully-unlocked-gsm-cdma/6d4ad966-db97-4d88-b409-b28cc2a0f8c9?l=12",
+                      "parent_url": "https://www.backmarket.com/en-us/p/iphone-13",
+                      "parent_slug": "iphone-13",
+                      "scores": {
+                        "overall": 73.25,
+                        "durability": 80,
+                        "performance": 62.5,
+                        "camera": 60,
+                        "screen": 85
+                      },
+                      "tags": [
+                        "Smart Essentials"
+                      ],
+                      "deals": []
+                    },
+                    {
+                      "id": "94222415-fcc0-4c03-99df-4edc011178f0",
+                      "legacy_id": 337371,
+                      "title": "iPhone 13 mini 128GB  - Blue - Unlocked",
+                      "model_title": "iPhone 13 mini • Unlocked",
+                      "subtitle": "Blue • 128 GB • Physical SIM + eSIM",
+                      "brand": "Apple",
+                      "model": "iPhone 13 mini",
+                      "category": "Smartphones",
+                      "category_id": 2,
+                      "color": "Blue",
+                      "grade": "Fair",
+                      "grade_value": 12,
+                      "price": 204,
+                      "price_new": 629,
+                      "currency": "USD",
+                      "rating": 4.25,
+                      "reviews_count": 2520,
+                      "stock": 8,
+                      "warranty_months": 12,
+                      "seller_id": 9545,
+                      "offer_id": "5dfae51f-cc8c-406f-88eb-cda902cdf174",
+                      "image": "https://d2e6ccujb3mkqf.cloudfront.net/94222415-fcc0-4c03-99df-4edc011178f0-1_76a4cd2c-b116-4149-a8a6-59fad26ce8ba.jpg",
+                      "url": "https://www.backmarket.com/en-us/p/iphone-13-128-gb-blue-fully-unlocked-gsm-cdma/94222415-fcc0-4c03-99df-4edc011178f0?l=12",
+                      "parent_url": "https://www.backmarket.com/en-us/p/iphone-13-mini",
+                      "parent_slug": "iphone-13-mini",
+                      "scores": {
+                        "overall": 75.25,
+                        "durability": 85,
+                        "performance": 62.5,
+                        "camera": 55.5,
+                        "screen": 87.5
+                      },
+                      "tags": [
+                        "Smart Essentials"
+                      ],
+                      "deals": []
+                    },
+                    "… 28 more"
+                  ],
+                  "facets": [
+                    {
+                      "name": "os",
+                      "values": [
+                        {
+                          "value": "iOS",
+                          "label": "iOS",
+                          "count": 366,
+                          "filter": "os:iOS"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "brand",
+                      "values": [
+                        {
+                          "value": "0  Apple",
+                          "label": "Apple",
+                          "count": 385,
+                          "filter": "brand:0  Apple"
+                        },
+                        {
+                          "value": "99 Back Market",
+                          "label": "Back Market",
+                          "count": 10,
+                          "filter": "brand:99 Back Market"
+                        },
+                        "… 5 more"
+                      ]
+                    },
+                    "… 43 more"
+                  ],
+                  "price_stats": {
+                    "min": 14.99,
+                    "max": 1599,
+                    "avg": 397.13,
+                    "sum": 162426
+                  },
+                  "sorts": [
+                    "relevance",
+                    "price_asc",
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

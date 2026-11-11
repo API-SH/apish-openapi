@@ -1,0 +1,1514 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Energy",
+    "version": "1.0.0",
+    "description": "The Energy API from API.SH: public Energy data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Energy",
+      "description": "6 endpoints (public data)",
+      "x-slug": "energy",
+      "x-domains": []
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/energy/v1/carbon-intensity": {
+      "get": {
+        "operationId": "energyCarbonIntensity",
+        "summary": "Grid carbon intensity (Great Britain)",
+        "description": "Carbon intensity of Great Britain's electricity (gCO2/kWh) with index (very low to very high) and generation mix, national or for a region or outward postcode: now, from a time, or a half-hourly forecast up to 48 hours.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/energy-carbon-intensity",
+        "tags": [
+          "Energy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "postcode",
+            "in": "query",
+            "required": false,
+            "description": "Outward postcode (e.g. SW1A, RG10) for its region.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "SW1A"
+          },
+          {
+            "name": "region_id",
+            "in": "query",
+            "required": false,
+            "description": "Region id 1-17 (see /energy/v1/carbon-regions).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "hours",
+            "in": "query",
+            "required": false,
+            "description": "Forecast hours ahead (1-48, half-hourly periods).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start time (YYYY-MM-DDTHH:MMZ, default now); national with no hours: the 24 hours to this time.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "scope": "regional",
+                  "region_id": 13,
+                  "region": "London",
+                  "dno_region": "UKPN London",
+                  "postcode": "SW1A",
+                  "periods": [
+                    {
+                      "from": "2026-11-04T05:00Z",
+                      "to": "2026-11-04T05:30Z",
+                      "forecast_gco2_kwh": 143,
+                      "actual_gco2_kwh": null,
+                      "index": "moderate",
+                      "generation_mix": [
+                        {
+                          "fuel": "biomass",
+                          "percent": 9.4
+                        },
+                        {
+                          "fuel": "coal",
+                          "percent": 0
+                        },
+                        "… 7 more"
+                      ]
+                    }
+                  ],
+                  "count": 1,
+                  "unit": "gCO2/kWh",
+                  "attribution": "Source: National Energy System Operator, Carbon Intensity API (CC BY 4.0)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/energy/v1/carbon-regions": {
+      "get": {
+        "operationId": "energyCarbonRegions",
+        "summary": "Carbon intensity by GB region",
+        "description": "Current carbon intensity, index and generation mix for each of Great Britain's 17 regions (and England, Scotland, Wales, GB).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/energy-carbon-regions",
+        "tags": [
+          "Energy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "from": "2026-11-04T05:00Z",
+                  "to": "2026-11-04T05:30Z",
+                  "count": 18,
+                  "items": [
+                    {
+                      "region_id": 1,
+                      "region": "North Scotland",
+                      "dno_region": "Scottish Hydro Electric Power Distribution",
+                      "from": "2026-11-04T05:00Z",
+                      "to": "2026-11-04T05:30Z",
+                      "forecast_gco2_kwh": 0,
+                      "actual_gco2_kwh": null,
+                      "index": "very low",
+                      "generation_mix": [
+                        {
+                          "fuel": "biomass",
+                          "percent": 0
+                        },
+                        {
+                          "fuel": "coal",
+                          "percent": 0
+                        },
+                        "… 7 more"
+                      ]
+                    },
+                    {
+                      "region_id": 2,
+                      "region": "South Scotland",
+                      "dno_region": "SP Distribution",
+                      "from": "2026-11-04T05:00Z",
+                      "to": "2026-11-04T05:30Z",
+                      "forecast_gco2_kwh": 0,
+                      "actual_gco2_kwh": null,
+                      "index": "very low",
+                      "generation_mix": [
+                        {
+                          "fuel": "biomass",
+                          "percent": 0
+                        },
+                        {
+                          "fuel": "coal",
+                          "percent": 0
+                        },
+                        "… 7 more"
+                      ]
+                    },
+                    "… 16 more"
+                  ],
+                  "unit": "gCO2/kWh",
+                  "attribution": "Source: National Energy System Operator, Carbon Intensity API (CC BY 4.0)",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/energy/v1/carbon-stats": {
+      "get": {
+        "operationId": "energyCarbonStats",
+        "summary": "GB carbon intensity statistics",
+        "description": "Great Britain's grid carbon intensity statistics (maximum, average, minimum in gCO2/kWh and the index) over a range of up to 30 days, as one block or split into blocks of 1-24 hours. Default: the last 7 days. Source: NESO Carbon Intensity API, CC BY 4.0.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/energy-carbon-stats",
+        "tags": [
+          "Energy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start (YYYY-MM-DD or YYYY-MM-DDTHH:MMZ).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-10-01"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "End (YYYY-MM-DD or YYYY-MM-DDTHH:MMZ), up to 30 days after from. Default: now, or 30 days after from when that is earlier.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "block",
+            "in": "query",
+            "required": false,
+            "description": "Split into blocks of this many hours (1-24).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/energy/v1/demand": {
+      "get": {
+        "operationId": "energyDemand",
+        "summary": "Electricity demand and forecast",
+        "description": "Electricity demand (load) of a European country in MW for a day or a range of up to 7 days, hour by hour or at the source's own interval: actual load, residual load, renewable share of load, and the day-ahead and intraday load forecasts (forecasts run into the future for today and tomorrow), with min, max and average. Source: Energy-Charts (Fraunhofer ISE), CC BY 4.0.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/energy-demand",
+        "tags": [
+          "Energy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country code: de (default), fr, es, it, nl, be, at, ch, pl, uk ... (the same list as /energy/v1/generation).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "de"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "One day (YYYY-MM-DD); default today.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "description": "Range start (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "description": "Range end (YYYY-MM-DD), up to 7 days after start_date.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resolution",
+            "in": "query",
+            "required": false,
+            "description": "hour (default) or raw (the source's 15-minute steps).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hour",
+                "raw"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "de",
+                  "start_date": "2026-11-04",
+                  "end_date": "2026-11-04",
+                  "resolution": "hour",
+                  "unit": "MW",
+                  "forecasts_available": {
+                    "day_ahead": true,
+                    "intraday": true
+                  },
+                  "load_stats": {
+                    "min": 46704,
+                    "max": 50527.5,
+                    "avg": 48547
+                  },
+                  "forecast_day_ahead_stats": {
+                    "min": 45657.2,
+                    "max": 65018.5,
+                    "avg": 57710
+                  },
+                  "count": 24,
+                  "series": [
+                    {
+                      "time": "2026-11-03T23:00:00Z",
+                      "load_mw": 50232.7,
+                      "residual_load_mw": 31206.6,
+                      "renewable_share_of_load_pct": 49.1,
+                      "forecast_day_ahead_mw": 48301.4,
+                      "forecast_intraday_mw": null
+                    },
+                    {
+                      "time": "2026-11-04T00:00:00Z",
+                      "load_mw": 47368.9,
+                      "residual_load_mw": 29173.5,
+                      "renewable_share_of_load_pct": 50.3,
+                      "forecast_day_ahead_mw": 46536,
+                      "forecast_intraday_mw": null
+                    },
+                    "… 22 more"
+                  ],
+                  "attribution": "Source: Energy-Charts (Fraunhofer ISE), CC BY 4.0",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/energy/v1/generation": {
+      "get": {
+        "operationId": "energyGeneration",
+        "summary": "Electricity generation by source (Europe)",
+        "description": "Public net electricity generation by source (wind, solar, gas, coal, nuclear, hydro, biomass...), load, residual load, cross-border trading and renewable share for a European country, hourly or at the source resolution, up to 7 days, with averages and peaks per source (MW), plus `summary`: average load, residual load and cross-border trading (MW) and average renewable share of generation and of load (percent) over the period.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/energy-generation",
+        "tags": [
+          "Energy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Country code (lower case), e.g. de, fr, es, it, nl, pl, uk, eu.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "ch",
+                "eu",
+                "all",
+                "al",
+                "am",
+                "at",
+                "az",
+                "ba",
+                "be",
+                "bg",
+                "by",
+                "cy",
+                "cz",
+                "dk",
+                "ee",
+                "es",
+                "fi",
+                "fr",
+                "ge",
+                "gr",
+                "hr",
+                "hu",
+                "ie",
+                "it",
+                "lt",
+                "lu",
+                "lv",
+                "md",
+                "me",
+                "mk",
+                "mt",
+                "nie",
+                "nl",
+                "no",
+                "pl",
+                "pt",
+                "ro",
+                "rs",
+                "ru",
+                "se",
+                "si",
+                "sk",
+                "tr",
+                "ua",
+                "uk",
+                "xk"
+              ]
+            },
+            "example": "de"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "One day (YYYY-MM-DD, default today).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-10-01"
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "description": "Range start.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "description": "Range end (max 7 days).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "resolution",
+            "in": "query",
+            "required": false,
+            "description": "`hour` (default) or `raw` (15 minutes where available).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hour",
+                "raw"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "de",
+                  "start_date": "2026-10-01",
+                  "end_date": "2026-10-01",
+                  "resolution": "hour",
+                  "unit": "MW",
+                  "sources": [
+                    "Hydro pumped storage consumption",
+                    "Cross border electricity trading",
+                    "… 19 more"
+                  ],
+                  "averages": [
+                    {
+                      "source": "Hydro pumped storage consumption",
+                      "avg_mw": -1132,
+                      "max_mw": -4.2
+                    },
+                    {
+                      "source": "Cross border electricity trading",
+                      "avg_mw": 5842,
+                      "max_mw": 12557.1
+                    },
+                    "… 19 more"
+                  ],
+                  "summary": {
+                    "load_avg_mw": 56363,
+                    "residual_load_avg_mw": 36918,
+                    "cross_border_trading_avg_mw": 5842,
+                    "renewable_share_of_generation_avg_pct": 51.7,
+                    "renewable_share_of_load_avg_pct": 44.3
+                  },
+                  "count": 24,
+                  "series": [
+                    {
+                      "time": "2026-09-30T22:00:00Z",
+                      "Hydro pumped storage consumption": -41.4,
+                      "Cross border electricity trading": -453,
+                      "Hydro Run-of-River": 931.4,
+                      "Biomass": 3722.8,
+                      "Fossil brown coal / lignite": 10016,
+                      "Fossil hard coal": 4270.7,
+                      "Fossil oil": 118.1,
+                      "Fossil coal-derived gas": 314.2,
+                      "Fossil gas": 5537,
+                      "Geothermal": 13.2,
+                      "Hydro water reservoir": 133.5,
+                      "Hydro pumped storage": 361.3,
+                      "Others": 168.6,
+                      "Waste": 1272.6,
+                      "Wind offshore": 2644.7,
+                      "Wind onshore": 15390.4,
+                      "Solar": 0,
+                      "Load": 46079.2,
+                      "Residual load": 28044.2,
+                      "Renewable share of load": 50.9,
+                      "Renewable share of generation": 52.6
+                    },
+                    {
+                      "time": "2026-09-30T23:00:00Z",
+                      "Hydro pumped storage consumption": -2464.5,
+                      "Cross border electricity trading": 2069.8,
+                      "Hydro Run-of-River": 943.6,
+                      "Biomass": 3685.2,
+                      "Fossil brown coal / lignite": 10482.2,
+                      "Fossil hard coal": 3917.7,
+                      "Fossil oil": 115.7,
+                      "Fossil coal-derived gas": 270.9,
+                      "Fossil gas": 5162,
+                      "Geothermal": 13.2,
+                      "Hydro water reservoir": 13.5,
+                      "Hydro pumped storage": 9.6,
+                      "Others": 167.6,
+                      "Waste": 1274.6,
+                      "Wind offshore": 3457.3,
+                      "Wind onshore": 14667.6,
+                      "Solar": 0,
+                      "Load": 44827.6,
+                      "Residual load": 26702.7,
+                      "Renewable share of load": 52.2,
+                      "Renewable share of generation": 52.9
+                    },
+                    "… 22 more"
+                  ],
+                  "attribution": "Source: Energy-Charts (Fraunhofer ISE), CC BY 4.0",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/energy/v1/prices": {
+      "get": {
+        "operationId": "energyPrices",
+        "summary": "Day-ahead electricity prices (Europe)",
+        "description": "Day-ahead wholesale electricity prices for a European bidding zone (EUR/MWh, 15-minute or hourly), for a day or a range up to 31 days, with min/max/average. Tomorrow's prices appear around 13:00 CET.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/energy-prices",
+        "tags": [
+          "Energy"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "query",
+            "required": false,
+            "description": "Bidding zone, e.g. DE-LU, FR, NL, BE, AT, ES, PT, IT-North, PL, DK1, NO1, SE3, FI.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AT",
+                "BE",
+                "BG",
+                "CH",
+                "CZ",
+                "DE-LU",
+                "DE-AT-LU",
+                "DK1",
+                "DK2",
+                "EE",
+                "ES",
+                "FI",
+                "FR",
+                "GR",
+                "HR",
+                "HU",
+                "IT-Calabria",
+                "IT-Centre-North",
+                "IT-Centre-South",
+                "IT-North",
+                "IT-SACOAC",
+                "IT-SACODC",
+                "IT-Sardinia",
+                "IT-Sicily",
+                "IT-South",
+                "LT",
+                "LV",
+                "ME",
+                "NL",
+                "NO1",
+                "NO2",
+                "NO2NSL",
+                "NO3",
+                "NO4",
+                "NO5",
+                "PL",
+                "PT",
+                "RO",
+                "RS",
+                "SE1",
+                "SE2",
+                "SE3",
+                "SE4",
+                "SI",
+                "SK"
+              ]
+            },
+            "example": "DE-LU"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "One day (YYYY-MM-DD, default today).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "description": "Range start.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "description": "Range end (max 31 days).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "zone": "DE-LU",
+                  "start_date": "2026-11-04",
+                  "end_date": "2026-11-05",
+                  "unit": "EUR / MWh",
+                  "interval_minutes": 15,
+                  "count": 96,
+                  "stats": {
+                    "min": 198.99,
+                    "max": 321.45,
+                    "avg": 248.99
+                  },
+                  "prices": [
+                    {
+                      "time": "2026-11-03T23:00:00Z",
+                      "price": 201.45
+                    },
+                    {
+                      "time": "2026-11-03T23:15:00Z",
+                      "price": 209.7
+                    },
+                    "… 94 more"
+                  ],
+                  "attribution": "Source: Energy-Charts (Fraunhofer ISE); CC BY 4.0 (creativecommons.org/licenses/by/4.0) from Bundesnetzagentur | SMARD.de",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

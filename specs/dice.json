@@ -1,0 +1,932 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Dice",
+    "version": "1.0.0",
+    "description": "The Dice API from API.SH: public Dice data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Dice",
+      "description": "2 endpoints (jobs & b2b)",
+      "x-slug": "dice",
+      "x-domains": [
+        "dice.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dice/v1/job": {
+      "get": {
+        "operationId": "diceJob",
+        "summary": "Dice job details",
+        "description": "One Dice job: full description (HTML and text), skills, company and its Dice profile link, location and address, employment type, salary range when listed, posted and valid-through dates and how applications are taken (`apply_type`). Removed jobs answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/dice-job",
+        "tags": [
+          "Dice"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The job's id (a GUID, `id` in search results) or its URL (`dice.com/job-detail/<id>`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "3bbe9ced-566b-4458-a5a3-dc44f6cfef0b"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "3bbe9ced-566b-4458-a5a3-dc44f6cfef0b",
+                  "legacy_id": "67cade8837254f80e2e22b54aa59f17e",
+                  "title": "API Systems Engineer",
+                  "url": "https://www.dice.com/job-detail/3bbe9ced-566b-4458-a5a3-dc44f6cfef0b",
+                  "company": "Navy Federal Credit Union",
+                  "company_profile_url": "https://www.dice.com/company-profile/5bea0a06-736c-43a2-8da0-ef013448b47e",
+                  "logo": "https://d3qscgr6xsioh.cloudfront.net/pnews9iHSvqDO7m5Tnry_transformed.png?format=webp",
+                  "location": "Vienna, VA, US",
+                  "address": {
+                    "city": "Vienna",
+                    "region": "VA",
+                    "post_code": "22180",
+                    "country": "US"
+                  },
+                  "remote": null,
+                  "applicant_location": "USA",
+                  "employment_type": "FULL_TIME",
+                  "salary": {
+                    "currency": "USD",
+                    "min": 96100,
+                    "max": 123200,
+                    "value": null,
+                    "unit": null
+                  },
+                  "posted_at": "2026-08-19T22:02:02.000Z",
+                  "valid_through": "2026-12-04T23:01:43.000Z",
+                  "skills": [
+                    "Research",
+                    "System Integration",
+                    "… 69 more"
+                  ],
+                  "apply_type": "External",
+                  "featured": true,
+                  "description_html": "<b>Overview</b> <br /> <br /> <strong>Navy Federal Credit Union currently does not provide sponsorship for this role. Applicants must be aut…",
+                  "description": "Overview\n\nNavy Federal Credit Union currently does not provide sponsorship for this role. Applicants must be authorized to work in the Unite…",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/dice/v1/search": {
+      "get": {
+        "operationId": "diceSearch",
+        "summary": "Dice job search",
+        "description": "Tech jobs on Dice (US) for a keyword and/or location, with the site's filters: radius, posted date, employment type, employer type, workplace (remote, on-site, hybrid), easy apply, visa sponsorship and company. `total` is Dice's count; 30 jobs per page. `facets` gives the counts per filter value. Each job: `id`, `legacy_id`, `title`, `url`, `company`, `company_profile_id`, `logo`, `location`, `city`, `state`, `country`, `employment_type`, `employer_type`, `workplace_types`, `remote`, `salary` (as listed), `summary`, `easy_apply`, `willing_to_sponsor`, `posted_at`, `updated_at` and `raw`. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/dice-search",
+        "tags": [
+          "Dice"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords, e.g. `python`, `java developer`. Required unless `location` is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "City, state or ZIP, e.g. `Austin, TX`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "New York, NY"
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Radius around the location.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "radius_unit",
+            "in": "query",
+            "required": false,
+            "description": "Unit of `radius` (default mi).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mi",
+                "km"
+              ]
+            }
+          },
+          {
+            "name": "posted",
+            "in": "query",
+            "required": false,
+            "description": "Posted within this many days.",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                "1",
+                "3",
+                "7"
+              ]
+            }
+          },
+          {
+            "name": "employment_type",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: `full_time`, `part_time`, `contract`, `third_party`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "employer_type",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: `direct_hire`, `recruiter`, `other`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "workplace",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: `remote`, `on_site`, `hybrid`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "easy_apply",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs with Dice Easy Apply.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "willing_to_sponsor",
+            "in": "query",
+            "required": false,
+            "description": "Only employers willing to sponsor a visa.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "description": "Only jobs from this company, by its name as Dice shows it (the job's `company`), e.g. `Capital One`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "python",
+                  "location": "New York, NY, USA",
+                  "url": "https://www.dice.com/jobs?q=python&location=New+York%2C+NY",
+                  "applied_filters": {
+                    "q": "python",
+                    "location": "New York, NY"
+                  },
+                  "total": 5250,
+                  "count": 30,
+                  "page": 1,
+                  "per_page": 30,
+                  "page_count": 175,
+                  "next_page": 2,
+                  "facets": [
+                    {
+                      "name": "employmentType",
+                      "label": "Employment Type",
+                      "values": [
+                        {
+                          "label": "Full-time",
+                          "value": "FULLTIME",
+                          "count": 4203
+                        },
+                        {
+                          "label": "Part-time",
+                          "value": "PARTTIME",
+                          "count": 39
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    {
+                      "name": "postedDate",
+                      "label": "Posted Date",
+                      "values": [
+                        {
+                          "label": "Today",
+                          "value": "ONE",
+                          "count": 228
+                        },
+                        {
+                          "label": "Last 3 Days",
+                          "value": "THREE",
+                          "count": 560
+                        },
+                        "… 1 more"
+                      ]
+                    },
+                    "… 6 more"
+                  ],
+                  "jobs": [
+                    {
+                      "id": "2852e1aa-6d4a-4aaf-bb3e-0d7b206f97d2",
+                      "legacy_id": "eb2648bc149ebcc653726bdf07f478df",
+                      "title": "Python Gen AI Developer",
+                      "url": "https://www.dice.com/job-detail/2852e1aa-6d4a-4aaf-bb3e-0d7b206f97d2",
+                      "company": "Scadea Solutions Inc",
+                      "company_profile_id": "f5a6619b-483b-5412-8dce-b021a4e64bef",
+                      "company_brand_id": "10430918",
+                      "logo": "https://d3qscgr6xsioh.cloudfront.net/P1C9hTpJRFyfAskqwpHF_dac5be87dd7c9d888299280711744f11.jpg?format=webp",
+                      "location": "Rutherford, New Jersey, USA",
+                      "city": "Rutherford",
+                      "state": "NJ",
+                      "country": "USA",
+                      "employment_type": "Full-time",
+                      "employer_type": "Direct Hire",
+                      "workplace_types": [
+                        "Hybrid"
+                      ],
+                      "remote": false,
+                      "salary": "$$120,000 - $125,000",
+                      "summary": "Python GenAI Developer Banking Client Location Dallas, TX Job Typer - Onsite Job Summary We are looking for a Python GenAI Developer with st…",
+                      "easy_apply": true,
+                      "willing_to_sponsor": null,
+                      "posted_at": "2026-11-03T14:42:28Z",
+                      "updated_at": "2026-11-03T14:42:28Z",
+                      "featured": null
+                    },
+                    {
+                      "id": "2a09ac9d-4e77-4f90-a39e-ff9e04f3046a",
+                      "legacy_id": "1acea7a9544d54fc2d2cd97799cd3dd3",
+                      "title": "Senior Python API and Java Developer",
+                      "url": "https://www.dice.com/job-detail/2a09ac9d-4e77-4f90-a39e-ff9e04f3046a",
+                      "company": "Cynet Systems",
+                      "company_profile_id": "50be2933-74ba-5791-bdd1-db37a3f13e1b",
+                      "company_brand_id": "10516350",
+                      "logo": "https://d3qscgr6xsioh.cloudfront.net/vC6xaBdSHmnOTjyZR6U1_logo.png?format=webp",
+                      "location": "New York, New York, USA",
+                      "city": "New York",
+                      "state": "NY",
+                      "country": "USA",
+                      "employment_type": "Contract, Third Party",
+                      "employer_type": "Direct Hire",
+                      "workplace_types": [
+                        "On-Site"
+                      ],
+                      "remote": false,
+                      "salary": "Depends on Experience",
+                      "summary": "We are looking for Senior Python API and Java Developer for our client in New York City, NYJob Title: Senior Python API and Java Developer J…",
+                      "easy_apply": true,
+                      "willing_to_sponsor": null,
+                      "posted_at": "2026-11-03T15:26:32Z",
+                      "updated_at": "2026-11-03T15:26:32Z",
+                      "featured": null
+                    },
+                    "… 28 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

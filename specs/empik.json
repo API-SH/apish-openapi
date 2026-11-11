@@ -1,0 +1,1394 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Empik",
+    "version": "1.0.0",
+    "description": "The Empik API from API.SH: public Empik data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Empik",
+      "description": "4 endpoints (e-commerce)",
+      "x-slug": "empik",
+      "x-domains": [
+        "empik.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/empik/v1/autocomplete": {
+      "get": {
+        "operationId": "empikAutocomplete",
+        "summary": "Empik search suggestions",
+        "description": "The suggestions Empik's search box shows for a partial query: suggested searches with their categories and suggested product ids, and suggested marketplace sellers.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/empik-autocomplete",
+        "tags": [
+          "Empik"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Partial query (up to 35 characters).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "wiedzmin"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "wiedzmin",
+                  "count": 10,
+                  "suggestions": [
+                    {
+                      "query": "wiedźmin",
+                      "categories": [
+                        {
+                          "id": "31",
+                          "name": "Książki"
+                        },
+                        {
+                          "id": "37",
+                          "name": "Zabawki"
+                        },
+                        "… 2 more"
+                      ],
+                      "product_ids": [
+                        "p1102239921",
+                        "p1755121994",
+                        "… 3 more"
+                      ]
+                    },
+                    {
+                      "query": "wiedźmin stary świat",
+                      "categories": [],
+                      "product_ids": [
+                        "p1344350644",
+                        "p1344351290",
+                        "… 3 more"
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "sellers": [],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/empik/v1/product": {
+      "get": {
+        "operationId": "empikProduct",
+        "summary": "Empik product details and offers",
+        "description": "One Empik product: name, link, type and format, authors and creators (author, publisher, series, brand, director, performer), rating and count, categories, badges, cover and gallery images, pre-sale date, in-store availability, the full attribute list (pages, language, release date, ISBN/EAN and more), description, FAQ, tags, the best offer and every seller's offer (price, original price, discount, promotions, lowest price before the discount, condition, availability, delivery options and price, seller with rating).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/empik-product",
+        "tags": [
+          "Empik"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Empik product id (p followed by digits, as in the link ,p<id>,), or a product link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "p1756075948"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "p1756075948",
+                  "name": "Harry Potter i Zakon Feniksa. Edycja z polską okładką i z barwionymi brzegami",
+                  "url": "https://www.empik.com/harry-potter-i-zakon-feniksa-edycja-z-polska-okladka-i-z-barwionymi-brzegami-rowling-j-k,p1756075948,ksiazka-p",
+                  "type": "PHYSICAL",
+                  "format": "twarda, barwione brzegi",
+                  "ebook_type": null,
+                  "authors": [
+                    {
+                      "name": "Rowling J. K.",
+                      "url": "https://www.empik.com/szukaj/produkt?author=rowling+j.+k."
+                    }
+                  ],
+                  "creators": {
+                    "brand": null,
+                    "series": "Harry Potter",
+                    "license": null,
+                    "line": null,
+                    "author": [
+                      "Rowling J. K."
+                    ],
+                    "director": [],
+                    "producer": [],
+                    "publisher": [
+                      "Media Rodzina"
+                    ],
+                    "performer": []
+                  },
+                  "rating": 4.9016395,
+                  "rating_count": 61,
+                  "category": "Książki",
+                  "categories": [
+                    {
+                      "id": "31",
+                      "name": "Książki",
+                      "url": "https://www.empik.com/ksiazki,31,s"
+                    },
+                    {
+                      "id": "3170",
+                      "name": "Dla młodzieży",
+                      "url": "https://www.empik.com/ksiazki/dla-mlodziezy,3170,s"
+                    },
+                    "… 1 more"
+                  ],
+                  "badges": [
+                    "Nowość"
+                  ],
+                  "cover": "https://ecsmedia.pl/cir/b/harry-potter-i-zakon-feniksa-edycja-z-polska-okladka-i-z-barwionymi-brzegami-2026/07/07/830655297703464566/30dbb74…",
+                  "images": [
+                    "https://ecsmedia.pl/cir/gallery.big/2026/07/07/830655297703464566/56f8599317c540db8bca0d97941ed24d.webp",
+                    "https://ecsmedia.pl/cir/gallery.big/2026/07/07/830655297703464566/252330889cae410e8a0ea1885e18e420.webp",
+                    "… 2 more"
+                  ],
+                  "pre_sale_date": "2026-09-08T22:00:00Z",
+                  "in_stores": true,
+                  "free_sample": null,
+                  "attributes": [
+                    {
+                      "label": "ID produktu",
+                      "values": [
+                        "1756075948"
+                      ],
+                      "filter_param": null
+                    },
+                    {
+                      "label": "Tytuł",
+                      "values": [
+                        "Harry Potter i Zakon Feniksa. Edycja z polską okładką i z barwionymi brzegami"
+                      ],
+                      "filter_param": null
+                    },
+                    "… 17 more"
+                  ],
+                  "description": "Harry Potter i Zakon Feniksa. Edycja z polską okładką i z barwionymi brzegami - J. K. Rowling Piąty tom kultowego cyklu w wyczekiwanej polsk…",
+                  "faq": [
+                    {
+                      "question": "O czym jest książka „Harry Potter i Zakon Feniksa. Edycja z polską okładką i z barwionymi brzegami”?",
+                      "answer": "To piąty tom serii o Harrym Potterze, w którym młody czarodziej mierzy się z narastającym niepokojem, tajemniczymi snami i coraz wyraźniejsz…"
+                    },
+                    {
+                      "question": "Do jakiego gatunku należy książka „Harry Potter i Zakon Feniksa. Edycja z polską okładką i z barwionymi brzegami”?",
+                      "answer": "To literatura młodzieżowa z wyraźnymi elementami fantasy. Czytelnik może spodziewać się opowieści osadzonej w świecie magii, pełnej tajemnic…"
+                    },
+                    "… 10 more"
+                  ],
+                  "tags": [
+                    "dorastanie",
+                    "fantasy",
+                    "… 4 more"
+                  ],
+                  "best_offer": {
+                    "id": "prod:p1756075948:0",
+                    "price": 70.99,
+                    "original_price": 109.99,
+                    "standard_price": null,
+                    "discount_percent": null,
+                    "discount_amount": 39,
+                    "promotions": [],
+                    "lowest_price_30_days": null,
+                    "condition": "NEW",
+                    "availability": "1 dzień roboczy",
+                    "availability_type": "IN_24_H",
+                    "deliveries": [
+                      {
+                        "title": "Darmowa dostawa z Premium",
+                        "subtitle": "Salony od 0 zł, punkty i kurier od 49.00 zł",
+                        "label": null
+                      },
+                      {
+                        "title": "Dostawa za darmo do salonu",
+                        "subtitle": null,
+                        "label": null
+                      }
+                    ],
+                    "delivery_price": null,
+                    "installments": null,
+                    "seller": {
+                      "id": "0",
+                      "name": "Empik",
+                      "url": null,
+                      "foreign": false,
+                      "super_seller": false,
+                      "rating": null,
+                      "rating_count": null
+                    }
+                  },
+                  "offers": [
+                    {
+                      "id": "prod:p1756075948:0",
+                      "price": 70.99,
+                      "original_price": 109.99,
+                      "standard_price": null,
+                      "discount_percent": null,
+                      "discount_amount": 39,
+                      "promotions": [],
+                      "lowest_price_30_days": null,
+                      "condition": "NEW",
+                      "availability": "1 dzień roboczy",
+                      "availability_type": "IN_24_H",
+                      "deliveries": [
+                        {
+                          "title": "Darmowa dostawa z Premium",
+                          "subtitle": "Salony od 0 zł, punkty i kurier od 49.00 zł",
+                          "label": null
+                        },
+                        {
+                          "title": "Dostawa za darmo do salonu",
+                          "subtitle": null,
+                          "label": null
+                        }
+                      ],
+                      "delivery_price": null,
+                      "installments": null,
+                      "seller": {
+                        "id": "0",
+                        "name": "Empik",
+                        "url": null,
+                        "foreign": false,
+                        "super_seller": false,
+                        "rating": null,
+                        "rating_count": null
+                      }
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/empik/v1/reviews": {
+      "get": {
+        "operationId": "empikReviews",
+        "summary": "Empik product reviews",
+        "description": "Customer reviews of an Empik product: id, date, rating, title, text, author (the site's nickname; full names shortened to first name and initial) and `author_name` (the nickname as the page shows it), verified purchase, commercial flag, useful and useless votes. Also the rating distribution, the site's review summary, total and hidden counts. Sort by relevance, helpfulness, rating or date. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/empik-reviews",
+        "tags": [
+          "Empik"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Empik product id or a product link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "p1756075948"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevant",
+                "helpful",
+                "rating_desc",
+                "rating_asc",
+                "newest",
+                "oldest"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (from `next_page`).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "p1756075948",
+                  "sort": "relevant",
+                  "rating_distribution": [
+                    {
+                      "stars": 1,
+                      "count": 1
+                    },
+                    {
+                      "stars": 2,
+                      "count": 0
+                    },
+                    "… 3 more"
+                  ],
+                  "ai_summary": null,
+                  "total": 9,
+                  "hidden": 0,
+                  "page": 1,
+                  "total_pages": 1,
+                  "next_page": null,
+                  "count": 9,
+                  "reviews": [
+                    {
+                      "id": "95522345",
+                      "date": "2026-09-06T19:31:39.1182",
+                      "rating": 1,
+                      "title": null,
+                      "text": "Zaraz po zakupie cena spada na jeszcze niższą BRAWO Empik!",
+                      "author": "dawidbf91",
+                      "author_name": "dawidbf91",
+                      "verified_purchase": true,
+                      "commercial": false,
+                      "useful": 6,
+                      "useless": 6
+                    },
+                    {
+                      "id": "95529102",
+                      "date": "2026-09-11T13:22:59.345619",
+                      "rating": 5,
+                      "title": null,
+                      "text": "Piękne polskie wydania ilustrowane 🥹 wspaniały powrót do Hogwartu!",
+                      "author": "Międzystronnik",
+                      "author_name": "Międzystronnik",
+                      "verified_purchase": true,
+                      "commercial": false,
+                      "useful": 5,
+                      "useless": 0
+                    },
+                    "… 7 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/empik/v1/search": {
+      "get": {
+        "operationId": "empikSearch",
+        "summary": "Empik product search and category listings",
+        "description": "Search Empik (Poland: books, music, films, games, toys and general retail, with marketplace sellers) or browse a category, with every filter the listing offers: the answer lists each filter group with its param name, values and counts (author, publisher, series, brand, format, seller, delivery time, rating, condition, free delivery, good choice, payment methods, categories, price range). Pass a group's `param` with a value to filter (repeat it for several values), price_min/price_max and a sort. Each product: id, name, link, price, previous price, discount, category, brand, authors, format, type, rating, availability, delivery, free-delivery flag, seller, sponsored flag and image. 60 per page; pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/empik-search",
+        "tags": [
+          "Empik"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search keywords.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "harry potter"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "A category path such as /ksiazki,31,s (from the categories filter), or an Empik category link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "popular",
+                "price_asc",
+                "price_desc",
+                "discount",
+                "discount_amount",
+                "newest"
+              ]
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price in PLN.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price in PLN.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "required": false,
+            "description": "Filter: an author value from `filters`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "publisherFacet",
+            "in": "query",
+            "required": false,
+            "description": "Filter: a publisher value from `filters`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seriesFacet",
+            "in": "query",
+            "required": false,
+            "description": "Filter: a series value from `filters`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brandFacet",
+            "in": "query",
+            "required": false,
+            "description": "Filter: a brand value from `filters`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "carrier",
+            "in": "query",
+            "required": false,
+            "description": "Filter: a format value from `filters`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mpShopIdFacet",
+            "in": "query",
+            "required": false,
+            "description": "Filter: a seller value from `filters`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rateScore",
+            "in": "query",
+            "required": false,
+            "description": "Filter: minimum stars (1-5).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "availabilityLabel",
+            "in": "query",
+            "required": false,
+            "description": "Filter: a delivery-time value from `filters`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productStateFacet",
+            "in": "query",
+            "required": false,
+            "description": "Filter: a condition value from `filters`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "freeDelivery",
+            "in": "query",
+            "required": false,
+            "description": "Filter: a free-delivery value from `filters`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (from `next_page`).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "harry potter",
+                  "category": null,
+                  "sort": "relevance",
+                  "applied_filters": {},
+                  "total": 15859,
+                  "page": 1,
+                  "next_page": 2,
+                  "count": 71,
+                  "filters": [
+                    {
+                      "title": "Kategorie",
+                      "param": "category",
+                      "options": [
+                        {
+                          "value": "/moda,43,s",
+                          "label": "Moda  ",
+                          "count": 5099
+                        },
+                        {
+                          "value": "/zabawki,37,s",
+                          "label": "Zabawki  ",
+                          "count": 3698
+                        },
+                        "… 18 more"
+                      ]
+                    },
+                    {
+                      "title": "Darmowa dostawa",
+                      "param": "freeDelivery",
+                      "options": [
+                        {
+                          "value": "freedeliverypremium",
+                          "label": "Dostawa Premium  ",
+                          "count": 8858
+                        },
+                        {
+                          "value": "mpfreedelivery",
+                          "label": "Darmowa dostawa ",
+                          "count": 1745
+                        }
+                      ]
+                    },
+                    "… 12 more"
+                  ],
+                  "products": [
+                    {
+                      "id": "p1719108852",
+                      "name": "Harry Potter i Czara Ognia. Edycja z polską okładką i z barwionymi brzegami",
+                      "url": "https://www.empik.com/harry-potter-i-czara-ognia-edycja-z-polska-okladka-i-z-barwionymi-brzegami-rowling-j-k,p1719108852,ksiazka-p",
+                      "price": 62.99,
+                      "old_price": 94.99,
+                      "currency": "PLN",
+                      "discount": "0%",
+                      "category": "Książki/Dla młodzieży/Literatura dla młodzieży",
+                      "brand": null,
+                      "variant": null,
+                      "authors": [
+                        {
+                          "name": "Rowling J. K.",
+                          "url": "https://www.empik.com/szukaj/produkt?author=rowling+j.+k."
+                        }
+                      ],
+                      "format": "twarda, barwione brzegi",
+                      "type": "Książki",
+                      "rating": 5,
+                      "availability": "Przewidywana wysyłka  w 1 dzień rob.",
+                      "delivery": "Przewidywana wysyłka w 1 dzień rob.",
+                      "free_delivery": true,
+                      "seller": {
+                        "id": "0",
+                        "name": "Empik"
+                      },
+                      "sponsored": true,
+                      "image": "https://ecsmedia.pl/cir/p/harry-potter-i-czara-ognia-edycja-z-polska-okladka-i-z-barwionymi-brzegami-2026/03/09/4270855565986579641/1d51d758…",
+                      "position": 0
+                    },
+                    {
+                      "id": "p1672601199",
+                      "name": "LEGO Harry Potter™, klocki, Hogsmeade™ — edycja kolekcjonerska, 76457",
+                      "url": "https://www.empik.com/lego-harry-potter-tm-klocki-hogsmeade-edycja-kolekcjonerska-76457-lego,p1672601199,zabawki-p",
+                      "price": 1248.98,
+                      "old_price": 1322.99,
+                      "currency": "PLN",
+                      "discount": "0%",
+                      "category": "Zabawki/Klocki/Klocki plastikowe",
+                      "brand": "LEGO",
+                      "variant": null,
+                      "authors": [
+                        {
+                          "name": "LEGO",
+                          "url": "https://www.empik.com/szukaj/produkt?brandFacet=lego"
+                        }
+                      ],
+                      "format": null,
+                      "type": "Zabawki",
+                      "rating": 5,
+                      "availability": "Przewidywana wysyłka  w 1 dzień rob.",
+                      "delivery": "Przewidywana wysyłka w 1 dzień rob.",
+                      "free_delivery": true,
+                      "seller": {
+                        "id": "0",
+                        "name": "Empik"
+                      },
+                      "sponsored": true,
+                      "image": "https://ecsmedia.pl/cir/p/lego-harry-potter-klocki-hogsmeade-edycja-kolekcjonerska-76457-5034071169073499476/7a4e5fe1aa9348e08f7f4faf3eb2224…",
+                      "position": 1
+                    },
+                    "… 69 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

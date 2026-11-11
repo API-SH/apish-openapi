@@ -1,0 +1,1473 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Hemnet",
+    "version": "1.0.0",
+    "description": "The Hemnet API from API.SH: public Hemnet data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Hemnet",
+      "description": "6 endpoints (real estate)",
+      "x-slug": "hemnet",
+      "x-domains": [
+        "hemnet.se"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hemnet/v1/agency": {
+      "get": {
+        "operationId": "hemnetAgency",
+        "summary": "Hemnet agency or broker",
+        "description": "A real-estate agency's Hemnet page (name, phone, e-mail, website, address, number of brokers, logo, its brokers, counts of homes for sale and sold, and its homes for sale), or one broker's page when the slug includes the broker (name, business phone and e-mail, photo, presentation, agency and their homes for sale).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hemnet-agency",
+        "tags": [
+          "Hemnet"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "description": "Agency slug (e.g. karla-fastighetsmakleri-ab-740978) or agency/broker path, or a hemnet.se/maklare/ link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "karla-fastighetsmakleri-ab-740978"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A hemnet.se/maklare/ link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hemnet/v1/listing": {
+      "get": {
+        "operationId": "hemnetListing",
+        "summary": "Hemnet listing details",
+        "description": "One home for sale on Hemnet by slug or link: address, area, postcode, municipality, region, districts, asking price, monthly fee, running costs, price per m², rooms, living, land and supplemental area, construction year, housing form, tenure, floor, foreclosure, new construction, upcoming, published date, days on Hemnet, full description, labels, energy class, housing association, price trend, open houses, all images, coordinates, the broker (name, business phone and e-mail, photo) and agency, link and `raw`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hemnet-listing",
+        "tags": [
+          "Hemnet"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "The last part of a hemnet.se/bostad/<slug> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lagenhet-2rum-vasastan-stockholms-kommun-tegnergatan-49-22055005"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A hemnet.se/bostad/ link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "true: the newest home for sale in Stockholm county (an example that never goes stale); ignores id/url.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hemnet/v1/locations": {
+      "get": {
+        "operationId": "hemnetLocations",
+        "summary": "Hemnet locations",
+        "description": "Swedish places for the Hemnet filters: counties, municipalities, areas, postal towns and streets, each with the id the search routes take in `location_ids`, its parent and type.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hemnet-locations",
+        "tags": [
+          "Hemnet"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "At least 2 letters.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "uppsala"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Max results (1-40, default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hemnet/v1/sale": {
+      "get": {
+        "operationId": "hemnetSale",
+        "summary": "Hemnet sold home details",
+        "description": "One sold home on Hemnet by slug or link: address, area, municipality, final price, asking price, price change, sale date, monthly fee, price per m², rooms, living and land area, housing form, tenure, the broker and agency (business contacts), earlier sales of the same home, nearby sales, link and `raw`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hemnet-sale",
+        "tags": [
+          "Hemnet"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": false,
+            "description": "The last part of a hemnet.se/salda/<slug> link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lagenhet-2rum-kragstalund-vallentuna-kommun-tallasvagen-308-7544994773589004331"
+          },
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A hemnet.se/salda/ link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "true: the latest sale in Stockholm county (an example that never goes stale); ignores id/url.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hemnet/v1/search": {
+      "get": {
+        "operationId": "hemnetSearch",
+        "summary": "Hemnet homes for sale",
+        "description": "Search homes for sale (and upcoming) in Sweden on Hemnet with the site's filters: locations, housing form (houses, row houses, apartments, vacation homes, plots, homesteads, others), price, rooms, living area, land area, monthly fee, construction year, price per m², distance to water or sea, balcony, elevator, new construction, foreclosure, bidding started, hide removed before showing, ownership only, published within, status, keywords and sort order. Each home: id, slug, address, area, housing form, asking price, rooms, living area, land area, fee, price per m², published date, showings, labels, coordinates, broker and agency, images, description, link and `raw`. 50 per page; pass `next_page` back as `page` (the site serves up to 50 pages).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hemnet-search",
+        "tags": [
+          "Hemnet"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "location_ids",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated location ids from /hemnet/v1/locations (e.g. 17744 = Stockholms län). Empty: all of Sweden.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "17744"
+          },
+          {
+            "name": "housing_form",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: houses, row_houses, apartments, vacation_homes, plots, homesteads, others.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum asking price (SEK).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum asking price (SEK).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "rooms_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum rooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "rooms_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum rooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "living_area_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum living area (m²).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "living_area_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum living area (m²).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "land_area_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum land area (m²).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "fee_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum monthly fee (SEK).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "fee_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum monthly fee (SEK).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "construction_year_min",
+            "in": "query",
+            "required": false,
+            "description": "Built in or after.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "construction_year_max",
+            "in": "query",
+            "required": false,
+            "description": "Built in or before.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "m2_price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price per m².",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "m2_price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price per m².",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "distance_to_water",
+            "in": "query",
+            "required": false,
+            "description": "Max distance to water (m).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "distance_to_sea",
+            "in": "query",
+            "required": false,
+            "description": "Max distance to the sea (m).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "balcony",
+            "in": "query",
+            "required": false,
+            "description": "true: only these.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "elevator",
+            "in": "query",
+            "required": false,
+            "description": "true: only these.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "foreclosure",
+            "in": "query",
+            "required": false,
+            "description": "true: only these.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "bidding_started",
+            "in": "query",
+            "required": false,
+            "description": "true: only these.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "hide_removed_before_showing",
+            "in": "query",
+            "required": false,
+            "description": "true: only these.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "owned_only",
+            "in": "query",
+            "required": false,
+            "description": "true: only these.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "new_construction",
+            "in": "query",
+            "required": false,
+            "description": "include (default), only or exclude.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "include",
+                "only",
+                "exclude"
+              ]
+            }
+          },
+          {
+            "name": "published_within",
+            "in": "query",
+            "required": false,
+            "description": "1d, 3d, 1w, 2w or 4w.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "for_sale (default), upcoming or all.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "for_sale",
+                "upcoming",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "description": "Keywords in the listing.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "newest (default), price_asc, price_desc, largest_living_area, price_per_m2_asc, price_per_m2_desc, fee_asc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "price_asc",
+                "price_desc",
+                "largest_living_area",
+                "price_per_m2_asc",
+                "price_per_m2_desc",
+                "fee_asc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-based).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hemnet/v1/sold": {
+      "get": {
+        "operationId": "hemnetSold",
+        "summary": "Hemnet sold prices",
+        "description": "Sold homes in Sweden on Hemnet with final price, asking price, price change and sale date, with the same location, housing form, price, rooms, area, fee and feature filters as the search plus `sold_within`. Each sale: id, slug, address, area, housing form, final and asking price, price change, sold date, rooms, living area, land area, fee, price per m², labels, coordinates, agency, link and `raw`. 50 per page; pass `next_page` back as `page`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hemnet-sold",
+        "tags": [
+          "Hemnet"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "location_ids",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated location ids from /hemnet/v1/locations.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "17744"
+          },
+          {
+            "name": "housing_form",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: houses, row_houses, apartments, vacation_homes, plots, homesteads, others.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price (SEK).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price (SEK).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "rooms_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum rooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "rooms_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum rooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "living_area_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum living area (m²).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "living_area_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum living area (m²).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "fee_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum monthly fee (SEK).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sold_within",
+            "in": "query",
+            "required": false,
+            "description": "e.g. 3m, 6m, 12m, 24m or all.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "description": "Keywords.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "newest (default), price_asc, price_desc, price_per_m2_asc, price_per_m2_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "price_asc",
+                "price_desc",
+                "price_per_m2_asc",
+                "price_per_m2_desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-based).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

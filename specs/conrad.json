@@ -1,0 +1,1765 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Conrad",
+    "version": "1.0.0",
+    "description": "The Conrad API from API.SH: public Conrad data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Conrad",
+      "description": "5 endpoints (e-commerce)",
+      "x-slug": "conrad",
+      "x-domains": [
+        "conrad.de"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conrad/v1/autocomplete": {
+      "get": {
+        "operationId": "conradAutocomplete",
+        "summary": "Conrad search suggestions",
+        "description": "What Conrad suggests while a shopper types: matching categories (with ids for /conrad/v1/search), popular categories, a detected brand and matching products (id, title, EAN, part number, image, link).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/conrad-autocomplete",
+        "tags": [
+          "Conrad"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The text typed so far.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "raspb"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Shop: de (conrad.de, default), at, ch, nl, be, fr, it, es, pl, cz, sk, si, hr, hu, dk, se or com (international, English).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "at",
+                "ch",
+                "nl",
+                "be",
+                "fr",
+                "it",
+                "es",
+                "pl",
+                "cz",
+                "sk",
+                "si",
+                "hr",
+                "hu",
+                "dk",
+                "se",
+                "com"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "raspb",
+                  "country": "de",
+                  "categories": [
+                    {
+                      "id": "f79010534",
+                      "name": "Raspberry Pi Microcontroller",
+                      "type": "VIRTUAL_CATEGORY"
+                    },
+                    {
+                      "id": "f79066838",
+                      "name": "Raspberry Pi Kühlung",
+                      "type": "VIRTUAL_CATEGORY"
+                    },
+                    "… 3 more"
+                  ],
+                  "popular_categories": [
+                    {
+                      "id": "1801015",
+                      "name": "Smartphones"
+                    },
+                    {
+                      "id": "2409001",
+                      "name": "3D Drucker"
+                    },
+                    "… 3 more"
+                  ],
+                  "brand": null,
+                  "is_brand": false,
+                  "is_product_id": false,
+                  "is_ean": false,
+                  "is_manufacturer_id": false,
+                  "products": [
+                    {
+                      "id": "2107998",
+                      "title": "ZDAuto MIO-RASPBERRYPI Erweiterungsboard Passend für (Entwicklungskits): Raspberry Pi®",
+                      "ean": "4053199961061",
+                      "manufacturer_part_number": "MIO-RASPBERRYPI",
+                      "image": "https://asset.conrad.com/media10/isa/160267/c1/-/de/002107998PI02/zdauto-mio-raspberrypi-erweiterungsboard-passend-fuer-entwicklungskits-ras…",
+                      "url": "https://www.conrad.de/de/p/zdauto-mio-raspberrypi-erweiterungsboard-passend-fuer-entwicklungskits-raspberry-pi-2107998.html"
+                    },
+                    {
+                      "id": "2108005",
+                      "title": "ZDAuto MIO-RASPBERRYPI Starter-Kit Erweiterungsboard Passend für (Entwicklungskits): Raspberry Pi®",
+                      "ean": "4053199961139",
+                      "manufacturer_part_number": "MIO-RASPBERRYPI Starter-Kit",
+                      "image": "https://asset.conrad.com/media10/isa/160267/c1/-/de/002108005PI00/zdauto-mio-raspberrypi-starter-kit-erweiterungsboard-passend-fuer-entwickl…",
+                      "url": "https://www.conrad.de/de/p/zdauto-mio-raspberrypi-starter-kit-erweiterungsboard-passend-fuer-entwicklungskits-raspberry-pi-2108005.html"
+                    },
+                    "… 13 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/conrad/v1/categories": {
+      "get": {
+        "operationId": "conradCategories",
+        "summary": "Conrad category tree",
+        "description": "Conrad's category tree: the top categories, or one category with its sub-categories (id, name, path, product count, image, link). Category ids work as `category` in /conrad/v1/search.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/conrad-categories",
+        "tags": [
+          "Conrad"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "A category id (e.g. t08, c37381); leave out for the top level.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "levels",
+            "in": "query",
+            "required": false,
+            "description": "How many levels of sub-categories, 1-3 (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Shop: de (conrad.de, default), at, ch, nl, be, fr, it, es, pl, cz, sk, si, hr, hu, dk, se or com (international, English).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "at",
+                "ch",
+                "nl",
+                "be",
+                "fr",
+                "it",
+                "es",
+                "pl",
+                "cz",
+                "sk",
+                "si",
+                "hr",
+                "hu",
+                "dk",
+                "se",
+                "com"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "de",
+                  "levels": 1,
+                  "count": 12,
+                  "categories": [
+                    {
+                      "id": "t12",
+                      "name": "Aktive Bauelemente",
+                      "has_children": true,
+                      "order": 7,
+                      "image": "https://asset.conrad.com/media10/isa/160267/c1/-/de/333998_AB_67_FB/image.jpg",
+                      "layouts": [
+                        "toplevelcategory"
+                      ],
+                      "path": [
+                        {
+                          "id": "t12",
+                          "name": "Aktive Bauelemente",
+                          "level": 0
+                        }
+                      ],
+                      "products_count": 103329,
+                      "slug": "aktive-bauelemente-12",
+                      "parent_id": null,
+                      "url": "https://www.conrad.de/de/o/aktive-bauelemente-12.html",
+                      "children": []
+                    },
+                    {
+                      "id": "t11",
+                      "name": "Education & Entwicklungskits",
+                      "has_children": true,
+                      "order": 6,
+                      "image": "https://asset.conrad.com/media10/isa/160267/c1/-/de/333998_AB_66_FB/image.jpg",
+                      "layouts": [
+                        "toplevelcategory"
+                      ],
+                      "path": [
+                        {
+                          "id": "t11",
+                          "name": "Education & Entwicklungskits",
+                          "level": 0
+                        }
+                      ],
+                      "products_count": 7094,
+                      "slug": "education-entwicklungskits-11",
+                      "parent_id": null,
+                      "url": "https://www.conrad.de/de/o/education-entwicklungskits-11.html",
+                      "children": []
+                    },
+                    "… 10 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/conrad/v1/offers": {
+      "get": {
+        "operationId": "conradOffers",
+        "summary": "Conrad live offers for many products",
+        "description": "Live offers for up to 50 Conrad products in one call: for each product every seller's price (gross and net), quantity price scales, stock, delivery and restock dates. `found` is false for products the shop does not sell.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/conrad-offers",
+        "tags": [
+          "Conrad"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "description": "Article numbers, comma-separated (up to 50).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2446476,2302794"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Shop: de (conrad.de, default), at, ch, nl, be, fr, it, es, pl, cz, sk, si, hr, hu, dk, se or com (international, English).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "at",
+                "ch",
+                "nl",
+                "be",
+                "fr",
+                "it",
+                "es",
+                "pl",
+                "cz",
+                "sk",
+                "si",
+                "hr",
+                "hu",
+                "dk",
+                "se",
+                "com"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "de",
+                  "count": 2,
+                  "products": [
+                    {
+                      "id": "2446476",
+                      "found": true,
+                      "url": "https://www.conrad.de/de/p/2446476.html",
+                      "offers_count": 1,
+                      "offers": [
+                        {
+                          "offer_id": "CE2446476",
+                          "seller_id": "CE001",
+                          "seller_name": "Conrad Electronic",
+                          "conrad_offer": true,
+                          "condition": "NEW",
+                          "price": 25.99,
+                          "currency": "EUR",
+                          "price_net": 21.84,
+                          "vat_percent": 19,
+                          "was_price": null,
+                          "base_price": null,
+                          "price_scales": [
+                            {
+                              "…": "3 fields"
+                            },
+                            {
+                              "…": "3 fields"
+                            },
+                            "… 4 more"
+                          ],
+                          "shipping_cost": 4.95,
+                          "free_shipping": false,
+                          "availability": "AVAILABLE_NOW",
+                          "stock": 4614,
+                          "in_stock": true,
+                          "delivery_days": 2,
+                          "ships_on": "2026-11-05",
+                          "delivered_on": "2026-11-09",
+                          "order_cutoff": "2026-11-05T16:30:00Z",
+                          "next_restock_date": "2027-03-11",
+                          "next_restock_quantity": 3000,
+                          "minimum_order_quantity": 1
+                        }
+                      ]
+                    },
+                    {
+                      "id": "2302794",
+                      "found": true,
+                      "url": "https://www.conrad.de/de/p/2302794.html",
+                      "offers_count": 1,
+                      "offers": [
+                        {
+                          "offer_id": "CE2302794",
+                          "seller_id": "CE001",
+                          "seller_name": "Conrad Electronic",
+                          "conrad_offer": true,
+                          "condition": "NEW",
+                          "price": 48.99,
+                          "currency": "EUR",
+                          "price_net": 41.17,
+                          "vat_percent": 19,
+                          "was_price": null,
+                          "base_price": null,
+                          "price_scales": [
+                            {
+                              "…": "3 fields"
+                            },
+                            {
+                              "…": "3 fields"
+                            },
+                            "… 3 more"
+                          ],
+                          "shipping_cost": 4.95,
+                          "free_shipping": false,
+                          "availability": "AVAILABLE_NOW",
+                          "stock": 123,
+                          "in_stock": true,
+                          "delivery_days": 2,
+                          "ships_on": "2026-11-05",
+                          "delivered_on": "2026-11-09",
+                          "order_cutoff": "2026-11-05T16:30:00Z",
+                          "next_restock_date": "2026-12-22",
+                          "next_restock_quantity": null,
+                          "minimum_order_quantity": 1
+                        }
+                      ]
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/conrad/v1/product": {
+      "get": {
+        "operationId": "conradProduct",
+        "summary": "Conrad product",
+        "description": "One Conrad product: title, headline, brand, manufacturer part number, EAN, every seller's live offer (price gross and net, quantity price scales, stock, delivery and shipping dates, restock date), rating, description, features, what is in the box, technical attributes, category path, images, documents (data sheets, manuals, declarations), variants, accessories, alternatives, dimensions and weight, warranty and the manufacturer's contact details for product safety.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/conrad-product",
+        "tags": [
+          "Conrad"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Article number (e.g. 2446476) or a conrad.de product link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2446476"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Shop: de (conrad.de, default), at, ch, nl, be, fr, it, es, pl, cz, sk, si, hr, hu, dk, se or com (international, English).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "at",
+                "ch",
+                "nl",
+                "be",
+                "fr",
+                "it",
+                "es",
+                "pl",
+                "cz",
+                "sk",
+                "si",
+                "hr",
+                "hu",
+                "dk",
+                "se",
+                "com"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "2446476",
+                  "product_number": "000000000002446476",
+                  "country": "de",
+                  "title": "VOLTCRAFT VC131 Hand-Multimeter digital CAT III 600 V Anzeige (Counts): 2000",
+                  "headline": "VOLTCRAFT VC131 Digital Multimeter",
+                  "short_description": "VOLTCRAFT VC131 DIGITAL MULTIMETER",
+                  "url": "https://www.conrad.de/de/p/voltcraft-vc131-hand-multimeter-digital-cat-iii-600-v-anzeige-counts-2000-2446476.html",
+                  "brand": "VOLTCRAFT",
+                  "brand_id": "Brand.3279",
+                  "brand_logo": "https://asset.conrad.com/media10/isa/160267/c1/-/de/VOLTCRAFT_FL_00/image.jpg",
+                  "manufacturer_part_number": "VC-12232380",
+                  "manufacturer_type": "VC131",
+                  "ean": "4064161193359",
+                  "price": 40.99,
+                  "currency": "EUR",
+                  "price_net": 34.45,
+                  "availability": "AVAILABLE_DELIVERY_SHORT",
+                  "stock": 4614,
+                  "delivered_on": "2026-11-09",
+                  "offers": [
+                    {
+                      "offer_id": "CE2446476",
+                      "seller_id": "CE001",
+                      "seller_name": "Conrad Electronic",
+                      "conrad_offer": true,
+                      "condition": "NEW",
+                      "price": 40.99,
+                      "currency": "EUR",
+                      "price_net": 34.45,
+                      "vat_percent": 19,
+                      "was_price": null,
+                      "base_price": null,
+                      "price_scales": [
+                        {
+                          "from_quantity": 1,
+                          "unit_price": 40.99,
+                          "saved_percent": 0
+                        },
+                        {
+                          "from_quantity": 3,
+                          "unit_price": 39.66,
+                          "saved_percent": 3
+                        },
+                        "… 3 more"
+                      ],
+                      "shipping_cost": 4.95,
+                      "free_shipping": false,
+                      "availability": "AVAILABLE_DELIVERY_SHORT",
+                      "stock": 4614,
+                      "in_stock": true,
+                      "delivery_days": 3,
+                      "ships_on": "2026-11-05",
+                      "delivered_on": "2026-11-09",
+                      "order_cutoff": "2026-11-05T16:30:00Z",
+                      "next_restock_date": "2027-03-11",
+                      "next_restock_quantity": 3000,
+                      "minimum_order_quantity": 1
+                    }
+                  ],
+                  "rating": 4.6364,
+                  "reviews_count": 11,
+                  "description": "Das VOLTCRAFT Handmultimeter VC 131 ist Ihr robustes Einstiegsgerät für viele Messaufgaben und ersetzt die überaus erfolgreichen Vorgänger (…",
+                  "features": [
+                    "CAT III 600 V",
+                    "2000 Counts",
+                    "… 5 more"
+                  ],
+                  "facts": [
+                    "AC/DC-Spannungsmessung",
+                    "DC-Strommessung bis 10 A",
+                    "… 8 more"
+                  ],
+                  "in_the_box": [
+                    "Multimeter",
+                    "1 x 9 V Batterie",
+                    "… 2 more"
+                  ],
+                  "technical_attributes": [
+                    {
+                      "key": "ATT.NUM.METERING_RANGE_VDC_MIN",
+                      "name": "Messbereich V/DC min.",
+                      "values": [
+                        "0.1 mV"
+                      ]
+                    },
+                    {
+                      "key": "Product.SubCategory",
+                      "name": "Produkt-Art",
+                      "values": [
+                        "Hand-Multimeter"
+                      ]
+                    },
+                    "… 25 more"
+                  ],
+                  "category": {
+                    "id": "1101010",
+                    "name": "Multimeter",
+                    "breadcrumb": [
+                      {
+                        "id": "t08",
+                        "name": "Messtechnik & Stromversorgung"
+                      },
+                      {
+                        "id": "c37381",
+                        "name": "Messgeräte"
+                      },
+                      "… 1 more"
+                    ]
+                  },
+                  "images": [
+                    {
+                      "url": "https://asset.conrad.com/media10/isa/160267/c1/-/de/002446476PI00/image.jpg",
+                      "type": "Primary Image",
+                      "alt": "Digital-Multimeter mit großem Display zeigt '19.99'. Enthält roten und schwarzen Messfühler. Marke: Voltcraft Modell: VC 131."
+                    },
+                    {
+                      "url": "https://asset.conrad.com/media10/isa/160267/c1/-/de/002446476PI01/image.jpg",
+                      "type": "Secondary Image",
+                      "alt": "Rückseite eines elektronischen Geräts mit schwarzer Abdeckung und Warnhinweisen zur Bedienungsanleitung in mehreren Sprachen."
+                    },
+                    "… 6 more"
+                  ],
+                  "documents": [
+                    {
+                      "title": "Konformitätserklärung 2446476 VOLTCRAFT VC131 Hand-Multimeter digital CAT III 600 V Anzeige (Counts): 2000",
+                      "type": "Konformitätserklärung",
+                      "language": "ml",
+                      "url": "https://asset.conrad.com/media10/add/160267/c1/-/gl/002446476CC00/konformitaetserklaerung-2446476-voltcraft-vc131-hand-multimeter-digital-ca…"
+                    },
+                    {
+                      "title": "Datenblatt 2446476 VOLTCRAFT VC131 Hand-Multimeter digital CAT III 600 V Anzeige (Counts): 2000",
+                      "type": "Datenblatt",
+                      "language": "en",
+                      "url": "https://asset.conrad.com/media10/add/160267/c1/-/en/002446476DS00/datenblatt-2446476-voltcraft-vc131-hand-multimeter-digital-cat-iii-600-v-a…"
+                    },
+                    "… 18 more"
+                  ],
+                  "variants": [
+                    {
+                      "id": "2742982",
+                      "title": "VOLTCRAFT VC131 Hand-Multimeter kalibriert (DAkkS-akkreditiertes Labor) digital CAT III 600 V Anzeige (Counts): 2000",
+                      "url": "https://www.conrad.de/de/p/voltcraft-vc131-hand-multimeter-kalibriert-dakks-akkreditiertes-labor-digital-cat-iii-600-v-anzeige-counts-2000-2…"
+                    },
+                    {
+                      "id": "2584520",
+                      "title": "VOLTCRAFT VC131 Hand-Multimeter kalibriert (ISO) digital CAT III 250 V Anzeige (Counts): 2000",
+                      "url": "https://www.conrad.de/de/p/voltcraft-vc131-hand-multimeter-kalibriert-iso-digital-cat-iii-250-v-anzeige-counts-2000-2584520.html"
+                    },
+                    "… 18 more"
+                  ],
+                  "accessories": [
+                    "3730550",
+                    "2588865",
+                    "… 11 more"
+                  ],
+                  "alternatives": [],
+                  "dimensions": {
+                    "height": {
+                      "value": 60,
+                      "unit": "mm"
+                    },
+                    "length": {
+                      "value": 165,
+                      "unit": "mm"
+                    },
+                    "width": {
+                      "value": 125,
+                      "unit": "mm"
+                    },
+                    "gross_weight": {
+                      "value": 420,
+                      "unit": "g"
+                    }
+                  },
+                  "warranty": {
+                    "value": 3,
+                    "unit": "Jahre"
+                  },
+                  "vat_percent": 19,
+                  "order_unit": "ST",
+                  "packaging": {
+                    "value": 1,
+                    "unit": "St."
+                  },
+                  "buyable": true,
+                  "hazardous": false,
+                  "…": "6 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/conrad/v1/search": {
+      "get": {
+        "operationId": "conradSearch",
+        "summary": "Search Conrad products",
+        "description": "Conrad Electronic product search with every filter the shop offers: product id, title, link, EAN, manufacturer part number, brand, image, key features and technical details, live price (gross and net), availability, stock, delivery date, the best seller and how many offers there are. `facets` lists the categories, product types, brands, sellers, price range, availability, store stock and the technical attributes of the results, with counts (pass names and values in `filters`). Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/conrad-search",
+        "tags": [
+          "Conrad"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search keywords (optional when category, brand, seller or filters is given).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "multimeter"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Only this category: an id such as 1101010, c37381, t08 or f79010534 (from /conrad/v1/categories, a suggestion, or `breadcrumb`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Brands, comma-separated, as in the brand facet (e.g. VOLTCRAFT,Fluke).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seller",
+            "in": "query",
+            "required": false,
+            "description": "Seller ids, comma-separated (CE001 is Conrad itself; others from a result's sellers or the sellerId facet).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price in the shop's currency.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price in the shop's currency.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "in_stock",
+            "in": "query",
+            "required": false,
+            "description": "true for products available online now.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "store",
+            "in": "query",
+            "required": false,
+            "description": "Only products in stock at this store (a value from the storeAvailability facet, e.g. Mannheim).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "Facet filters as name:value pairs separated by `;`, several values of one facet with `|` (e.g. productType:Hand-Multimeter;ATT_MEASURING-MODE:True RMS).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order: relevance (default), price_asc, price_desc.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1 for the first. Pass back `next_page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Results per page, up to 60 (default 30).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Shop: de (conrad.de, default), at, ch, nl, be, fr, it, es, pl, cz, sk, si, hr, hu, dk, se or com (international, English).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "at",
+                "ch",
+                "nl",
+                "be",
+                "fr",
+                "it",
+                "es",
+                "pl",
+                "cz",
+                "sk",
+                "si",
+                "hr",
+                "hu",
+                "dk",
+                "se",
+                "com"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "multimeter",
+                  "applied_filters": {
+                    "country": "de",
+                    "sort": "relevance",
+                    "page": 1,
+                    "limit": 30
+                  },
+                  "total": 1167,
+                  "total_exact": true,
+                  "page": 1,
+                  "count": 30,
+                  "next_page": 2,
+                  "corrected_query": null,
+                  "breadcrumb": [
+                    {
+                      "id": "t08",
+                      "name": "Messtechnik & Stromversorgung"
+                    },
+                    {
+                      "id": "c37381",
+                      "name": "Messgeräte"
+                    },
+                    "… 1 more"
+                  ],
+                  "items": [
+                    {
+                      "id": "2446476",
+                      "title": "VOLTCRAFT VC131 Hand-Multimeter  digital  CAT III 600 V Anzeige (Counts): 2000",
+                      "url": "https://www.conrad.de/de/p/2446476.html",
+                      "ean": "4064161193359",
+                      "manufacturer_part_number": "VC-12232380",
+                      "brand": "VOLTCRAFT",
+                      "image": "https://asset.conrad.com/media10/isa/160267/c1/-/de/002446476PI00/voltcraft-vc131-hand-multimeter-digital-cat-iii-600-v-anzeige-counts-2000.…",
+                      "features": [
+                        "CAT III 600 V",
+                        "2000 Counts",
+                        "… 5 more"
+                      ],
+                      "specials": [
+                        "topSellerProduct",
+                        "Education"
+                      ],
+                      "energy_efficiency": null,
+                      "technical_details": [
+                        {
+                          "name": "Messbereich V/DC max.",
+                          "key": "ATT_NUM_METERING_RANGE_VDC_MAX",
+                          "values": [
+                            "600 V"
+                          ]
+                        },
+                        {
+                          "name": "Messbereich A/DC max.",
+                          "key": "ATT_NUM_METERING_RANGE_ADC_MAX",
+                          "values": [
+                            "10 A"
+                          ]
+                        },
+                        "… 9 more"
+                      ],
+                      "price": 40.99,
+                      "currency": "EUR",
+                      "price_net": 34.45,
+                      "availability": "AVAILABLE_DELIVERY_SHORT",
+                      "stock": 4614,
+                      "delivered_on": "2026-11-09",
+                      "seller_id": "CE001",
+                      "seller_name": "Conrad Electronic",
+                      "offers_count": 1,
+                      "sellers": [
+                        {
+                          "id": "CE001",
+                          "name": "Conrad Electronic SE"
+                        }
+                      ],
+                      "buyable": true
+                    },
+                    {
+                      "id": "2576861",
+                      "title": "VOLTCRAFT VC252 Hand-Multimeter  digital True RMS LoZ CAT III 600 V Anzeige (Counts): 4000",
+                      "url": "https://www.conrad.de/de/p/2576861.html",
+                      "ean": "4064161218021",
+                      "manufacturer_part_number": "VC-12884305",
+                      "brand": "VOLTCRAFT",
+                      "image": "https://asset.conrad.com/media10/isa/160267/c1/-/de/002576861PI00/voltcraft-vc252-hand-multimeter-digital-true-rms-loz-cat-iii-600-v-anzeige…",
+                      "features": [
+                        "CAT III 600 V",
+                        "4000 Counts",
+                        "… 5 more"
+                      ],
+                      "specials": [
+                        "Education"
+                      ],
+                      "energy_efficiency": null,
+                      "technical_details": [
+                        {
+                          "name": "Messbereich A/AC max.",
+                          "key": "ATT_NUM_METERING_RANGE_AAC_MAX",
+                          "values": [
+                            "10 A"
+                          ]
+                        },
+                        {
+                          "name": "Messbereich V/DC max.",
+                          "key": "ATT_NUM_METERING_RANGE_VDC_MAX",
+                          "values": [
+                            "600 V"
+                          ]
+                        },
+                        "… 10 more"
+                      ],
+                      "price": 57.99,
+                      "currency": "EUR",
+                      "price_net": 48.73,
+                      "availability": "AVAILABLE_DELIVERY_SHORT",
+                      "stock": 2076,
+                      "delivered_on": "2026-11-10",
+                      "seller_id": "CE001",
+                      "seller_name": "Conrad Electronic",
+                      "offers_count": 1,
+                      "sellers": [
+                        {
+                          "id": "CE001",
+                          "name": "Conrad Electronic SE"
+                        }
+                      ],
+                      "buyable": true
+                    },
+                    "… 28 more"
+                  ],
+                  "facets": [
+                    {
+                      "name": "productType",
+                      "label": "Produkt-Art",
+                      "type": "TERM_OR",
+                      "range": null,
+                      "values": [
+                        {
+                          "value": "Hand-Multimeter",
+                          "label": "Hand-Multimeter",
+                          "count": 586,
+                          "selected": false
+                        },
+                        {
+                          "value": "Stromzange",
+                          "label": "Stromzange",
+                          "count": 462,
+                          "selected": false
+                        },
+                        "… 12 more"
+                      ]
+                    },
+                    {
+                      "name": "brand",
+                      "label": "Marke",
+                      "type": "TERM_OR",
+                      "range": null,
+                      "values": [
+                        {
+                          "value": "Fluke",
+                          "label": "Fluke",
+                          "count": 235,
+                          "selected": false
+                        },
+                        {
+                          "value": "VOLTCRAFT",
+                          "label": "VOLTCRAFT",
+                          "count": 213,
+                          "selected": false
+                        },
+                        "… 46 more"
+                      ]
+                    },
+                    "… 17 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

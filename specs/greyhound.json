@@ -1,0 +1,1964 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Greyhound",
+    "version": "1.0.0",
+    "description": "The Greyhound API from API.SH: public Greyhound data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Greyhound",
+      "description": "7 endpoints (travel & events)",
+      "x-slug": "greyhound",
+      "x-domains": [
+        "greyhound.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/greyhound/v1/cities": {
+      "get": {
+        "operationId": "greyhoundCities",
+        "summary": "Greyhound city autocomplete",
+        "description": "Cities matching a name, from Greyhound (greyhound.com; FlixBus and Greyhound share one network): `id`, `legacy_id`, `name`, `country`, `region`, `subdivision_code`, `lat`, `lng`, `timezone_offset_seconds`, `has_train_station`, `served`, `score`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greyhound-cities",
+        "tags": [
+          "Greyhound"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "At least 2 characters of a city name.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "dall"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language code (e.g. `en`, `de`, `fr`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "2-letter country code filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "served_only",
+            "in": "query",
+            "required": false,
+            "description": "`true`: only cities with service.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "dall",
+                  "count": 7,
+                  "cities": [
+                    {
+                      "id": "54f13a66-59ee-41d4-b017-e4240add0403",
+                      "legacy_id": 26951,
+                      "name": "Dallas, TX",
+                      "country": "US",
+                      "region": null,
+                      "subdivision_code": "US-TX",
+                      "lat": 32.7766642,
+                      "lng": -96.7969879,
+                      "timezone_offset_seconds": -21600,
+                      "has_train_station": false,
+                      "served": true,
+                      "score": 19.878439
+                    },
+                    {
+                      "id": "b05dbe4d-2431-4117-a113-48d71a3d31ef",
+                      "legacy_id": 107873,
+                      "name": "Dallas, PA",
+                      "country": "US",
+                      "region": null,
+                      "subdivision_code": "US-PA",
+                      "lat": 41.3361911,
+                      "lng": -75.9632546,
+                      "timezone_offset_seconds": -18000,
+                      "has_train_station": false,
+                      "served": true,
+                      "score": 17.860638
+                    },
+                    "… 5 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greyhound/v1/city": {
+      "get": {
+        "operationId": "greyhoundCity",
+        "summary": "Greyhound city profile",
+        "description": "A city's profile from Greyhound (greyhound.com; FlixBus and Greyhound share one network): `id`, `legacy_id`, `name`, `slug`, `country`, `description`, `activities`, `transport` (bus, train), `lat`, `lng`, `search_volume` and `raw`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greyhound-city",
+        "tags": [
+          "Greyhound"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "City name or id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Chicago"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "97a51149-150b-4ecf-a1fa-aadaeb61bf02",
+                  "legacy_id": 48191,
+                  "name": "Chicago, IL",
+                  "slug": "chicago-il",
+                  "country": "US",
+                  "description": null,
+                  "activities": [],
+                  "transport": [
+                    "bus"
+                  ],
+                  "lat": 41.878113,
+                  "lng": -87.6298,
+                  "search_volume": 2962700,
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greyhound/v1/destinations": {
+      "get": {
+        "operationId": "greyhoundDestinations",
+        "summary": "Greyhound destinations from a city",
+        "description": "Every destination reachable from a city, from Greyhound (greyhound.com; FlixBus and Greyhound share one network): `id`, `name`, `country`, `lat`, `lng`, `price` (`min`, `avg`, `max`, `currency`), `min_duration_minutes`, `avg_duration_minutes`, `transfer_needed`, `transport`, `route_popularity`. Sorted by popularity unless `sort` says otherwise.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greyhound-destinations",
+        "tags": [
+          "Greyhound"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "description": "City name or id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Chicago"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Up to 500 (default 100).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "3-letter currency code (default `USD`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "Only destinations in this 2-letter country.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Only destinations whose lowest fare is at most this.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "`popularity` (default), `price` or `duration`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "popularity",
+                "price",
+                "duration"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "from": {
+                    "id": "97a51149-150b-4ecf-a1fa-aadaeb61bf02",
+                    "name": "Chicago, IL"
+                  },
+                  "currency": "USD",
+                  "applied_filters": {
+                    "country": null,
+                    "max_price": null,
+                    "sort": "popularity"
+                  },
+                  "count": 100,
+                  "destinations": [
+                    {
+                      "id": "c0a47c54-53ea-46dc-984b-b764fc0b2fa9",
+                      "legacy_id": 27821,
+                      "name": "New York, NY",
+                      "slug": "new-york-ny",
+                      "country": "US",
+                      "lat": 40.712776,
+                      "lng": -74.005974,
+                      "price": {
+                        "min": 106.98,
+                        "avg": 109.98,
+                        "max": 242.26,
+                        "currency": "USD"
+                      },
+                      "min_duration_minutes": 1025,
+                      "avg_duration_minutes": 1201,
+                      "transfer_needed": false,
+                      "transport": [
+                        "bus"
+                      ],
+                      "route_popularity": 7200,
+                      "search_volume": 12347000
+                    },
+                    {
+                      "id": "eeff627f-2fda-4e75-8468-783d47955b3a",
+                      "legacy_id": 32841,
+                      "name": "Boston, MA",
+                      "slug": "boston-ma",
+                      "country": "US",
+                      "lat": 42.36008,
+                      "lng": -71.05888,
+                      "price": {
+                        "min": 134.46,
+                        "avg": 164.97,
+                        "max": 249.98,
+                        "currency": "USD"
+                      },
+                      "min_duration_minutes": 1355,
+                      "avg_duration_minutes": 1793,
+                      "transfer_needed": true,
+                      "transport": [
+                        "bus"
+                      ],
+                      "route_popularity": 1000,
+                      "search_volume": 4320100
+                    },
+                    "… 98 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greyhound/v1/popular-cities": {
+      "get": {
+        "operationId": "greyhoundPopularCities",
+        "summary": "Greyhound popular cities",
+        "description": "A country's most searched Greyhound cities: `id`, `legacy_id`, `name`, `slug`, `country`, `lat`, `lng`, `transport`, `search_volume`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greyhound-popular-cities",
+        "tags": [
+          "Greyhound"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "2-letter country code (default `US`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Up to 500 (default 50).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "country": "US",
+                  "count": 50,
+                  "cities": [
+                    {
+                      "id": "c0a47c54-53ea-46dc-984b-b764fc0b2fa9",
+                      "legacy_id": 27821,
+                      "name": "New York, NY",
+                      "slug": "new-york-ny",
+                      "country": "US",
+                      "lat": 40.712776,
+                      "lng": -74.005974,
+                      "transport": [
+                        "bus"
+                      ],
+                      "search_volume": 12347000
+                    },
+                    {
+                      "id": "eeff627f-2fda-4e75-8468-783d47955b3a",
+                      "legacy_id": 32841,
+                      "name": "Boston, MA",
+                      "slug": "boston-ma",
+                      "country": "US",
+                      "lat": 42.36008,
+                      "lng": -71.05888,
+                      "transport": [
+                        "bus"
+                      ],
+                      "search_volume": 4320100
+                    },
+                    "… 48 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greyhound/v1/search": {
+      "get": {
+        "operationId": "greyhoundSearch",
+        "summary": "Greyhound trip search",
+        "description": "Every Greyhound departure between two cities or stations on a date, from Greyhound (greyhound.com; FlixBus and Greyhound share one network): `uid`, `status`, `available`, `transfer_type`, `transfers`, `departure` and `arrival` (time with offset, city, station and their ids), `duration_minutes`, `price` (`total`, `original`, `per_person`, the same with the platform fee, `currency`), `seats_left_at_price`, `seats_available`, `bike_slots_available`, `capacity`, `brands`, `operators`, `means_of_transport`, `amenities`, `legs` (ride id, stations, brand, operator, amenities, seat types), `bikes_allowed` and `raw`. Also `stations` and `operators` of the results, `platform_fees` and `no_bikes_period`. `total_unfiltered` counts the trips before the filters. One page holds the whole day.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greyhound-search",
+        "tags": [
+          "Greyhound"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "description": "Departure city name (e.g. `New York`) or a city id from `/greyhound/v1/cities`; with `search_by=stations` a station name or id.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "New York"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "description": "Arrival city or station, as for `from`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Boston"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Travel date `YYYY-MM-DD`. Default: 30 days ahead.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days_ahead",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `date`: days from today (0-365).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "30"
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "description": "Adults (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "children_0_5",
+            "in": "query",
+            "required": false,
+            "description": "Children aged 0-5.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "children_6_14",
+            "in": "query",
+            "required": false,
+            "description": "Children aged 6-14.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "seniors",
+            "in": "query",
+            "required": false,
+            "description": "Seniors.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "students",
+            "in": "query",
+            "required": false,
+            "description": "Students.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "bikes",
+            "in": "query",
+            "required": false,
+            "description": "Bike slots.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "3-letter currency code (default `USD`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search_by",
+            "in": "query",
+            "required": false,
+            "description": "`cities` (default) or `stations`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cities",
+                "stations"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "`departure` (default), `arrival`, `price` or `duration`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "departure",
+                "arrival",
+                "price",
+                "duration"
+              ]
+            }
+          },
+          {
+            "name": "transport",
+            "in": "query",
+            "required": false,
+            "description": "Only `bus` or `train` rides.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "bus",
+                "train"
+              ]
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Only trips by this brand (e.g. `FlixBus`, `Greyhound`, `FlixTrain`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "direct_only",
+            "in": "query",
+            "required": false,
+            "description": "`true`: no transfers.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "available_only",
+            "in": "query",
+            "required": false,
+            "description": "`true`: only trips that can be booked.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "departure_after",
+            "in": "query",
+            "required": false,
+            "description": "Earliest local departure time `HH:MM`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "departure_before",
+            "in": "query",
+            "required": false,
+            "description": "Latest local departure time `HH:MM`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "required": false,
+            "description": "Highest total price in the chosen currency.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "from": {
+                    "id": "c0a47c54-53ea-46dc-984b-b764fc0b2fa9",
+                    "name": "New York, NY"
+                  },
+                  "to": {
+                    "id": "eeff627f-2fda-4e75-8468-783d47955b3a",
+                    "name": "Boston, MA"
+                  },
+                  "date": "2026-12-05",
+                  "currency": "USD",
+                  "passengers": {
+                    "adult": 1
+                  },
+                  "applied_filters": {
+                    "search_by": "cities",
+                    "sort": "departure",
+                    "transport": null,
+                    "brand": null,
+                    "direct_only": false,
+                    "available_only": false,
+                    "departure_after": null,
+                    "departure_before": null,
+                    "max_price": null
+                  },
+                  "count": 63,
+                  "total_unfiltered": 63,
+                  "trips": [
+                    {
+                      "uid": "direct:0f9a282c-a012-4faf-99d3-8004493843bd:e204bb66-8ab9-4437-8d0d-2b603cdf0c43:9b6bfd56-3ecb-11ea-8017-02437075395e",
+                      "status": "available",
+                      "available": true,
+                      "transfer_type": "direct",
+                      "transfers": 0,
+                      "departure": {
+                        "time": "2026-12-05T01:00:00-05:00",
+                        "city": "New York, NY",
+                        "city_id": "c0a47c54-53ea-46dc-984b-b764fc0b2fa9",
+                        "station": "New York Port Authority",
+                        "station_id": "e204bb66-8ab9-4437-8d0d-2b603cdf0c43",
+                        "station_slug": "new-york-port-authority"
+                      },
+                      "arrival": {
+                        "time": "2026-12-05T05:30:00-05:00",
+                        "city": "Boston, MA",
+                        "city_id": "eeff627f-2fda-4e75-8468-783d47955b3a",
+                        "station": "Boston (South Station)",
+                        "station_id": "9b6bfd56-3ecb-11ea-8017-02437075395e",
+                        "station_slug": "boston-south-station"
+                      },
+                      "duration_minutes": 270,
+                      "price": {
+                        "total": 32.99,
+                        "original": 32.99,
+                        "per_person": 32.99,
+                        "total_with_platform_fee": 36.98,
+                        "per_person_with_platform_fee": 36.98,
+                        "currency": "USD"
+                      },
+                      "seats_left_at_price": null,
+                      "seats_left": null,
+                      "seats_available": 49,
+                      "bike_slots_available": 0,
+                      "capacity": "high",
+                      "brands": [
+                        "Greyhound"
+                      ],
+                      "operators": [
+                        "Greyhound Lines, Inc."
+                      ],
+                      "means_of_transport": [
+                        "bus"
+                      ],
+                      "amenities": [
+                        "WIFI",
+                        "POWER_SOCKETS"
+                      ],
+                      "intermediate_stations_count": 0,
+                      "legs": [
+                        {
+                          "ride_id": "0f9a282c-a012-4faf-99d3-8004493843bd",
+                          "departure": {
+                            "…": "6 fields"
+                          },
+                          "arrival": {
+                            "…": "6 fields"
+                          },
+                          "means_of_transport": "bus",
+                          "brand": "Greyhound",
+                          "brand_id": "5f59428d-c840-44be-bd9e-2e1175e06779",
+                          "operator": "Greyhound Lines, Inc.",
+                          "operator_id": "grey",
+                          "marketplace": false,
+                          "amenities": [
+                            "WIFI",
+                            "POWER_SOCKETS"
+                          ],
+                          "seat_types": [
+                            "SEATER"
+                          ]
+                        }
+                      ],
+                      "messages": [],
+                      "bikes_allowed": true,
+                      "sale_restricted": false,
+                      "wheelchair": "unknown"
+                    },
+                    {
+                      "uid": "direct:852720c5-9dc9-4f5a-b5d7-d7e8d0e538c1:74b8f0dc-56a2-4d1b-b0a4-abe9df30a007:9b6bfd56-3ecb-11ea-8017-02437075395e",
+                      "status": "available",
+                      "available": true,
+                      "transfer_type": "direct",
+                      "transfers": 0,
+                      "departure": {
+                        "time": "2026-12-05T01:05:00-05:00",
+                        "city": "New York, NY",
+                        "city_id": "c0a47c54-53ea-46dc-984b-b764fc0b2fa9",
+                        "station": "New York (GW Bridge)",
+                        "station_id": "74b8f0dc-56a2-4d1b-b0a4-abe9df30a007",
+                        "station_slug": "new-york-gw-bridge"
+                      },
+                      "arrival": {
+                        "time": "2026-12-05T05:10:00-05:00",
+                        "city": "Boston, MA",
+                        "city_id": "eeff627f-2fda-4e75-8468-783d47955b3a",
+                        "station": "Boston (South Station)",
+                        "station_id": "9b6bfd56-3ecb-11ea-8017-02437075395e",
+                        "station_slug": "boston-south-station"
+                      },
+                      "duration_minutes": 245,
+                      "price": {
+                        "total": 33.99,
+                        "original": 33.99,
+                        "per_person": 33.99,
+                        "total_with_platform_fee": 37.98,
+                        "per_person_with_platform_fee": 37.98,
+                        "currency": "USD"
+                      },
+                      "seats_left_at_price": null,
+                      "seats_left": null,
+                      "seats_available": 54,
+                      "bike_slots_available": 0,
+                      "capacity": "high",
+                      "brands": [
+                        "Greyhound"
+                      ],
+                      "operators": [
+                        "Greyhound Lines, Inc."
+                      ],
+                      "means_of_transport": [
+                        "bus"
+                      ],
+                      "amenities": [
+                        "WIFI",
+                        "POWER_SOCKETS"
+                      ],
+                      "intermediate_stations_count": 0,
+                      "legs": [
+                        {
+                          "ride_id": "852720c5-9dc9-4f5a-b5d7-d7e8d0e538c1",
+                          "departure": {
+                            "…": "6 fields"
+                          },
+                          "arrival": {
+                            "…": "6 fields"
+                          },
+                          "means_of_transport": "bus",
+                          "brand": "Greyhound",
+                          "brand_id": "5f59428d-c840-44be-bd9e-2e1175e06779",
+                          "operator": "Greyhound Lines, Inc.",
+                          "operator_id": "grey",
+                          "marketplace": false,
+                          "amenities": [
+                            "WIFI",
+                            "POWER_SOCKETS"
+                          ],
+                          "seat_types": [
+                            "SEATER"
+                          ]
+                        }
+                      ],
+                      "messages": [],
+                      "bikes_allowed": true,
+                      "sale_restricted": false,
+                      "wheelchair": "unknown"
+                    },
+                    "… 61 more"
+                  ],
+                  "platform_fees": [
+                    3.99
+                  ],
+                  "no_bikes_period": {
+                    "from": "+1 555 010 0000",
+                    "to": "+1 555 010 0000"
+                  },
+                  "stations": [
+                    {
+                      "id": "ddf85f3f-f4ac-45e7-b439-1c31ed733ce1",
+                      "name": "NYC Midtown (31st St & 8th Ave)",
+                      "slug": "new-york-city-midtown",
+                      "is_train": false
+                    },
+                    {
+                      "id": "9b6c1745-3ecb-11ea-8017-02437075395e",
+                      "name": "Brookline",
+                      "slug": "brookline-ma",
+                      "is_train": false
+                    },
+                    "… 10 more"
+                  ],
+                  "operators": [
+                    {
+                      "id": "grey",
+                      "name": "Greyhound Lines, Inc.",
+                      "url": "http://www.greyhound.com",
+                      "address": "9773 Harry Hines Blvd., TX 75220 Dallas"
+                    },
+                    {
+                      "id": "flixus",
+                      "name": "FlixBus Inc.",
+                      "url": "https://www.flixbus.com/",
+                      "address": "PO Box 660362, TX 75266-0 Dallas"
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greyhound/v1/stations": {
+      "get": {
+        "operationId": "greyhoundStations",
+        "summary": "Greyhound station autocomplete",
+        "description": "Stations matching a name, from Greyhound (greyhound.com; FlixBus and Greyhound share one network): `id`, `legacy_id`, `name`, `slug`, `is_train`, `address`, `zip_code`, `city`, `city_id`, `country`, `lat`, `lng`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greyhound-stations",
+        "tags": [
+          "Greyhound"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "At least 2 characters of a station or city name.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "denver"
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Language code.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "description": "2-letter country code filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "denver",
+                  "count": 2,
+                  "stations": [
+                    {
+                      "id": "55b07fb1-b6da-4069-975d-e69d4278391a",
+                      "legacy_id": 73043,
+                      "name": "Denver Union Station Bus Concourse",
+                      "slug": "denver-union-station",
+                      "is_train": false,
+                      "address": "1700 Wewatta St",
+                      "zip_code": "80202",
+                      "city": "Denver, CO",
+                      "city_id": "e39e6d48-a9da-49fb-8a87-f1fe4b05a12f",
+                      "city_legacy_id": 54301,
+                      "country": "US",
+                      "country_name": "USA",
+                      "lat": 39.75392,
+                      "lng": -105.00111,
+                      "score": 22.453081
+                    },
+                    {
+                      "id": "79a230f0-4c40-40a4-8509-942dac9d2972",
+                      "legacy_id": 92253,
+                      "name": "Denver Union Station (CDOT)",
+                      "slug": "denver-amtrak-sta-e",
+                      "is_train": false,
+                      "address": "1701 Wynkoop St-Union Amtrak",
+                      "zip_code": "80202",
+                      "city": "Denver, CO",
+                      "city_id": "e39e6d48-a9da-49fb-8a87-f1fe4b05a12f",
+                      "city_legacy_id": 54301,
+                      "country": "US",
+                      "country_name": "USA",
+                      "lat": 39.753098,
+                      "lng": -105.000107,
+                      "score": 20.179018
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/greyhound/v1/trip": {
+      "get": {
+        "operationId": "greyhoundTrip",
+        "summary": "Greyhound trip itinerary",
+        "description": "One trip's itinerary from Greyhound (greyhound.com; FlixBus and Greyhound share one network): every stop with arrival and departure times, the line code and its final destination, brand, carriers, notices, and the departure and arrival stations with address, postcode and coordinates. Give a trip `uid` from `/greyhound/v1/search`, or `from`, `to` and `date`/`days_ahead` to take that day's first departure (`index` picks another). Trip uids expire once the ride has left.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/greyhound-trip",
+        "tags": [
+          "Greyhound"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "query",
+            "required": false,
+            "description": "Trip uid from `/greyhound/v1/search` (`direct:…` or `interconnection:…`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Instead of `uid`: departure city (with `to`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "New York"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Arrival city.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Boston"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "Travel date `YYYY-MM-DD` (with `from`/`to`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days_ahead",
+            "in": "query",
+            "required": false,
+            "description": "Days from today (with `from`/`to`).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "30"
+          },
+          {
+            "name": "index",
+            "in": "query",
+            "required": false,
+            "description": "Which departure of that day (0 = first).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "uid": "direct:0f9a282c-a012-4faf-99d3-8004493843bd:e204bb66-8ab9-4437-8d0d-2b603cdf0c43:9b6bfd56-3ecb-11ea-8017-02437075395e",
+                  "departure": {
+                    "name": "New York Port Authority",
+                    "city": "New York, NY",
+                    "address": "625 8Th Ave",
+                    "zip_code": "10018",
+                    "country": "US",
+                    "lat": 40.75695,
+                    "lng": -73.9905,
+                    "description": "Bus will stop at the Port Authority Bus Terminal located at 625 8th Avenue. The ticket counter is located in the North wing on the subway le…"
+                  },
+                  "arrival": {
+                    "name": "Boston (South Station)",
+                    "city": "Boston, MA",
+                    "address": "700 Atlantic Ave",
+                    "zip_code": "02111",
+                    "country": "US",
+                    "lat": 42.350469,
+                    "lng": -71.05618,
+                    "description": "Greyhound and FlixBus buses will arrive and depart from the South Wing and departure gate numbers will be Gates #13, #14, and #18-27."
+                  },
+                  "legs": [
+                    {
+                      "type": "ride",
+                      "line": "US0230",
+                      "line_destination": "Boston (South Station)",
+                      "line_id": 49133,
+                      "brand": "Greyhound",
+                      "brand_type": "core",
+                      "sub_brand": null,
+                      "stops": [
+                        {
+                          "name": "New York Port Authority",
+                          "arrival": null,
+                          "departure": "2026-12-05T01:00:00-05:00",
+                          "time": "2026-12-05T01:00:00-05:00"
+                        },
+                        {
+                          "name": "Hartford (Union Station)",
+                          "arrival": "2026-12-05T03:30:00-05:00",
+                          "departure": "2026-12-05T03:45:00-05:00",
+                          "time": "2026-12-05T03:30:00-05:00"
+                        },
+                        "… 1 more"
+                      ],
+                      "carriers": [
+                        "Greyhound Lines, Inc."
+                      ],
+                      "operators": [
+                        "Greyhound Lines, Inc"
+                      ],
+                      "messages": {
+                        "from": null,
+                        "to": null
+                      },
+                      "warnings": [],
+                      "transfer_minutes": null
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

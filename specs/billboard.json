@@ -1,0 +1,1120 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Billboard",
+    "version": "1.0.0",
+    "description": "The Billboard API from API.SH: public Billboard data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Billboard",
+      "description": "4 endpoints (media & music)",
+      "x-slug": "billboard",
+      "x-domains": [
+        "billboard.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/billboard/v1/artist": {
+      "get": {
+        "operationId": "billboardArtist",
+        "summary": "Billboard artist chart history",
+        "description": "An artist's history on one Billboard chart: every song or album that charted with its debut date, peak position, weeks at the peak, peak date and weeks on the chart; the artist's totals on that chart (titles, top ten hits, number one hits); and the list of charts the artist has a history on (code and name, for the chart parameter).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/billboard-artist",
+        "tags": [
+          "Billboard"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "artist",
+            "in": "query",
+            "required": true,
+            "description": "The artist: a billboard.com/artist/<name>/ link (any chart-history tab of it), the <name> part, or the artist's name.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "taylor-swift"
+          },
+          {
+            "name": "chart",
+            "in": "query",
+            "required": false,
+            "description": "Chart code from the charts list in the answer (hsi Billboard Hot 100, tlp Billboard 200, ats Artist 100, stm Streaming Songs, ...). Default hsi.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "hsi"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "artist": "taylor-swift",
+                  "name": "Taylor Swift",
+                  "url": "https://www.billboard.com/artist/taylor-swift/chart-history/hsi/",
+                  "artist_url": "https://www.billboard.com/artist/taylor-swift/",
+                  "image": "https://charts-static.billboard.com/img/2006/07/taylor-swift-vug-344x344.jpg",
+                  "chart": "hsi",
+                  "chart_name": "Billboard Hot 100",
+                  "titles": 281,
+                  "top_ten_hits": 74,
+                  "number_one_hits": 16,
+                  "count": 281,
+                  "entries": [
+                    {
+                      "title": "Cruel Summer",
+                      "artist": "Taylor Swift",
+                      "debut_date": "2019-09-07",
+                      "peak_position": 1,
+                      "weeks_at_peak": 4,
+                      "peak_date": "2023-10-28",
+                      "weeks_on_chart": 54
+                    },
+                    {
+                      "title": "Anti-Hero",
+                      "artist": "Taylor Swift",
+                      "debut_date": "2022-11-05",
+                      "peak_position": 1,
+                      "weeks_at_peak": 8,
+                      "peak_date": "2022-11-05",
+                      "weeks_on_chart": 53
+                    },
+                    "… 279 more"
+                  ],
+                  "charts": [
+                    {
+                      "code": "hsi",
+                      "name": "Billboard Hot 100",
+                      "url": "https://www.billboard.com/artist/taylor-swift/chart-history/hsi/"
+                    },
+                    {
+                      "code": "tlp",
+                      "name": "Billboard 200",
+                      "url": "https://www.billboard.com/artist/taylor-swift/chart-history/tlp/"
+                    },
+                    "… 163 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/billboard/v1/chart": {
+      "get": {
+        "operationId": "billboardChart",
+        "summary": "Billboard chart",
+        "description": "A Billboard chart for any week since the chart began (Hot 100 since 1958): each entry's rank, title, artist, cover image and artist image, last week's rank and change, peak position, weeks on chart, weeks at No. 1, new and re-entry flags, debut position and date, peak date, awards (gainer, highest debut ...), songwriters, producers, label and RIAA certification. Works with the charts in /billboard/v1/charts and any other chart slug from billboard.com/charts/<slug>/. Chart metadata only, no lyrics. Each entry also lists `artists` (every linked artist with name, id and link, and whether they are featured), `artist_ids` and `featured_artists`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/billboard-chart",
+        "tags": [
+          "Billboard"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "description": "Chart slug: hot-100, billboard-200, billboard-global-200, artist-100, streaming-songs, country-songs, latin-songs, japan-hot-100 ... (see /billboard/v1/charts).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "hot-100"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "description": "A date in the chart week wanted (YYYY-MM-DD). Default the latest chart.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2024-01-06"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Return only the top N entries (1-200).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "chart": "hot-100",
+                  "chart_name": "Billboard Hot 100",
+                  "kind": "songs",
+                  "week": "2024-01-06",
+                  "requested_date": "2024-01-06",
+                  "url": "https://www.billboard.com/charts/hot-100/2024-01-06/",
+                  "previous_week": "2023-12-30",
+                  "total": 100,
+                  "count": 100,
+                  "entries": [
+                    {
+                      "rank": 1,
+                      "title": "Rockin' Around The Christmas Tree",
+                      "artist": "Brenda Lee",
+                      "is_new": false,
+                      "is_reentry": false,
+                      "last_week": 2,
+                      "change": 1,
+                      "peak_position": 1,
+                      "weeks_on_chart": 58,
+                      "weeks_at_no1": 3,
+                      "debut_position": 64,
+                      "debut_date": "1960-12-12",
+                      "peak_date": "2023-12-09",
+                      "awards": [
+                        "Biggest gain in streams",
+                        "Gains In Performance"
+                      ],
+                      "songwriters": [
+                        "J.D.Marks"
+                      ],
+                      "producers": [
+                        "O.Bradley"
+                      ],
+                      "label": "Decca/MCA Nashville/UMe",
+                      "riaa_certification": "Platinum x7",
+                      "image": "https://charts-static.billboard.com/img/1960/12/brenda-lee-we3-rockinaroundthechristmastree-lnw-180x180.jpg",
+                      "artist_image": null,
+                      "artist_url": null,
+                      "artist_ids": [],
+                      "artists": [],
+                      "featured_artists": []
+                    },
+                    {
+                      "rank": 2,
+                      "title": "All I Want For Christmas Is You",
+                      "artist": "Mariah Carey",
+                      "is_new": false,
+                      "is_reentry": false,
+                      "last_week": 1,
+                      "change": -1,
+                      "peak_position": 1,
+                      "weeks_on_chart": 65,
+                      "weeks_at_no1": 22,
+                      "debut_position": 83,
+                      "debut_date": "2000-01-08",
+                      "peak_date": "2019-12-21",
+                      "awards": [
+                        "Gains In Performance"
+                      ],
+                      "songwriters": [
+                        "M.Carey",
+                        "W.Afanasieff"
+                      ],
+                      "producers": [
+                        "W.Afanasieff",
+                        "M.Carey"
+                      ],
+                      "label": "Columbia/Legacy",
+                      "riaa_certification": "Diamond",
+                      "image": "https://charts-static.billboard.com/img/1994/12/mariah-carey-qmg-alliwantforchristmasisyou-7ve-180x180.jpg",
+                      "artist_image": "https://charts-static.billboard.com/img/1990/06/mariah-carey-qmg-344x344.jpg",
+                      "artist_url": "https://www.billboard.com/artist/mariah-carey/",
+                      "artist_ids": [
+                        "mariah-carey"
+                      ],
+                      "artists": [
+                        {
+                          "name": "Mariah Carey",
+                          "id": "mariah-carey",
+                          "url": "https://www.billboard.com/artist/mariah-carey/",
+                          "featured": false
+                        }
+                      ],
+                      "featured_artists": []
+                    },
+                    "… 98 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/billboard/v1/charts": {
+      "get": {
+        "operationId": "billboardCharts",
+        "summary": "Billboard charts list",
+        "description": "The main weekly Billboard charts with their slugs, names, kind (songs, albums or artists) and links, to use with /billboard/v1/chart.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/billboard-charts",
+        "tags": [
+          "Billboard"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "count": 40,
+                  "charts": [
+                    {
+                      "slug": "hot-100",
+                      "name": "Billboard Hot 100",
+                      "kind": "songs",
+                      "url": "https://www.billboard.com/charts/hot-100/"
+                    },
+                    {
+                      "slug": "billboard-200",
+                      "name": "Billboard 200",
+                      "kind": "albums",
+                      "url": "https://www.billboard.com/charts/billboard-200/"
+                    },
+                    "… 38 more"
+                  ],
+                  "note": "any other chart slug from billboard.com/charts/<slug>/ also works with /billboard/v1/chart",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/billboard/v1/news": {
+      "get": {
+        "operationId": "billboardNews",
+        "summary": "Billboard news articles",
+        "description": "Billboard's articles, newest first, optionally matching a search term or about one artist: title, summary, link, published and modified times, section, authors, keywords and the lead image.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/billboard-news",
+        "tags": [
+          "Billboard"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search term.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "grammy"
+          },
+          {
+            "name": "artist",
+            "in": "query",
+            "required": false,
+            "description": "Only articles tagged with this artist (the billboard.com/artist/<name>/ link, its <name> part or the name).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "taylor-swift"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page (1-100).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Articles a page (1-50, default 20).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "20"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": null,
+                  "artist": {
+                    "id": 371422,
+                    "name": "Taylor Swift",
+                    "slug": "taylor-swift",
+                    "articles": 10005
+                  },
+                  "page": 1,
+                  "per_page": 20,
+                  "count": 20,
+                  "next_page": 2,
+                  "articles": [
+                    {
+                      "id": 1236371936,
+                      "title": "Taylor Swift Made Sure She Didn’t ‘Kick Somebody Off’ of ‘Toy Story 5’ by Agreeing to Write the End Credits Song",
+                      "summary": "Randy Newman had previously written the original songs for the franchise.",
+                      "url": "https://www.billboard.com/music/music-news/taylor-swift-toy-story-5-song-didnt-want-to-kick-somebody-off-1236371936/",
+                      "published": "2026-11-02T17:17:11Z",
+                      "modified": "2026-11-02T17:17:16Z",
+                      "section": "Music News",
+                      "authors": [
+                        "Hannah Dailey"
+                      ],
+                      "keywords": [
+                        "genre pop",
+                        "music news",
+                        "… 1 more"
+                      ],
+                      "image": "https://www.billboard.com/wp-content/uploads/2026/10/P108QRF2-e1792406932507.jpg",
+                      "image_credit": null
+                    },
+                    {
+                      "id": 1236371350,
+                      "title": "Taylor Swift’s ‘I Knew It, I Knew You’ Spends Fourth Month at No. 1 on Top Movie Songs Chart",
+                      "summary": "Swift’s Toy Story 5 soundtrack contribution leads challengers from Spider-Man: Brand New Day and Practical Magic 2 .",
+                      "url": "https://www.billboard.com/music/chart-beat/taylor-swift-i-knew-it-i-knew-you-top-movie-songs-september-1236371350/",
+                      "published": "2026-10-30T21:12:59Z",
+                      "modified": "2026-10-30T21:13:04Z",
+                      "section": "Chart Beat",
+                      "authors": [
+                        "Kevin Rutherford"
+                      ],
+                      "keywords": [
+                        "chart beat",
+                        "genre pop",
+                        "… 2 more"
+                      ],
+                      "image": "https://www.billboard.com/wp-content/uploads/2026/06/taylor-swift-jessie-toy-story-5-premiere-2026-billboard-1800.jpg",
+                      "image_credit": null
+                    },
+                    "… 18 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

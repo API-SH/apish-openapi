@@ -1,0 +1,1411 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Compass",
+    "version": "1.0.0",
+    "description": "The Compass API from API.SH: public Compass data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Compass",
+      "description": "3 endpoints (real estate)",
+      "x-slug": "compass",
+      "x-domains": [
+        "compass.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/compass/v1/agent": {
+      "get": {
+        "operationId": "compassAgent",
+        "summary": "Compass agent profile",
+        "description": "A Compass agent's or team's public profile: name, title, phone, email, photo, market, about, specialties, awards, education, client testimonials as the agent shows them (`testimonials` with rating, text and author, plus `testimonials_text`), active listings for sale and for rent (with totals) and closed deals (sales and rentals, with totals; the newest `deals_limit` of each), plus `raw`.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/compass-agent",
+        "tags": [
+          "Compass"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "query",
+            "required": true,
+            "description": "Profile slug as in a compass.com/agents/<slug>/ link (e.g. charles-runnels), or the link itself.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "charles-runnels"
+          },
+          {
+            "name": "deals_limit",
+            "in": "query",
+            "required": false,
+            "description": "Closed deals to return per kind (1 to 100, default 25).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "655ce8519b1d630001438856",
+                  "slug": "charles-runnels",
+                  "url": "https://www.compass.com/agents/charles-runnels/",
+                  "name": "Charles Runnels",
+                  "is_team": false,
+                  "title": "REALTOR®",
+                  "phone": "+1 555 010 0000",
+                  "email": "name@example.com",
+                  "photo": "https://www.compass.com/m/13/eb908893-e113-4c87-bdf6-aa2890cd2e25/300x300.webp",
+                  "market": "Austin & Central Texas",
+                  "about": "Charles started his Austin real estate career in 2009, specializing in Central Austin and Downtown. Prior to launching his career in residen…",
+                  "specialties": "Certified Luxury Home Marketing Specialist, Graduate REALTOR® Institute",
+                  "awards": "Platinum Top 500 REALTORS® 2018, 2019, 2020, 2021, 2022\nPlatinum Top 50 REALTORS® Finalist 2016, 2017, 2018, 2020",
+                  "education": "University of Oklahoma - Master's in Human Relations University of Oklahoma - Bachelor's in History",
+                  "other_media": "Charles’s Concierge Page\nSee It First™ with Charles Runnels",
+                  "card": {
+                    "displayName": "Charles Runnels",
+                    "displayPhone": "+1 555 010 0000",
+                    "email": "name@example.com",
+                    "firstName": "Charles",
+                    "imagePath": "https://www.compass.com/m/13/eb908893-e113-4c87-bdf6-aa2890cd2e25/300x300.webp",
+                    "lastName": "Runnels",
+                    "phone": "+1 555 010 0000",
+                    "title": "REALTOR®"
+                  },
+                  "active_sales_total": 8,
+                  "active_rentals_total": 2,
+                  "active_sales": [
+                    {
+                      "id": "2184622719364823065",
+                      "url": "https://www.compass.com/homedetails/5001-Shoal-Creek-Blvd-Austin-TX-78756/1GCFX3_pid/",
+                      "address": "5001 Shoal Creek Boulevard",
+                      "city": "Austin",
+                      "state": "TX",
+                      "zip": "78756",
+                      "status": "Coming Soon",
+                      "price": 1828700,
+                      "bedrooms": 4,
+                      "bathrooms": 4,
+                      "sqft": 3456,
+                      "listed": null,
+                      "closed": null,
+                      "list_price": null,
+                      "sold_price": null,
+                      "photo": "https://www.compass.com/m/0/f8f2d2d2-aeec-4c58-9d29-ea98996b59b9/origin.jpg"
+                    },
+                    {
+                      "id": "2184619572756174361",
+                      "url": "https://www.compass.com/homedetails/222-West-Ave-Unit-1802-Austin-TX-78701/1EYWXV_pid/",
+                      "address": "222 West Avenue, Unit 1802",
+                      "city": "Austin",
+                      "state": "TX",
+                      "zip": "78701",
+                      "status": "Coming Soon",
+                      "price": 1100000,
+                      "bedrooms": 2,
+                      "bathrooms": 2,
+                      "sqft": 1000,
+                      "listed": null,
+                      "closed": null,
+                      "list_price": null,
+                      "sold_price": null,
+                      "photo": "https://www.compass.com/m/0/b2182c04-3160-4814-bd65-fb4d52cadb38/origin.jpg"
+                    },
+                    "… 6 more"
+                  ],
+                  "active_rentals": [
+                    {
+                      "id": "2190422679009984657",
+                      "url": "https://www.compass.com/homedetails/3106-Jeanne-Marie-Ct-Austin-TX-78745/1EYX7A_pid/",
+                      "address": "3106 Jeanne Marie Court",
+                      "city": "Austin",
+                      "state": "TX",
+                      "zip": "78745",
+                      "status": "Active",
+                      "price": 2998,
+                      "bedrooms": 3,
+                      "bathrooms": 2,
+                      "sqft": 1450,
+                      "listed": "2026-09-08T05:00:00.000Z",
+                      "closed": null,
+                      "list_price": 3000,
+                      "sold_price": null,
+                      "photo": "https://www.compass.com/m/9dd0d4c919560a2e6c982da7422476020f865df7807d586463681ffb0bd7be6c/origin.jpg"
+                    },
+                    {
+                      "id": "2204819612484760489",
+                      "url": "https://www.compass.com/homedetails/206-Nelray-Blvd-Austin-TX-78751/1FKL6W_pid/",
+                      "address": "206 Nelray Boulevard",
+                      "city": "Austin",
+                      "state": "TX",
+                      "zip": "78751",
+                      "status": "Active",
+                      "price": 2695,
+                      "bedrooms": 2,
+                      "bathrooms": 1,
+                      "sqft": 1030,
+                      "listed": "2026-09-28T05:00:00.000Z",
+                      "closed": null,
+                      "list_price": 2695,
+                      "sold_price": null,
+                      "photo": "https://www.compass.com/m/c576101c55be811ea86693a6563ea274d44d0f7ecb0a79d8d0d83444044a6ca5/origin.jpg"
+                    }
+                  ],
+                  "closed_sales_total": 253,
+                  "closed_rentals_total": 47,
+                  "closed_sales": [
+                    {
+                      "id": "867388834463620377",
+                      "url": "https://www.compass.com/homedetails/2009-E-13th-St-Austin-TX-78702/1G1Q7Q_pid/",
+                      "address": "2009 East 13th Street",
+                      "city": "Austin",
+                      "state": "TX",
+                      "zip": "78702",
+                      "status": "Closed",
+                      "price": 1850000,
+                      "bedrooms": 4,
+                      "bathrooms": 3,
+                      "sqft": 2428,
+                      "listed": "2021-09-09T05:00:00.000Z",
+                      "closed": "2021-12-10T06:00:00.000Z",
+                      "list_price": 1850000,
+                      "sold_price": 1750000,
+                      "photo": "https://www.compass.com/m/d9b24ec1e664d00bdf44eec32a20ec96564a37e9ada51ef78232735ad12c84f4/origin.jpg"
+                    },
+                    {
+                      "id": "1257240445248805529",
+                      "url": "https://www.compass.com/homedetails/1904-Newning-Ave-Austin-TX-78704/1FXMRU_pid/",
+                      "address": "1904 Newning Avenue",
+                      "city": "Austin",
+                      "state": "TX",
+                      "zip": "78704",
+                      "status": "Closed",
+                      "price": 1795000,
+                      "bedrooms": 3,
+                      "bathrooms": 3,
+                      "sqft": 1946,
+                      "listed": "2023-03-01T06:00:00.000Z",
+                      "closed": "2023-03-31T05:00:00.000Z",
+                      "list_price": 1795000,
+                      "sold_price": 1715000,
+                      "photo": "https://www.compass.com/m/a736b2aed827121a543430879ff7070b9c5cc5eb_img_0_000e0/origin.jpg"
+                    },
+                    "… 16 more"
+                  ],
+                  "closed_rentals": [
+                    {
+                      "id": "1991856173841590665",
+                      "url": "https://www.compass.com/homedetails/5001-Shoal-Creek-Blvd-Austin-TX-78756/1991856173841590665_lid/",
+                      "address": "5001 Shoal Creek Boulevard",
+                      "city": "Austin",
+                      "state": "TX",
+                      "zip": "78756",
+                      "status": "Closed",
+                      "price": 6750,
+                      "bedrooms": 4,
+                      "bathrooms": 4,
+                      "sqft": 3456,
+                      "listed": "2025-12-08T06:00:00.000Z",
+                      "closed": "2026-01-19T06:00:00.000Z",
+                      "list_price": 6750,
+                      "sold_price": 6750,
+                      "photo": "https://www.compass.com/m/53adbca981afb623f95635f3af58800d8b58bd95_img_0_3f3ee/origin.jpg"
+                    },
+                    {
+                      "id": "1048852119991202385",
+                      "url": "https://www.compass.com/homedetails/1309-Palo-Duro-Rd-Unit-1-Austin-TX-78756/1048852119991202385_lid/",
+                      "address": "1309 Palo Duro Road, Unit 1",
+                      "city": "Austin",
+                      "state": "TX",
+                      "zip": "78756",
+                      "status": "Closed",
+                      "price": 5500,
+                      "bedrooms": 4,
+                      "bathrooms": 3,
+                      "sqft": 2095,
+                      "listed": "2022-05-17T05:00:00.000Z",
+                      "closed": "2022-09-16T05:00:00.000Z",
+                      "list_price": 6000,
+                      "sold_price": 5500,
+                      "photo": "https://www.compass.com/m/bd8aa610c70c3373a93809e876eb290523f11c7f_img_0_c7235/origin.jpg"
+                    },
+                    "… 16 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/compass/v1/listing": {
+      "get": {
+        "operationId": "compassListing",
+        "summary": "Compass home details",
+        "description": "One home on Compass: ids, status, price, price per sq ft, last sold price, address, neighborhood, coordinates, beds, baths, size, lot, stories, property type, year built, description, amenities, key details (taxes, HOA, days on market, MLS type...), listing details, pet policy, outdoor space, parking, view, tax assessment, nearby schools with grades and ratings, parcel number, every photo, listed and updated dates, status and price history, and the listing agents (name, role, company, phone, email, profile), plus `raw`. `latest=true` takes the first result of a search instead of a link.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/compass-listing",
+        "tags": [
+          "Compass"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": false,
+            "description": "A compass.com /homedetails/... link (url of a search result).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://www.compass.com/homedetails/1011-Brodie-St-Unit-14-Austin-TX-78704/1F40XY_pid/"
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "Use the first result of a search (pass the search params, e.g. location).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "2184922358551059729",
+                  "property_id": "53614517492699280",
+                  "url": "https://www.compass.com/homedetails/810-W-Johanna-St-Austin-TX-78704/1F6N32_pid/",
+                  "status": "Coming Soon",
+                  "mls_status": "Coming Soon",
+                  "price": 2495000,
+                  "price_per_sqft": 795,
+                  "last_sold_price": 515000,
+                  "currency": "USD",
+                  "address": "810 West Johanna Street",
+                  "unit": null,
+                  "city": "Austin",
+                  "state": "TX",
+                  "zip": "78704",
+                  "neighborhood": "Bouldin Creek",
+                  "latitude": 30.2470462,
+                  "longitude": -97.76040909999999,
+                  "bedrooms": 5,
+                  "bathrooms": 3,
+                  "full_bathrooms": 3,
+                  "half_bathrooms": 0,
+                  "sqft": 3138,
+                  "lot_sqft": 7826,
+                  "lot_size": "0.18 AC / 7,826 SF",
+                  "stories": null,
+                  "property_type": "Single Family",
+                  "year_built": 1930,
+                  "description": "The quintessential Bouldin experience, where timeless Craftsman charm meets the scale and function of modern construction. Originally constr…",
+                  "amenities": [
+                    "Central AC",
+                    "Central Heating",
+                    "… 9 more"
+                  ],
+                  "key_details": [
+                    {
+                      "name": "Status",
+                      "value": "Coming Soon"
+                    },
+                    {
+                      "name": "Days on Market",
+                      "value": "-"
+                    },
+                    "… 20 more"
+                  ],
+                  "listing_details": [
+                    {
+                      "name": "Key Details",
+                      "subCategories": [
+                        {
+                          "name": "Key Details",
+                          "fields": [
+                            {
+                              "…": "2 fields"
+                            },
+                            {
+                              "…": "2 fields"
+                            },
+                            "… 9 more"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "General Information",
+                      "subCategories": [
+                        {
+                          "name": "Parking",
+                          "fields": [
+                            {
+                              "…": "2 fields"
+                            },
+                            {
+                              "…": "2 fields"
+                            },
+                            "… 1 more"
+                          ]
+                        },
+                        {
+                          "name": "Interior",
+                          "fields": [
+                            {
+                              "…": "2 fields"
+                            }
+                          ]
+                        },
+                        "… 1 more"
+                      ]
+                    }
+                  ],
+                  "pet_policy": null,
+                  "outdoor_space": null,
+                  "parking": [
+                    "Additional Parking",
+                    "Alley Access"
+                  ],
+                  "garage_spaces": 1,
+                  "view": [
+                    "Views: None"
+                  ],
+                  "tax_assessment": {
+                    "assessorInfo": {
+                      "title": "Assessor Information",
+                      "propertyTax": {
+                        "taxYear": "2025",
+                        "tax": "$24,767",
+                        "dateUpdated": 1761868800000,
+                        "monthlyTax": "$2,064"
+                      },
+                      "assessment": {
+                        "title": "Taxable Value",
+                        "landValue": 600418,
+                        "additionsValue": 704579,
+                        "year": "2026",
+                        "previousValue": "$1,414,963",
+                        "dateUpdated": 1761868800000
+                      },
+                      "appraisal": {
+                        "title": "Appraisal",
+                        "landValue": 600418,
+                        "additionsValue": 704579,
+                        "year": "2026"
+                      },
+                      "market": {
+                        "title": "Market",
+                        "landValue": 1304997,
+                        "additionsValue": 704579
+                      }
+                    },
+                    "categories": [
+                      {
+                        "name": "Home Facts",
+                        "subCategories": [
+                          {
+                            "…": "1 fields"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "schools": [
+                    {
+                      "name": "Becker Elementary School",
+                      "grades": "PK-5",
+                      "types": [
+                        "Public"
+                      ],
+                      "rating": 8,
+                      "distance_miles": 0.24,
+                      "url": "https://www.greatschools.org/texas/austin/525-Becker-Elementary-School/"
+                    },
+                    {
+                      "name": "Lively Middle School",
+                      "grades": "6-8",
+                      "types": [
+                        "Public"
+                      ],
+                      "rating": 4,
+                      "distance_miles": 0.64,
+                      "url": "https://www.greatschools.org/texas/austin/542-Fulmore-Middle-School/"
+                    },
+                    "… 19 more"
+                  ],
+                  "parcel_number": "302825",
+                  "photos": [
+                    "https://www.compass.com/m/0/ce1f1f5e-7f0a-4343-8ae7-609c053909bf/origin.jpg",
+                    "https://www.compass.com/m/0/4c9733fd-3c78-440b-ba4e-250b0317482b/origin.jpg",
+                    "… 29 more"
+                  ],
+                  "…": "10 more fields",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/compass/v1/search": {
+      "get": {
+        "operationId": "compassSearch",
+        "summary": "Compass home search",
+        "description": "Homes for sale, for rent or recently sold on Compass in a US city or neighborhood, with the site's filters: price, beds, baths, size, year built, HOA, days on market, property type, features (pool, garage, waterfront, doorman, elevator, washer in unit, outdoor space, air conditioning, basement, accessible) and keywords, plus sort. Each result has the listing id, link, price, address, beds, baths, size, lot, property type, status, badges (e.g. coming soon), coordinates and photos. `total` is the site's match count. 41 per page; pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/compass-search",
+        "tags": [
+          "Compass"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "description": "City or neighborhood: a Compass place slug such as austin-tx, manhattan-ny or bouldin-creek-austin-tx, a compass.com search link, or a name such as \"Austin, TX\".",
+            "schema": {
+              "type": "string"
+            },
+            "example": "austin-tx"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Listing status (sold: the last 90 days).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "for_sale",
+                "rent",
+                "sold"
+              ]
+            },
+            "example": "for_sale"
+          },
+          {
+            "name": "property_type",
+            "in": "query",
+            "required": false,
+            "description": "Property type.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "single_family",
+                "condo",
+                "townhouse",
+                "co_op",
+                "multi_family",
+                "land",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum price (USD).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum price (USD).",
+            "schema": {
+              "type": "number"
+            },
+            "example": "900000"
+          },
+          {
+            "name": "beds_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum bedrooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "beds_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum bedrooms.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "baths_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum bathrooms.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "baths_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum bathrooms.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sqft_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum size (sq ft).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sqft_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum size (sq ft).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "year_built_min",
+            "in": "query",
+            "required": false,
+            "description": "Built in or after this year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "year_built_max",
+            "in": "query",
+            "required": false,
+            "description": "Built in or before this year.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "hoa_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum monthly HOA fee (USD).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "days_on_market_max",
+            "in": "query",
+            "required": false,
+            "description": "Listed within this many days.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "features",
+            "in": "query",
+            "required": false,
+            "description": "Required features, comma list: pool, garage, waterfront, doorman, elevator, washer_in_unit, outdoor_space, air_conditioning, basement, accessible.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "required": false,
+            "description": "Keywords in the listing.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Sort order.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_desc",
+                "price_asc",
+                "newest",
+                "sqft_desc",
+                "sqft_asc"
+              ]
+            },
+            "example": "relevance"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Result page (1 = first).",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "location": "austin-tx",
+                  "locations": [
+                    {
+                      "id": 42626,
+                      "name": "Austin",
+                      "type": 1,
+                      "slug": "austin-tx"
+                    }
+                  ],
+                  "status": "for_sale",
+                  "sort": "relevance",
+                  "search_url": "https://www.compass.com/homes-for-sale/austin-tx/price.max=900000/",
+                  "total": 3950,
+                  "page": 1,
+                  "page_size": 41,
+                  "count": 41,
+                  "next_page": 2,
+                  "applied_filters": {
+                    "price_max": 900000
+                  },
+                  "results": [
+                    {
+                      "id": "2155640660692399401",
+                      "url": "https://www.compass.com/homedetails/1011-Brodie-St-Unit-14-Austin-TX-78704/1F40XY_pid/",
+                      "price": 650000,
+                      "price_text": "$650,000",
+                      "currency": "USD",
+                      "address": "1011 Brodie Street, Unit 14, Austin, TX 78704",
+                      "bedrooms": 3,
+                      "bathrooms": 2,
+                      "sqft": 1362,
+                      "lot_acres": 0.1,
+                      "lot_size": "0.10 AC / 4,181 SF",
+                      "property_type": "Single Family",
+                      "status": "coming soon",
+                      "status_code": 14,
+                      "badges": [
+                        "See It First",
+                        "Compass Coming Soon"
+                      ],
+                      "latitude": 30.246848,
+                      "longitude": -97.7640244,
+                      "photos": [
+                        "https://www.compass.com/m/0/9e33bd21-dd70-40ee-99cb-6318cb44157c/origin.jpg",
+                        "https://www.compass.com/m/0/6cfc35d6-3ccf-4872-94ae-68b453a9a526/origin.jpg",
+                        "… 23 more"
+                      ]
+                    },
+                    {
+                      "id": "2185745219172425673",
+                      "url": "https://www.compass.com/homedetails/2411-Little-John-Ln-Austin-TX-78704/1G5402_pid/",
+                      "price": 899000,
+                      "price_text": "$899,000",
+                      "currency": "USD",
+                      "address": "2411 Little John Lane, Austin, TX 78704",
+                      "bedrooms": 3,
+                      "bathrooms": 3,
+                      "sqft": 1641,
+                      "lot_acres": 0.19,
+                      "lot_size": "0.19 AC / 8,272 SF",
+                      "property_type": "Single Family",
+                      "status": "coming soon",
+                      "status_code": 14,
+                      "badges": [
+                        "See It First",
+                        "Compass Coming Soon"
+                      ],
+                      "latitude": 30.2356234,
+                      "longitude": -97.74831209999999,
+                      "photos": [
+                        "https://www.compass.com/m/0/60b98b43-fe7e-4d52-8ca9-5b20890c0093/origin.jpg",
+                        "https://www.compass.com/m/0/162d1531-2ed2-44c9-b5d9-e5893db9b965/origin.jpg",
+                        "… 26 more"
+                      ]
+                    },
+                    "… 39 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

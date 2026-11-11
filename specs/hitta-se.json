@@ -1,0 +1,1396 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Hitta.se",
+    "version": "1.0.0",
+    "description": "The Hitta.se API from API.SH: public Hitta.se data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Hitta.se",
+      "description": "6 endpoints (jobs & b2b)",
+      "x-slug": "hitta-se",
+      "x-domains": [
+        "hitta.se"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hitta/v1/business": {
+      "get": {
+        "operationId": "hittaBusiness",
+        "summary": "Hitta.se business",
+        "description": "One business: name, legal name, business type, category, description, website, phone, email, social links, logo, address and position, founding date, employees, revenue, rating, opening hours, latest reviews, and company register data (organisation and VAT number, legal form, F-tax and VAT registration, industry codes, business description, signatory rule, annual figures by year, board members with name, roles and the site's person key, other listings of the company), and the listing's extras as the listing shows them (registered vehicles with count, latest purchase date and make/model year list, customer-reference e-mail, every listing attribute).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hitta-business",
+        "tags": [
+          "Hitta.se"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Business id or hitta.se/verksamhet/... link, e.g. `fagbfnnt`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "fagbfnnt"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "fagbfnnt",
+                  "name": "Pizzeria Gyllenstiernan",
+                  "url": "https://www.hitta.se/verksamhet/fagbfnnt",
+                  "legal_name": "pizzeria gyllenstiernan ab",
+                  "business_type": "Aktiebolag",
+                  "category": "Libanesiska restauranger",
+                  "description": "I dagens lunch 89:- ingår dricka, salladsbord samt kaffe. Välkommen in för att prova pizza, pasta, sallad, kebab eller falafel ur vår meny. …",
+                  "website": "http://www.pizzeriagyllenstiernan.com",
+                  "phone": "+1 555 010 0000",
+                  "email": "name@example.com",
+                  "social": [
+                    "https://www.facebook.com/Pizzeriagyllenstiernan/"
+                  ],
+                  "logo": "https://cdn.hitta.se/products/images/InfoTextDeluxe/gyllenstiernan2_Il.jpg",
+                  "address": {
+                    "street": "Gyllenstiernsgatan 3",
+                    "zipcode": "11526",
+                    "city": "Stockholm",
+                    "region": "Stockholms län",
+                    "country": "SE"
+                  },
+                  "lat": 59.33639707393239,
+                  "lng": 18.099435907866017,
+                  "founded": "2015-06-11",
+                  "employees": 3,
+                  "annual_revenue_ksek": 2882,
+                  "rating": 4.5,
+                  "rating_count": 4,
+                  "review_count": 3,
+                  "opening_hours": [
+                    {
+                      "day": "Monday",
+                      "opens": "10:30",
+                      "closes": "21:00"
+                    },
+                    {
+                      "day": "Tuesday",
+                      "opens": "10:30",
+                      "closes": "21:00"
+                    },
+                    "… 5 more"
+                  ],
+                  "reviews": [
+                    {
+                      "author": "Olof S.",
+                      "rating": 3,
+                      "text": "Helt okej pizza, men långt kvar till toppbetyg. Ligger närmare två stjärnor, sorry.",
+                      "date": "2023-05-06"
+                    },
+                    {
+                      "author": "Lars G.",
+                      "rating": 5,
+                      "text": "Världens bästa pizzeria. Jag jobbar absolut inte på denna pizzeria",
+                      "date": "2023-03-04"
+                    },
+                    "… 1 more"
+                  ],
+                  "company": {
+                    "legal_name": "Pizzeria Gyllenstiernan AB",
+                    "org_number": "5590171905",
+                    "vat_number": "SE559017190501",
+                    "legal_form": "Aktiebolag",
+                    "established": "2015-06-11",
+                    "tax_status": "Registrerad för F-skatt",
+                    "vat_status": "Registrerad i momsregistret",
+                    "f_tax_registered": true,
+                    "vat_registered": true,
+                    "industry_codes": [
+                      {
+                        "code": 56110,
+                        "name": "Restaurangverksamhet"
+                      }
+                    ],
+                    "business_description": "Bolaget ska bedriva pizzeria och restaurangverksamhet samt därmed förenlig verksamhet.",
+                    "signatory": [
+                      "Firman tecknas av styrelsen"
+                    ],
+                    "summary": "Pizzeria Gyllenstiernan AB är ett mindre aktiebolag med 3 anställda. Senaste räkenskapsåret gjordes en förlust på 33 TKR. Det sitter fler mä…",
+                    "employees": 3,
+                    "turnover_ksek": 2882,
+                    "profit_ksek": -33,
+                    "turnover_year": 2025,
+                    "part_of_group": false,
+                    "parent_company": null,
+                    "annual_reports": [
+                      "2025-12",
+                      "2024-12",
+                      "… 9 more"
+                    ],
+                    "board": [
+                      {
+                        "name": "Ali Abood Flefil",
+                        "roles": [
+                          "Styrelseledamot"
+                        ],
+                        "board_member": true,
+                        "executive": false,
+                        "accountant": false,
+                        "since": "2024-03-19"
+                      },
+                      {
+                        "name": "Daniel Migdal Flefil",
+                        "roles": [
+                          "Styrelsesuppleant"
+                        ],
+                        "board_member": true,
+                        "executive": false,
+                        "accountant": false,
+                        "since": "2024-03-19"
+                      }
+                    ],
+                    "board_summary": {
+                      "members": 2
+                    },
+                    "figures": [
+                      {
+                        "period": "2025-12",
+                        "turnover": 2882,
+                        "operPftIncLoss": -34,
+                        "profit": -33,
+                        "netpl": -33,
+                        "lAsset": 0,
+                        "cAsset": 364,
+                        "assets": 364,
+                        "shareholdersEQ": 205,
+                        "untaxedReserves": 0,
+                        "provisions": 0,
+                        "totLongTermLiab": 0,
+                        "totCurrLiab": 159,
+                        "balSheetTot": 364,
+                        "emoluments": 0,
+                        "tantiem": 0,
+                        "salariesOthers": 0,
+                        "resultSalaries": 0,
+                        "socCost": 0,
+                        "divdwtdl": 0,
+                        "employees": 3,
+                        "inventory": 50,
+                        "turnoverPerEmployee": 960.6666666666666,
+                        "costPerEmployee": 0,
+                        "profitMargin": -0.01179736294240111,
+                        "solidity": 0.5631868131868132,
+                        "quickRatio": 1.9748427672955975
+                      },
+                      {
+                        "period": "2024-12",
+                        "turnover": 2934,
+                        "operPftIncLoss": 71,
+                        "profit": 72,
+                        "netpl": 57,
+                        "lAsset": 0,
+                        "cAsset": 416,
+                        "assets": 416,
+                        "shareholdersEQ": 238,
+                        "untaxedReserves": 0,
+                        "provisions": 0,
+                        "totLongTermLiab": 0,
+                        "totCurrLiab": 178,
+                        "balSheetTot": 416,
+                        "emoluments": 0,
+                        "tantiem": 0,
+                        "salariesOthers": 0,
+                        "resultSalaries": 0,
+                        "socCost": 0,
+                        "divdwtdl": 0,
+                        "employees": 3,
+                        "inventory": 96,
+                        "turnoverPerEmployee": 978,
+                        "costPerEmployee": 0,
+                        "profitMargin": 0.02419904567143831,
+                        "solidity": 0.5721153846153846,
+                        "quickRatio": 1.797752808988764
+                      },
+                      "… 1 more"
+                    ],
+                    "listings": [
+                      {
+                        "id": "fagbfnnt",
+                        "name": "Pizzeria Gyllenstiernan",
+                        "city": "Stockholm"
+                      }
+                    ]
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hitta/v1/person": {
+      "get": {
+        "operationId": "hittaPerson",
+        "summary": "Person details on Hitta.se",
+        "description": "One person's page on Hitta.se: name, age, gender, birth year, full address, phone numbers, household information, vehicle registrations and coordinates.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hitta-person",
+        "tags": [
+          "Hitta.se"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A person id (e.g. abc123def) or a hitta.se/person/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "abc123def"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hitta/v1/person-search": {
+      "get": {
+        "operationId": "hittaPersonSearch",
+        "summary": "Person search on Hitta.se",
+        "description": "Search for people on Hitta.se by name and optionally location. Returns name, age, gender, address, phone numbers and coordinates. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hitta-person-search",
+        "tags": [
+          "Hitta.se"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "A person's name.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Svensson"
+          },
+          {
+            "name": "where",
+            "in": "query",
+            "required": false,
+            "description": "A place in Sweden (city, district).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Stockholm"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": "1"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hitta/v1/reviews": {
+      "get": {
+        "operationId": "hittaReviews",
+        "summary": "Hitta.se business reviews",
+        "description": "A business's reviews: reviewer (first name and initial), rating, text and date, with the average rating and counts. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hitta-reviews",
+        "tags": [
+          "Hitta.se"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Business id or hitta.se/verksamhet/... link, e.g. `fagbfnnt`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "fagbfnnt"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1-500 (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page, 1-50 (default 20).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "fagbfnnt",
+                  "page": 1,
+                  "limit": 20,
+                  "average_rating": 4.5,
+                  "total_ratings": 4,
+                  "total_reviews": 3,
+                  "count": 3,
+                  "next_page": null,
+                  "reviews": [
+                    {
+                      "id": "645672ec4c034100010a2cb1",
+                      "author": "Olof S.",
+                      "rating": 3,
+                      "text": "Helt okej pizza, men långt kvar till toppbetyg. Ligger närmare två stjärnor, sorry.",
+                      "date": "2023-05-06T15:31:56.000Z",
+                      "source": "hitta",
+                      "owner_reply": null
+                    },
+                    {
+                      "id": "64031018a843fe0001a5cda5",
+                      "author": "Lars G.",
+                      "rating": 5,
+                      "text": "Världens bästa pizzeria. Jag jobbar absolut inte på denna pizzeria",
+                      "date": "2023-03-04T09:32:08.000Z",
+                      "source": "hitta",
+                      "owner_reply": null
+                    },
+                    "… 1 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hitta/v1/search": {
+      "get": {
+        "operationId": "hittaSearch",
+        "summary": "Hitta.se business search",
+        "description": "Search Swedish businesses on Hitta.se: name, link, phone numbers, email, categories, street address, postcode, city, district, municipality, county, position, rating and review count, number of offices and products. Add a place with `where` (e.g. `Stockholm`); without one the whole of Sweden is searched. 25 per page; `total` is the number of matches. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hitta-search",
+        "tags": [
+          "Hitta.se"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Business name, trade or product, e.g. `pizza`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "pizza"
+          },
+          {
+            "name": "where",
+            "in": "query",
+            "required": false,
+            "description": "City, town or area, e.g. `Stockholm`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Stockholm"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1-40 (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "pizza",
+                  "where": null,
+                  "nationwide": true,
+                  "page": 1,
+                  "total": 1311,
+                  "count": 25,
+                  "next_page": 2,
+                  "industry_category": "pizza",
+                  "related_products": [
+                    "konferans",
+                    "sallader",
+                    "… 2 more"
+                  ],
+                  "results": [
+                    {
+                      "id": "msbdfhan",
+                      "name": "Helenas Pizzabutik",
+                      "url": "https://www.hitta.se/verksamhet/helenas-pizzabutik-msbdfhan",
+                      "phones": [
+                        {
+                          "label": "Tel",
+                          "number": "+1 555 010 0000",
+                          "display": "0660-830 54"
+                        }
+                      ],
+                      "email": null,
+                      "categories": [
+                        "Restaurang, Mat & Dryck"
+                      ],
+                      "category_group": null,
+                      "address": "storgatan 29",
+                      "zip_city": "89134 Örnsköldsvik",
+                      "street": "storgatan",
+                      "street_number": "29",
+                      "zipcode": "89134",
+                      "city": "Örnsköldsvik",
+                      "district": "Örnsköldsvik",
+                      "municipality": "Örnsköldsvik",
+                      "county": "Västernorrlands län",
+                      "lat": 63.29318454085661,
+                      "lng": 18.71387410882341,
+                      "distance_m": null,
+                      "rating": 3.88,
+                      "review_count": 8,
+                      "offices": 1,
+                      "paying_customer": false,
+                      "products": []
+                    },
+                    {
+                      "id": "msudakou",
+                      "name": "Kebabnekajse",
+                      "url": "https://www.hitta.se/verksamhet/kebabnekajse-msudakou",
+                      "phones": [
+                        {
+                          "label": "Tel",
+                          "number": "+1 555 010 0000",
+                          "display": "090-77 44 44"
+                        }
+                      ],
+                      "email": "name@example.com",
+                      "categories": [
+                        "Restaurang, Mat & Dryck"
+                      ],
+                      "category_group": "EAT",
+                      "address": "Östra Norrlandsgatan 57",
+                      "zip_city": "90331 Umeå",
+                      "street": "Östra Norrlandsgatan",
+                      "street_number": "57",
+                      "zipcode": "90331",
+                      "city": "Umeå",
+                      "district": "Umeå Stadsdistrikt",
+                      "municipality": "Umeå",
+                      "county": "Västerbottens län",
+                      "lat": 63.82534114491028,
+                      "lng": 20.28311763026148,
+                      "distance_m": null,
+                      "rating": null,
+                      "review_count": null,
+                      "offices": 1,
+                      "paying_customer": false,
+                      "products": []
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/hitta/v1/top-list": {
+      "get": {
+        "operationId": "hittaTopList",
+        "summary": "Top lists on Hitta.se",
+        "description": "Sweden's top lists (richest, highest income, etc.) from Hitta.se, optionally filtered by location.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/hitta-top-list",
+        "tags": [
+          "Hitta.se"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "where",
+            "in": "query",
+            "required": false,
+            "description": "A place in Sweden to filter the top lists (e.g. Stockholm).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

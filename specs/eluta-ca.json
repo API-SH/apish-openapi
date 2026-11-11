@@ -1,0 +1,1182 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Eluta.ca",
+    "version": "1.0.0",
+    "description": "The Eluta.ca API from API.SH: public Eluta.ca data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Eluta.ca",
+      "description": "3 endpoints (jobs & b2b)",
+      "x-slug": "eluta-ca",
+      "x-domains": [
+        "eluta.ca"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/eluta/v1/employer/jobs": {
+      "get": {
+        "operationId": "elutaEmployerJobs",
+        "summary": "Eluta.ca employer jobs",
+        "description": "Every job Eluta.ca lists for one employer, with the search filters (sort, remote, salary, job level, category, radius). Each job: `id`, `title`, `url`, `employer`, `employer_url`, `top_employer` (and its review link), `location`, `salary` with `salary_min`/`salary_max`/`salary_period` when the ad shows pay, `snippet`, `last_seen` (when the site last found the ad), `source` (the employer site the ad was read from) and `apply_url`. `total` is the employer's job count. Pass `next_page` back as `page`; null on the last page. Unknown employers answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/eluta-employer-jobs",
+        "tags": [
+          "Eluta.ca"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "employer",
+            "in": "query",
+            "required": true,
+            "description": "The employer's eluta.ca/jobs-at-<employer> link (`employer_url` in search results) or the part after `jobs-at-`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "atkinsréalis"
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Kilometres around `location` (the site's default is 50).",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                "5",
+                "10",
+                "25",
+                "50",
+                "100",
+                "200"
+              ]
+            }
+          },
+          {
+            "name": "remote",
+            "in": "query",
+            "required": false,
+            "description": "`only`: remote jobs; `onsite`: on-site jobs.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "only",
+                "onsite"
+              ]
+            }
+          },
+          {
+            "name": "salary_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum yearly salary in CAD.",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                "40000",
+                "60000",
+                "80000",
+                "100000",
+                "120000",
+                "140000"
+              ]
+            }
+          },
+          {
+            "name": "job_type",
+            "in": "query",
+            "required": false,
+            "description": "Job level or type.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full_time",
+                "part_time",
+                "entry_level",
+                "internship",
+                "seasonal"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "A category as listed in `refine.categories`, e.g. `Engineering - Civil`, `Computing - Software & Web Development`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default `relevance`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "date",
+                "popularity",
+                "distance"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1-100 (10 jobs a page). Pass `next_page` back; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "employer": "AtkinsRéalis Canada",
+                  "url": "https://www.eluta.ca/jobs-at-atkinsr%C3%A9alis",
+                  "applied_filters": {},
+                  "total": 727,
+                  "total_is_estimate": false,
+                  "page": 1,
+                  "count": 10,
+                  "next_page": 2,
+                  "jobs": [
+                    {
+                      "id": "c94aa75919789b9502805720e808fb77",
+                      "title": "New Graduate, Geotechnical Engineering",
+                      "url": "https://www.eluta.ca/spl/new-graduate-geotechnical-engineering-c94aa75919789b9502805720e808fb77",
+                      "employer": "AtkinsRéalis Canada Inc.",
+                      "employer_url": null,
+                      "top_employer": true,
+                      "top_employer_url": "https://reviews.canadastop100.com/top-employer-atkinsréalis",
+                      "location": "Toronto ON",
+                      "salary": "$61,900 - $80,000",
+                      "salary_min": 61900,
+                      "salary_max": 80000,
+                      "salary_period": "year",
+                      "snippet": "Job Description Overview Kickstart your career with our Odyssey Program! Please note that this job posting is intended for you to express yo…",
+                      "last_seen": "1 hour ago",
+                      "source": "slihrms.wd3.myworkdayjobs.com",
+                      "apply_url": "https://www.eluta.ca/direct/i?i=c94aa75919789b9502805720e808fb77"
+                    },
+                    {
+                      "id": "7ddbb965993ac671ad8f3f76506b92be",
+                      "title": "Manager, Alberta, Electrical",
+                      "url": "https://www.eluta.ca/spl/manager-alberta-electrical-7ddbb965993ac671ad8f3f76506b92be",
+                      "employer": "AtkinsRéalis Canada Inc.",
+                      "employer_url": null,
+                      "top_employer": true,
+                      "top_employer_url": "https://reviews.canadastop100.com/top-employer-atkinsréalis",
+                      "location": "Calgary AB",
+                      "salary": null,
+                      "salary_min": null,
+                      "salary_max": null,
+                      "salary_period": null,
+                      "snippet": "Job Description Overview AtkinsRéalis is growing and our Western Canadian Engineering group is seeking a client-facing Electrical Engineerin…",
+                      "last_seen": "1 hour ago",
+                      "source": "slihrms.wd3.myworkdayjobs.com",
+                      "apply_url": "https://www.eluta.ca/direct/i?i=7ddbb965993ac671ad8f3f76506b92be"
+                    },
+                    "… 8 more"
+                  ],
+                  "refine": {
+                    "categories": [
+                      "Trades/Technicians",
+                      "Engineering - Civil",
+                      "… 10 more"
+                    ],
+                    "job_levels": [
+                      {
+                        "filter": "etype",
+                        "value": 1,
+                        "name": "Full-time",
+                        "count": 723
+                      },
+                      {
+                        "filter": "etype",
+                        "value": 2,
+                        "name": "Part-time",
+                        "count": 4
+                      },
+                      "… 2 more"
+                    ],
+                    "locations": []
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/eluta/v1/job": {
+      "get": {
+        "operationId": "elutaJob",
+        "summary": "Eluta.ca job ad",
+        "description": "One job ad on Eluta.ca: title, employer with its short description and jobs link, location, contract (full-time, part-time…), salary when shown, the full description (text and HTML), the employer's Canada's Top Employers awards and the apply link (it opens the ad on the employer's site). `latest=true` with search parameters returns the first matching ad. Removed ads answer 404.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/eluta-job",
+        "tags": [
+          "Eluta.ca"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "description": "Job `id` from search (32 characters) or its eluta.ca/spl/... link.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "required": false,
+            "description": "`true`: the first ad of a search with `q`/`location` instead of an `id`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "With `latest=true`: keywords.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "With `latest=true`: city and province.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "e64c1ab6082211e10d72699c767214f7",
+                  "title": "Engineering Manager, Reactor Engineering",
+                  "url": "https://www.eluta.ca/spl/engineering-manager-reactor-engineering-e64c1ab6082211e10d72699c767214f7",
+                  "employer": "AtkinsRéalis Canada Inc.",
+                  "employer_url": "https://www.eluta.ca/jobs-at-atkinsr%C3%A9alis",
+                  "employer_summary": "AtkinsRéalis Canada Inc. is one of Canada's largest engineering and construction firms, with offices across Canada and countries worldwide.",
+                  "location": "Pickering ON",
+                  "contract": "full-time",
+                  "salary": null,
+                  "description": "Job Description\n\nOverview\n\nAtkinsRéalis is one of Canada's largest private sector nuclear engineering groups. We have been providing a wide …",
+                  "description_html": "<h4>\n Job Description\n</h4>\n<h3>\n Overview\n</h3>\n<p>\n AtkinsR&eacute;alis is one of Canada's largest private sector nuclear engineering grou…",
+                  "top_employer_awards": [
+                    "https://www.canadastop100.com/montreal"
+                  ],
+                  "apply_url": "https://www.eluta.ca/direct/i?i=e64c1ab6082211e10d72699c767214f7",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/eluta/v1/search": {
+      "get": {
+        "operationId": "elutaSearch",
+        "summary": "Eluta.ca job search",
+        "description": "Jobs on Eluta.ca, the Canadian job search engine that lists jobs from employers' own career sites, for a keyword and/or location, with every filter of the site: radius, remote or on-site, minimum salary, job level, Canada's Top Employers lists, category and sort. Each job: `id`, `title`, `url`, `employer`, `employer_url`, `top_employer` (and its review link), `location`, `salary` with `salary_min`/`salary_max`/`salary_period` when the ad shows pay, `snippet`, `last_seen` (when the site last found the ad), `source` (the employer site the ad was read from) and `apply_url`. `total` is the site's count (`total_is_estimate` when it shows 10000+); `refine` lists the categories, job levels (with counts) offered for this search. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/eluta-search",
+        "tags": [
+          "Eluta.ca"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Keywords, e.g. `engineer`, `nurse`. Required unless `location` is given.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "engineer"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "description": "City and province, e.g. `Toronto ON`, `Vancouver BC`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Toronto ON"
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "description": "Kilometres around `location` (the site's default is 50).",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                "5",
+                "10",
+                "25",
+                "50",
+                "100",
+                "200"
+              ]
+            }
+          },
+          {
+            "name": "remote",
+            "in": "query",
+            "required": false,
+            "description": "`only`: remote jobs; `onsite`: on-site jobs.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "only",
+                "onsite"
+              ]
+            }
+          },
+          {
+            "name": "salary_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum yearly salary in CAD.",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                "40000",
+                "60000",
+                "80000",
+                "100000",
+                "120000",
+                "140000"
+              ]
+            }
+          },
+          {
+            "name": "job_type",
+            "in": "query",
+            "required": false,
+            "description": "Job level or type.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "full_time",
+                "part_time",
+                "entry_level",
+                "internship",
+                "seasonal"
+              ]
+            }
+          },
+          {
+            "name": "top_employer",
+            "in": "query",
+            "required": false,
+            "description": "Only employers on one of the Canada's Top Employers lists.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "top100",
+                "over40",
+                "greenest",
+                "family_friendly",
+                "young_people",
+                "small_medium",
+                "diversity",
+                "greater_toronto",
+                "southwestern_ontario"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "A category as listed in `refine.categories`, e.g. `Engineering - Civil`, `Computing - Software & Web Development`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default `relevance`).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "date",
+                "popularity",
+                "distance"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1-100 (10 jobs a page). Pass `next_page` back; null on the last page.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "q": "engineer",
+                  "location": "Toronto ON",
+                  "applied_filters": {},
+                  "url": "https://www.eluta.ca/search?q=engineer+location%3A%22Toronto+ON%22&salary_type=1&collapsed=True",
+                  "total": 9055,
+                  "total_is_estimate": false,
+                  "page": 1,
+                  "count": 10,
+                  "next_page": 2,
+                  "jobs": [
+                    {
+                      "id": "e64c1ab6082211e10d72699c767214f7",
+                      "title": "Engineering Manager, Reactor Engineering",
+                      "url": "https://www.eluta.ca/spl/engineering-manager-reactor-engineering-e64c1ab6082211e10d72699c767214f7",
+                      "employer": "AtkinsRéalis Canada Inc.",
+                      "employer_url": "https://www.eluta.ca/jobs-at-atkinsr%C3%A9alis",
+                      "top_employer": true,
+                      "top_employer_url": "https://reviews.canadastop100.com/top-employer-atkinsréalis",
+                      "location": "Pickering, ON",
+                      "salary": null,
+                      "salary_min": null,
+                      "salary_max": null,
+                      "salary_period": null,
+                      "snippet": "... engineering groups. We have been providing a wide range of services to the nuclear industry in Canada and around the world since for mor…",
+                      "last_seen": "5 hours ago",
+                      "source": "slihrms.wd3.myworkdayjobs.com",
+                      "apply_url": "https://www.eluta.ca/direct/i?i=e64c1ab6082211e10d72699c767214f7"
+                    },
+                    {
+                      "id": "e4ba0c28bd13a59035789fea76fb1e15",
+                      "title": "Staff Engineer, Site Reliability Engineering",
+                      "url": "https://www.eluta.ca/spl/staff-engineer-site-reliability-engineering-e4ba0c28bd13a59035789fea76fb1e15",
+                      "employer": "General Motors of Canada Company",
+                      "employer_url": "https://www.eluta.ca/jobs-at-general-motors-of-canada",
+                      "top_employer": false,
+                      "top_employer_url": null,
+                      "location": "Markham, ON",
+                      "salary": "$147,000 - $196,600",
+                      "salary_min": 147000,
+                      "salary_max": 196600,
+                      "salary_period": "year",
+                      "snippet": "... Engineer to help make GM's data platforms reliable, observable, operable, and scalable. This is a senior technical leadership role for s…",
+                      "last_seen": "7 hours ago",
+                      "source": "generalmotors.wd5.myworkdayjobs.com",
+                      "apply_url": "https://www.eluta.ca/direct/i?i=e4ba0c28bd13a59035789fea76fb1e15"
+                    },
+                    "… 8 more"
+                  ],
+                  "refine": {
+                    "categories": [
+                      "Computing - Software & Web Development",
+                      "Engineering - Civil",
+                      "… 10 more"
+                    ],
+                    "job_levels": [
+                      {
+                        "filter": "etype",
+                        "value": 1,
+                        "name": "Full-time",
+                        "count": 8764
+                      },
+                      {
+                        "filter": "etype",
+                        "value": 2,
+                        "name": "Part-time",
+                        "count": 291
+                      },
+                      "… 3 more"
+                    ],
+                    "locations": []
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

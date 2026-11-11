@@ -1,0 +1,1442 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Morningstar",
+    "version": "1.0.0",
+    "description": "The Morningstar API from API.SH: public Morningstar data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Morningstar",
+      "description": "5 endpoints (finance & crypto)",
+      "x-slug": "morningstar",
+      "x-domains": [
+        "morningstar.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/morningstar/v1/etf": {
+      "get": {
+        "operationId": "morningstarEtf",
+        "summary": "Morningstar ETF",
+        "description": "An ETF on Morningstar: NAV and 1-day return, total assets, expense ratio, yields, turnover, category, benchmark, inception date, the Morningstar star ratings (overall, 3, 5 and 10 year), the Medalist rating where public, sustainability quintile, and trailing returns (1 day to since inception) for NAV and market price with the category difference, percentile rank and fund count. Also the portfolio date, number of holdings, the top 10 holdings (name, ticker, ISIN, type, sector, country, weight, shares, market value, 1-year return) with their share of assets, and `sector_weights` (equity sectors and, for bond funds, fixed-income sectors: the ETF, its category and its index).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/morningstar-etf",
+        "tags": [
+          "Morningstar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "query",
+            "required": true,
+            "description": "ETF ticker.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "SPY"
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "description": "Morningstar market code. Default arcx, xnas, bats, then xnys.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "ticker": "SPY",
+                  "exchange": "arcx",
+                  "id": "FEUSA00001",
+                  "name": "State Street® SPDR® S&P 500® ETF",
+                  "isin": "US78462F1030",
+                  "url": "https://www.morningstar.com/etfs/arcx/spy/quote",
+                  "currency": "USD",
+                  "nav": 754.5177,
+                  "nav_one_day_return_percent": -0.50479,
+                  "nav_as_of": "2026-11-02",
+                  "category": "US Fund Large Blend",
+                  "asset_type": "EQUITY",
+                  "inception_date": "1993-01-22",
+                  "status": "Open",
+                  "total_assets": 797954749200,
+                  "expense_ratio_percent": 0.09,
+                  "gross_expense_ratio_percent": 0.0945,
+                  "yield_12_month_percent": 1.00355,
+                  "sec_yield_percent": 0.97,
+                  "turnover_percent": 3,
+                  "benchmark": "S&P 500 (TR) (1970)",
+                  "index": "Morningstar US Large TR USD",
+                  "star_rating": 4,
+                  "star_rating_3y": 4,
+                  "star_rating_5y": 4,
+                  "star_rating_10y": 4,
+                  "rating_date": "2026-10-31",
+                  "medalist_rating": null,
+                  "has_medalist_rating": true,
+                  "sustainability_quintile": 3,
+                  "returns_as_of": "2026-11-02",
+                  "trailing_returns_nav_percent": {
+                    "1Day": -0.50479,
+                    "1Week": -1.7497,
+                    "1Month": -2.29647,
+                    "3Month": 0.94173,
+                    "YearToDate": 11.12304,
+                    "1Year": 11.44331,
+                    "3Year": 21.86672,
+                    "5Year": 11.7266,
+                    "10Year": 15.43427,
+                    "15Year": 14.75719,
+                    "SinceInception": 10.75872
+                  },
+                  "trailing_returns_market_percent": {
+                    "1Day": 0.29916,
+                    "1Week": -1.98919,
+                    "1Month": -1.98664,
+                    "3Month": -0.19129,
+                    "YearToDate": 11.48653,
+                    "1Year": 11.58071,
+                    "3Year": 21.63005,
+                    "5Year": 11.66064,
+                    "10Year": 15.52398,
+                    "15Year": 14.64204,
+                    "SinceInception": 10.74376
+                  },
+                  "category_return_difference_percent": {
+                    "1Day": -0.15870999999999996,
+                    "1Week": -0.43613999999999997,
+                    "1Month": -0.7282599999999997,
+                    "3Month": 0.47939,
+                    "YearToDate": 1.0437499999999993,
+                    "1Year": 0.6723700000000008,
+                    "3Year": 2.0154400000000017,
+                    "5Year": 1.6076800000000002,
+                    "10Year": 1.3539499999999993,
+                    "15Year": 1.2382399999999993,
+                    "SinceInception": null
+                  },
+                  "category_rank_percentile": {
+                    "1Day": 64,
+                    "1Week": 66,
+                    "1Month": 55,
+                    "3Month": 37,
+                    "YearToDate": 38,
+                    "1Year": 42,
+                    "3Year": 27,
+                    "5Year": 22,
+                    "10Year": 18,
+                    "15Year": 14,
+                    "SinceInception": null
+                  },
+                  "category_fund_count": {
+                    "1Day": 1404,
+                    "1Week": 1402,
+                    "1Month": 1398,
+                    "3Month": 1386,
+                    "YearToDate": 1343,
+                    "1Year": 1321,
+                    "3Year": 1209,
+                    "5Year": 1123,
+                    "10Year": 901,
+                    "15Year": 682,
+                    "SinceInception": null
+                  },
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/morningstar/v1/fund": {
+      "get": {
+        "operationId": "morningstarFund",
+        "summary": "Morningstar fund",
+        "description": "A mutual fund on Morningstar: NAV and 1-day return, fund size, adjusted and net expense ratio, fee level, share class, Morningstar category, style box, minimum investment, status, TTM yield, turnover, the analyst's one-line summary, the top 10 holdings with weights, values and sectors and `sector_weights` (equity sectors and, for bond funds, fixed-income sectors: the fund, its category and its index). ETFs (type=etf) give the analyst summary and holdings. Medalist and star ratings are subscriber-only and not included. `details=true` adds the security `id` and: `asset_allocation` (US equity, non-US equity, bond, cash, other: net, long and short percent with category and index comparison), `trailing_returns` (1 day to since inception: NAV and market return, difference to category, category rank percentile and fund count), `star_rating` (overall, 3, 5 and 10 years), `risk` (alpha, beta, R-squared, standard deviation and Sharpe ratio over 1 to 15 years for the fund, its category and index where published, plus risk and return versus category) and `management` (advisor, manager count, average and longest manager tenure, current and past managers with start dates).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/morningstar-fund",
+        "tags": [
+          "Morningstar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "query",
+            "required": true,
+            "description": "Fund or ETF ticker.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "VFIAX"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "fund (default) or etf.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fund",
+                "etf"
+              ]
+            },
+            "example": "fund"
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "description": "Morningstar market code. Default xnas for funds; arcx, xnas, then bats for ETFs.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "details",
+            "in": "query",
+            "required": false,
+            "description": "true adds asset allocation, trailing returns, star rating, risk statistics and management (default false).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "ticker": "VFIAX",
+                  "type": "fund",
+                  "exchange": "xnas",
+                  "url": "https://www.morningstar.com/funds/xnas/vfiax/quote",
+                  "name": "Vanguard 500 Index Fund Admiral Shares",
+                  "nav": 698.88,
+                  "one_day_return_percent": null,
+                  "nav_as_of": "Nov 4, 2026, 1:11:06 AM",
+                  "fund_size": 1700000000000,
+                  "adjusted_expense_ratio": 0.04,
+                  "net_expense_ratio": 0.04,
+                  "prospectus_expense_ratio": null,
+                  "fee_level": "Low",
+                  "share_class": "Institutional",
+                  "category": "Large Blend",
+                  "style_box": "Large Blend",
+                  "minimum_initial_investment": 3000,
+                  "status": "Open",
+                  "ttm_yield": 1.06,
+                  "turnover_ratio": 2,
+                  "analyst_summary": "Vanguard S&P 500 accurately represents the large-cap US stock market, allowing its low fee and efficient portfolio to carve it a long-term e…",
+                  "analyst_summary_date": "Apr 27, 2026",
+                  "portfolio_date": "Sep 30, 2026",
+                  "top10_percent_assets": 39.1,
+                  "top_holdings": [
+                    {
+                      "name": "NVIDIA Corp",
+                      "weight_percent": 8.39,
+                      "market_value_usd": 145000000000,
+                      "sector": "Technology"
+                    },
+                    {
+                      "name": "Apple Inc",
+                      "weight_percent": 7.38,
+                      "market_value_usd": 128000000000,
+                      "sector": "Technology"
+                    },
+                    "… 8 more"
+                  ],
+                  "note": "Morningstar's Medalist rating, star rating and full analysis are subscriber-only and not included.",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/morningstar/v1/holdings": {
+      "get": {
+        "operationId": "morningstarHoldings",
+        "summary": "Morningstar holdings",
+        "description": "A fund's or ETF's holdings on Morningstar, largest first, 100 a page: name, ticker, ISIN, CUSIP, type, sector, country, weight, shares, share change and market value; with the portfolio date, holding counts, top 10 weight, turnover and benchmark, and (first page) the sector breakdown against the category and index and the country weights of the listed holdings.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/morningstar-holdings",
+        "tags": [
+          "Morningstar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "query",
+            "required": true,
+            "description": "Fund or ETF ticker.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "SPY"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "fund or etf. Default: ETF first, then mutual fund.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "fund",
+                "etf"
+              ]
+            },
+            "example": "etf"
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "description": "Morningstar market code. Default xnas for funds; arcx, xnas, bats, then xnys for ETFs.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1), 100 holdings a page. `next_page` is null on the last page.",
+            "schema": {
+              "type": "integer"
+            },
+            "example": "1"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "ticker": "SPY",
+                  "type": "etf",
+                  "exchange": "arcx",
+                  "name": "State Street® SPDR® S&P 500® ETF Trust",
+                  "id": "FEUSA00001",
+                  "url": "https://www.morningstar.com/etfs/arcx/spy/portfolio",
+                  "portfolio_date": "2026-11-02",
+                  "total_holdings": 504,
+                  "equity_holdings": 503,
+                  "bond_holdings": 0,
+                  "other_holdings": 1,
+                  "top10_percent_assets": 37.08521,
+                  "turnover_percent": 3,
+                  "benchmark": "S&P 500 (TR) (1970)",
+                  "equity_percent": 99.802,
+                  "bond_percent": 0,
+                  "other_percent": 0.198,
+                  "page": 1,
+                  "count": 100,
+                  "holdings_available": 100,
+                  "has_more": false,
+                  "next_page": null,
+                  "holdings": [
+                    {
+                      "rank": 1,
+                      "name": "Apple Inc",
+                      "ticker": "AAPL",
+                      "isin": "US0378331005",
+                      "cusip": "037833100",
+                      "type": "Equity",
+                      "sector": "Technology",
+                      "country": "United States",
+                      "currency": "USD",
+                      "weight_percent": 7.70069,
+                      "shares": 178010005,
+                      "share_change": -447320,
+                      "market_value": 61347588023,
+                      "maturity_date": null,
+                      "coupon": null,
+                      "first_bought": "2002-03-31",
+                      "one_year_return_percent": 25.5243,
+                      "id": "0P000000GY"
+                    },
+                    {
+                      "rank": 2,
+                      "name": "NVIDIA Corp",
+                      "ticker": "NVDA",
+                      "isin": "US67066G1040",
+                      "cusip": "67066G104",
+                      "type": "Equity",
+                      "sector": "Technology",
+                      "country": "United States",
+                      "currency": "USD",
+                      "weight_percent": 7.58232,
+                      "shares": 295174623,
+                      "share_change": -741735,
+                      "market_value": 60404534851,
+                      "maturity_date": null,
+                      "coupon": null,
+                      "first_bought": "2002-03-31",
+                      "one_year_return_percent": 0.0445,
+                      "id": "0P000003RE"
+                    },
+                    "… 98 more"
+                  ],
+                  "sector_breakdown": {
+                    "fund": {
+                      "as_of": "2026-10-30",
+                      "basicMaterials": 1.58443,
+                      "consumerCyclical": 9.19018,
+                      "financialServices": 12.02929,
+                      "realEstate": 1.79756,
+                      "communicationServices": 8.41963,
+                      "energy": 3.90903,
+                      "industrials": 7.6103,
+                      "technology": 38.23482,
+                      "consumerDefensive": 4.88207,
+                      "healthcare": 10.25348,
+                      "utilities": 2.08921
+                    },
+                    "category": {
+                      "as_of": "2026-09-30",
+                      "basicMaterials": 1.88306,
+                      "consumerCyclical": 8.99701,
+                      "financialServices": 12.49834,
+                      "realEstate": 1.48333,
+                      "communicationServices": 9.13937,
+                      "energy": 3.31906,
+                      "industrials": 9.8517,
+                      "technology": 36.17151,
+                      "consumerDefensive": 4.42975,
+                      "healthcare": 10.18704,
+                      "utilities": 2.03983
+                    },
+                    "index": {
+                      "as_of": "2026-09-30",
+                      "basicMaterials": 1.4536,
+                      "consumerCyclical": 8.4249,
+                      "financialServices": 11.37367,
+                      "realEstate": 1.47143,
+                      "communicationServices": 10.07721,
+                      "energy": 3.4471,
+                      "industrials": 7.72091,
+                      "technology": 40.7863,
+                      "consumerDefensive": 4.28782,
+                      "healthcare": 9.2227,
+                      "utilities": 1.73436
+                    },
+                    "category_name": "US Fund Large Blend",
+                    "index_name": "Morningstar US Large TR USD"
+                  },
+                  "country_weights_of_listed_holdings": [
+                    {
+                      "country": "United States",
+                      "weight_percent": 74.67657
+                    },
+                    {
+                      "country": "Switzerland",
+                      "weight_percent": 0.19594
+                    }
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/morningstar/v1/search": {
+      "get": {
+        "operationId": "morningstarSearch",
+        "summary": "Morningstar search",
+        "description": "Search Morningstar for stocks, mutual funds and ETFs by name or ticker: name, ticker, type (stock, fund or etf), exchange and its market code, currency, and the id and link to use with /morningstar/v1/stock and /morningstar/v1/fund. 25 results a page; pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/morningstar-search",
+        "tags": [
+          "Morningstar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Name or ticker to search for.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "vanguard 500"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page of results. Pass `next_page` from the previous response.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "vanguard 500",
+                  "page": 1,
+                  "total": 1511,
+                  "total_pages": 61,
+                  "count": 25,
+                  "next_page": 2,
+                  "results": [
+                    {
+                      "name": "Vanguard 500 Index Institutional Select Shares",
+                      "ticker": "VFFSX",
+                      "type": "fund",
+                      "exchange_code": "xnas",
+                      "exchange": "USD",
+                      "currency": null,
+                      "id": "funds/xnas/vffsx",
+                      "url": "https://www.morningstar.com/funds/xnas/vffsx/quote"
+                    },
+                    {
+                      "name": "Vanguard 500 Index Fund Admiral Shares",
+                      "ticker": "VFIAX",
+                      "type": "fund",
+                      "exchange_code": "xnas",
+                      "exchange": "USD",
+                      "currency": null,
+                      "id": "funds/xnas/vfiax",
+                      "url": "https://www.morningstar.com/funds/xnas/vfiax/quote"
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/morningstar/v1/stock": {
+      "get": {
+        "operationId": "morningstarStock",
+        "summary": "Morningstar stock",
+        "description": "A US stock's Morningstar quote page: previous close, day and 52-week range, bid and ask, shares outstanding, market cap, volume and average, normalized P/E, price to sales, trailing and forward dividend yield, dividend schedule, total yield, sector, industry, style box, employees, website, company profile, and its main competitors with valuation, financial strength and profitability metrics side by side. Star ratings, fair values and moats are subscriber-only and not included.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/morningstar-stock",
+        "tags": [
+          "Morningstar"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "ticker",
+            "in": "query",
+            "required": true,
+            "description": "US ticker.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "AAPL"
+          },
+          {
+            "name": "exchange",
+            "in": "query",
+            "required": false,
+            "description": "Morningstar market code (xnas, xnys ...). Default: tries xnas, then xnys.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "ticker": "AAPL",
+                  "exchange": "xnas",
+                  "url": "https://www.morningstar.com/stocks/xnas/aapl/quote",
+                  "name": "Apple Inc",
+                  "previous_close": 338.32,
+                  "day_range": {
+                    "low": 325.33,
+                    "high": 334.5
+                  },
+                  "week52_range": {
+                    "low": 243.42,
+                    "high": 351.73
+                  },
+                  "bid": 329.8,
+                  "ask": 329.96,
+                  "shares_outstanding": 14530000000,
+                  "market_cap": 4840000000000,
+                  "volume": 63000000,
+                  "average_volume": 43000000,
+                  "pe_normalized": 38.55,
+                  "price_to_sales": 10.2,
+                  "dividend_yield_trailing": 0.32,
+                  "dividend_yield_forward": 0.33,
+                  "dividend_schedule": "Feb, May, Aug, Nov",
+                  "total_yield": 2.11,
+                  "sector": "Technology",
+                  "industry": "Consumer Electronics",
+                  "style_box": "Large Core",
+                  "employees": 167000,
+                  "website": "https://www.apple.com",
+                  "description": "Apple is among the largest companies in the world, with a broad portfolio of hardware and software products targeted at consumers and busine…",
+                  "competitors": [
+                    {
+                      "name": "Samsung Electronics Co Ltd",
+                      "ticker": "005930"
+                    },
+                    {
+                      "name": "Microsoft Corp",
+                      "ticker": "MSFT"
+                    },
+                    "… 1 more"
+                  ],
+                  "comparison": {
+                    "valuation": {
+                      "Price/Earnings (Normalized)": {
+                        "AAPL": 38.55,
+                        "005930": 10.19,
+                        "MSFT": 28.88
+                      },
+                      "Price/Book Value": {
+                        "AAPL": 43.03,
+                        "005930": 2.74,
+                        "MSFT": 8.22
+                      },
+                      "Price/Sales": {
+                        "AAPL": 10.2,
+                        "005930": 2.78,
+                        "MSFT": 11.2
+                      },
+                      "Price/Cash Flow": {
+                        "AAPL": 30.54,
+                        "005930": 5.49,
+                        "MSFT": 20.02
+                      }
+                    },
+                    "financial_strength": {
+                      "Quick Ratio": {
+                        "AAPL": 0.83,
+                        "005930": 2.2,
+                        "MSFT": 0.83
+                      },
+                      "Current Ratio": {
+                        "AAPL": 1.02,
+                        "005930": 2.83,
+                        "MSFT": 1.22
+                      },
+                      "Interest Coverage": {
+                        "AAPL": null,
+                        "005930": 242.73,
+                        "MSFT": 55.15
+                      }
+                    },
+                    "profitability": {
+                      "Return on Assets (Normalized)": {
+                        "AAPL": 37.85,
+                        "005930": 24.86,
+                        "MSFT": 19.01
+                      },
+                      "Return on Equity (Normalized)": {
+                        "AAPL": 147.14,
+                        "005930": 33.47,
+                        "MSFT": 32.28
+                      },
+                      "Return on Invested Capital (Normalized)": {
+                        "AAPL": 77.52,
+                        "005930": 30.09,
+                        "MSFT": 28.37
+                      }
+                    }
+                  },
+                  "note": "Morningstar's star rating, fair value, uncertainty and economic moat are subscriber-only and not included.",
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}

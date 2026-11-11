@@ -1,0 +1,1769 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: The Knot",
+    "version": "1.0.0",
+    "description": "The The Knot API from API.SH: public The Knot data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "The Knot",
+      "description": "5 endpoints (local services)",
+      "x-slug": "the-knot",
+      "x-domains": [
+        "theknot.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/theknot/v1/categories": {
+      "get": {
+        "operationId": "theknotCategories",
+        "summary": "The Knot vendor categories and filters",
+        "description": "Without `category`: the 25 vendor categories (code, slug, name, link). With `category`: the category's details (description, singular and plural names), every filter it offers with each option value (use them as `param:value` in /theknot/v1/search `filters`), the sort options and the full category list.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 2 credits per successful call. Docs: https://api.sh/docs/theknot-categories",
+        "tags": [
+          "The Knot"
+        ],
+        "x-credits": 2,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Optional category slug, code or name to get its filters.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "wedding-reception-venues"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": {
+                    "code": "REC",
+                    "slug": "wedding-reception-venues",
+                    "name": "Reception Venues",
+                    "id": "1572f50a-93b6-40ea-9492-d8cec37f0c44",
+                    "description": "Venues suitable for hosting wedding receptions.",
+                    "singular": "Wedding Venue",
+                    "plural": "Wedding Venues"
+                  },
+                  "filters": [
+                    {
+                      "name": "Best Of Weddings",
+                      "param": "best-of-weddings",
+                      "single_select": false,
+                      "options": [
+                        {
+                          "name": "2026 Best of Weddings Winner",
+                          "value": "current-winner",
+                          "id": "d98faf54-cb69-451c-b8be-5f2a5a6dea19"
+                        },
+                        {
+                          "name": "Hall of Fame",
+                          "value": "hall-of-fame",
+                          "id": "19f33d4a-0a5a-48e2-af70-39f94ea4ea7f"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Business Attributes",
+                      "param": "business-attributes",
+                      "single_select": false,
+                      "options": [
+                        {
+                          "name": "Asian-owned Business",
+                          "value": "asian-owned-business",
+                          "id": "750f0833-d418-46ca-9551-558593eadfc9"
+                        },
+                        {
+                          "name": "Black-owned Business",
+                          "value": "black-owned-business",
+                          "id": "4fbcaa51-1beb-4efe-92aa-0d10faa832ba"
+                        },
+                        "… 6 more"
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "sorts": [
+                    "recommended",
+                    "featured"
+                  ],
+                  "count": 25,
+                  "categories": [
+                    {
+                      "code": "REC",
+                      "slug": "wedding-reception-venues",
+                      "name": "Reception Venues",
+                      "id": "1572f50a-93b6-40ea-9492-d8cec37f0c44",
+                      "url": "https://www.theknot.com/marketplace/wedding-reception-venues"
+                    },
+                    {
+                      "code": "WPH",
+                      "slug": "wedding-photographers",
+                      "name": "Wedding Photographers",
+                      "id": "a520ad92-ff3f-4869-a382-92c87a5d809e",
+                      "url": "https://www.theknot.com/marketplace/wedding-photographers"
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 2
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/theknot/v1/locations": {
+      "get": {
+        "operationId": "theknotLocations",
+        "summary": "The Knot states and cities",
+        "description": "Without `state`: the 50 states with their slugs. With `state`: that state's cities with the `location` value for /theknot/v1/search (e.g. `albany-ny`), its top cities, and the recommended vendors the state page shows for each city (same fields as search results).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 2 credits per successful call. Docs: https://api.sh/docs/theknot-locations",
+        "tags": [
+          "The Knot"
+        ],
+        "x-credits": 2,
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Optional state name or slug (`new-york`, `texas`, `california`).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "new-york"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Optional category (default `wedding-reception-venues`); sets the category of the city links and recommended vendors.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "wedding-reception-venues"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": "wedding-reception-venues",
+                  "state": {
+                    "name": "New York",
+                    "code": "NY",
+                    "slug": "new-york"
+                  },
+                  "count": 58,
+                  "cities": [
+                    {
+                      "name": "Albany",
+                      "location": "albany-ny",
+                      "url": "https://www.theknot.com/marketplace/wedding-reception-venues-albany-ny"
+                    },
+                    {
+                      "name": "Auburn",
+                      "location": "auburn-ny",
+                      "url": "https://www.theknot.com/marketplace/wedding-reception-venues-auburn-ny"
+                    },
+                    "… 56 more"
+                  ],
+                  "top_cities": [
+                    "new york",
+                    "buffalo",
+                    "… 2 more"
+                  ],
+                  "recommended_by_city": [
+                    {
+                      "city": "new york",
+                      "total": 272,
+                      "vendors": [
+                        {
+                          "id": "2079484",
+                          "storefront_id": "4ee2c9ac-ad86-4eb6-9ba3-5130dcab84fd",
+                          "vendor_id": "8dc1337d-9dc9-4d9a-a680-0205e06a35df",
+                          "name": "The Pier Sixty Collection",
+                          "url": "https://www.theknot.com/marketplace/the-pier-sixty-collection-new-york-ny-2079484",
+                          "category": "Reception Venues",
+                          "category_code": "REC",
+                          "description": "Located within New York’s iconic Chelsea Piers, The Pier Sixty Collection offers three alluring waterfront venues — each with sweeping views…",
+                          "review_summary_ai": "Pier Sixty Collection (Current and The Lighthouse) is praised for breathtaking waterfront views, sunset photo backdrops, elegant spaces, and…",
+                          "rating": 4.9,
+                          "reviews_count": 86,
+                          "address": {
+                            "…": "7 fields"
+                          },
+                          "service_area": null,
+                          "estimated_cost": {
+                            "…": "5 fields"
+                          },
+                          "facets": [
+                            {
+                              "…": "2 fields"
+                            },
+                            {
+                              "…": "2 fields"
+                            },
+                            "… 4 more"
+                          ],
+                          "photo": {
+                            "…": "5 fields"
+                          },
+                          "logo": "https://media-api.xogrp.com/images/91d3d20b-a080-4bec-9fb7-9d859710ded8",
+                          "photos_count": 45,
+                          "tier": "PREMIUM",
+                          "ad_tier": "PLATINUM",
+                          "claimed": true,
+                          "paid": true,
+                          "quick_responder": false,
+                          "is_new": false,
+                          "deals": []
+                        },
+                        {
+                          "id": "597704",
+                          "storefront_id": "19e04a71-2a97-4ab1-8b2a-a25000b1bd05",
+                          "vendor_id": "5b6bf106-0ad7-4576-b79f-a5bd008c4ef2",
+                          "name": "One if by Land, Two if by Sea",
+                          "url": "https://www.theknot.com/marketplace/one-if-by-land-two-if-by-sea-new-york-ny-597704",
+                          "category": "Reception Venues",
+                          "category_code": "REC",
+                          "description": "One if by Land, Two if by Sea is a romantic restaurant based in New York, NY, that hosts weddings and events. Known for its beautiful decor …",
+                          "review_summary_ai": "One If By Land, Two If By Sea is a romantic, historic venue with candlelit rooms, brick walls, garden views, and a movie-like atmosphere. Re…",
+                          "rating": 5,
+                          "reviews_count": 6,
+                          "address": {
+                            "…": "7 fields"
+                          },
+                          "service_area": null,
+                          "estimated_cost": {
+                            "…": "5 fields"
+                          },
+                          "facets": [
+                            {
+                              "…": "2 fields"
+                            },
+                            {
+                              "…": "2 fields"
+                            },
+                            "… 4 more"
+                          ],
+                          "photo": {
+                            "…": "5 fields"
+                          },
+                          "logo": "https://media-api.xogrp.com/images/45d1a71b-20c3-4f14-8097-4cefb8c0e7a8",
+                          "photos_count": 102,
+                          "tier": "PREMIUM",
+                          "ad_tier": "PLATINUM",
+                          "claimed": true,
+                          "paid": true,
+                          "quick_responder": false,
+                          "is_new": false,
+                          "deals": []
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    {
+                      "city": "buffalo",
+                      "total": 241,
+                      "vendors": [
+                        {
+                          "id": "221045",
+                          "storefront_id": "a759e7ad-a609-40bb-a22e-bc53fbd26fc0",
+                          "vendor_id": "323e0b76-2e9c-498c-a3e7-7852e8a77e91",
+                          "name": "Avanti Mansion",
+                          "url": "https://www.theknot.com/marketplace/avanti-mansion-buffalo-ny-221045",
+                          "category": "Reception Venues",
+                          "category_code": "REC",
+                          "description": "One historic estate. Three distinct venues. 27 acres of breathtaking possibility.\n\nAvanti Mansion is a private estate in Western New York wh…",
+                          "review_summary_ai": "Avanti Mansion is a gorgeous, versatile wedding venue with multiple ceremony spaces and romantic, well-appointed rooms. Couples praise the a…",
+                          "rating": 4.8,
+                          "reviews_count": 225,
+                          "address": {
+                            "…": "7 fields"
+                          },
+                          "service_area": null,
+                          "estimated_cost": null,
+                          "facets": [
+                            {
+                              "…": "2 fields"
+                            },
+                            {
+                              "…": "2 fields"
+                            },
+                            "… 5 more"
+                          ],
+                          "photo": {
+                            "…": "5 fields"
+                          },
+                          "logo": "https://media-api.xogrp.com/images/085ebc66-a80c-413e-8dde-ab8dbaf5c2f5",
+                          "photos_count": 66,
+                          "tier": "FEATURED",
+                          "ad_tier": "PLATINUM",
+                          "claimed": true,
+                          "paid": true,
+                          "quick_responder": true,
+                          "is_new": false,
+                          "deals": [
+                            {
+                              "…": "6 fields"
+                            },
+                            {
+                              "…": "6 fields"
+                            },
+                            "… 3 more"
+                          ]
+                        },
+                        {
+                          "id": "342465",
+                          "storefront_id": "158690f7-addb-443d-94b6-9ddf00b19ed1",
+                          "vendor_id": "5c8c6dcc-f98d-45a2-a1ff-368c7918d6a7",
+                          "name": "Kloc's Grove",
+                          "url": "https://www.theknot.com/marketplace/klocs-grove-west-seneca-ny-342465",
+                          "category": "Reception Venues",
+                          "category_code": "REC",
+                          "description": "Kloc's Grove takes a timeless garden elegance and blends it with our spacious picturesque settings to create the perfect venue for your wedd…",
+                          "review_summary_ai": "Kloc's Grove is highly recommended for weddings — management and staff are professional, organized, and went above and beyond to keep the da…",
+                          "rating": 4.7,
+                          "reviews_count": 36,
+                          "address": {
+                            "…": "7 fields"
+                          },
+                          "service_area": null,
+                          "estimated_cost": {
+                            "…": "5 fields"
+                          },
+                          "facets": [
+                            {
+                              "…": "2 fields"
+                            },
+                            {
+                              "…": "2 fields"
+                            },
+                            "… 5 more"
+                          ],
+                          "photo": {
+                            "…": "5 fields"
+                          },
+                          "logo": null,
+                          "photos_count": 21,
+                          "tier": "FEATURED",
+                          "ad_tier": "PLATINUM",
+                          "claimed": true,
+                          "paid": true,
+                          "quick_responder": true,
+                          "is_new": false,
+                          "deals": []
+                        },
+                        "… 2 more"
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 2
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/theknot/v1/search": {
+      "get": {
+        "operationId": "theknotSearch",
+        "summary": "The Knot wedding vendor search",
+        "description": "Wedding vendors and venues in one city and category as The Knot lists them, 30 per page: name, storefront link, category, short description, rating and review count, AI review summary, street address with coordinates, service area, estimated costs (budget range, ceremony, catering per guest, bar per guest, reception), facets (ceremony types, styles, services), photo and logo, vendor tier, deals, plus the category's filters with every option value, the price histogram and the total. Filters are passed as `param:value` pairs taken from the `filters` list (e.g. `guest_capacity:101-150,settings:rooftop`); several values of one filter match any of them. Page with `page`; `next_page` is null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 3 credits per successful call. Docs: https://api.sh/docs/theknot-search",
+        "tags": [
+          "The Knot"
+        ],
+        "x-credits": 3,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": true,
+            "description": "Vendor category: slug (`wedding-reception-venues`, `wedding-photographers`, `florists`, `wedding-djs`...), code (`REC`, `WPH`...) or name. See /theknot/v1/categories.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "wedding-photographers"
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": true,
+            "description": "City and state code as The Knot writes it: `chicago-il`, `new-york-ny`, or `Austin, TX`. /theknot/v1/locations lists each state's cities.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "chicago-il"
+          },
+          {
+            "name": "filters",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated `param:value` pairs from the `filters` list of this category (e.g. `guest_capacity:101-150,settings:rooftop,settings:barn`, `distance:within-25-miles`, `business-attributes:woman-owned-business`, `deals:all-deals`). An unknown value answers 404. `starting_price_range` takes only `affordable` (the numeric price bands are not available).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "business-attributes:woman-owned-business"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "`recommended` (default, the site's banded-distance ranking) or `featured`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "recommended",
+                "featured"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Results page, 1-based (30 vendors per page).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": {
+                    "code": "WPH",
+                    "slug": "wedding-photographers",
+                    "name": "Wedding Photographers"
+                  },
+                  "location": "chicago-il",
+                  "city": "Chicago",
+                  "state": "IL",
+                  "market_code": "045",
+                  "page": 1,
+                  "page_size": 30,
+                  "pages": 14,
+                  "total": 412,
+                  "count": 30,
+                  "next_page": 2,
+                  "sort": "recommended",
+                  "applied_filters": {},
+                  "seo_filter": null,
+                  "url": "https://www.theknot.com/marketplace/wedding-photographers-chicago-il",
+                  "vendors": [
+                    {
+                      "id": "443719",
+                      "storefront_id": "9361f9ce-0edc-bf93-8bca-0197b15da885",
+                      "vendor_id": "22d269c3-021d-4cbd-9004-1136a5349a47",
+                      "name": "TWA Photographic Artists",
+                      "url": "https://www.theknot.com/marketplace/twa-photographic-artists-chicago-il-443719",
+                      "category": "Wedding Photographers",
+                      "category_code": "WPH",
+                      "description": "TWA Photographic Artists is an award-winning wedding photography and videography team based in Chicago, proudly serving Chicagoland and Milw…",
+                      "review_summary_ai": "TWA is praised for professional, responsive, and friendly photographers and videographers who put couples at ease and capture beautiful pose…",
+                      "rating": 4.7,
+                      "reviews_count": 1179,
+                      "address": {
+                        "street": null,
+                        "street2": null,
+                        "city": "Chicago",
+                        "state": "IL",
+                        "postal_code": null,
+                        "latitude": 0,
+                        "longitude": 0
+                      },
+                      "service_area": "Chicago + All Suburbs",
+                      "estimated_cost": null,
+                      "facets": [
+                        {
+                          "name": "Business Attributes",
+                          "values": [
+                            "Woman-owned Business"
+                          ]
+                        },
+                        {
+                          "name": "Photo Shoot Types",
+                          "values": [
+                            "Bridal Portraits",
+                            "Day After Session",
+                            "… 2 more"
+                          ]
+                        },
+                        "… 4 more"
+                      ],
+                      "photo": {
+                        "id": "3a099126-5f75-4e67-b648-981e28b46286",
+                        "url": "https://media-api.xogrp.com/images/2e9f1111-8840-458d-8cc0-b4b191dca0c8",
+                        "type": "PHOTO",
+                        "width": null,
+                        "height": null
+                      },
+                      "logo": "https://media-api.xogrp.com/images/50b79c1a-24a2-4422-ba8e-140966abd6d5",
+                      "photos_count": 162,
+                      "tier": "PREMIUM",
+                      "ad_tier": "PLATINUM",
+                      "claimed": true,
+                      "paid": true,
+                      "quick_responder": true,
+                      "is_new": false,
+                      "deals": []
+                    },
+                    {
+                      "id": "541798",
+                      "storefront_id": "fdea25d3-adc9-4372-9608-e6c455c5053b",
+                      "vendor_id": "f7000d0a-6c65-4b15-b460-7adaf831761a",
+                      "name": "This Is Feeling Photo + Video",
+                      "url": "https://www.theknot.com/marketplace/this-is-feeling-photo-+-video-chicago-il-541798",
+                      "category": "Wedding Photographers",
+                      "category_code": "WPH",
+                      "description": "This Is Feeling Photo + Video is a wedding photography business based in Chicago, IL, owned and operated by Benjamin Chernivsky. Initially e…",
+                      "review_summary_ai": "This Is Feeling delivers artistic, timeless wedding photos and videos that capture candid emotion and striking portraits without feeling sta…",
+                      "rating": 4.9,
+                      "reviews_count": 170,
+                      "address": {
+                        "street": "171 W Randolph St",
+                        "street2": "STE 302",
+                        "city": "Chicago",
+                        "state": "IL",
+                        "postal_code": "60601",
+                        "latitude": 41.8845,
+                        "longitude": -87.6337
+                      },
+                      "service_area": "Wherever you are...",
+                      "estimated_cost": null,
+                      "facets": [
+                        {
+                          "name": "Destination Weddings",
+                          "values": [
+                            "Destination Wedding Packages"
+                          ]
+                        },
+                        {
+                          "name": "Photo Shoot Types",
+                          "values": [
+                            "Bridal Portraits",
+                            "Day After Session",
+                            "… 1 more"
+                          ]
+                        },
+                        "… 4 more"
+                      ],
+                      "photo": {
+                        "id": "8b2164cc-71b6-4b07-ac97-449b926e41fd",
+                        "url": "https://media-api.xogrp.com/images/d770ed81-3960-4324-b8e2-687a93be5fa4",
+                        "type": "PHOTO",
+                        "width": null,
+                        "height": null
+                      },
+                      "logo": "https://media-api.xogrp.com/images/15b84969-404b-4655-a703-691070b7d4f9",
+                      "photos_count": 37,
+                      "tier": "PREMIUM",
+                      "ad_tier": "PLATINUM",
+                      "claimed": true,
+                      "paid": true,
+                      "quick_responder": true,
+                      "is_new": false,
+                      "deals": []
+                    },
+                    "… 28 more"
+                  ],
+                  "filters": [
+                    {
+                      "name": "Best Of Weddings",
+                      "param": "best-of-weddings",
+                      "single_select": false,
+                      "options": [
+                        {
+                          "name": "2026 Best of Weddings Winner",
+                          "value": "current-winner",
+                          "id": "d98faf54-cb69-451c-b8be-5f2a5a6dea19"
+                        },
+                        {
+                          "name": "Hall of Fame",
+                          "value": "hall-of-fame",
+                          "id": "19f33d4a-0a5a-48e2-af70-39f94ea4ea7f"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Confidence & Support",
+                      "param": "confidence-and-support",
+                      "single_select": false,
+                      "options": [
+                        {
+                          "name": "Peace of Mind",
+                          "value": "peace-of-mind",
+                          "id": "19c8944d-4220-4b1d-950c-a33f95e63833"
+                        }
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "price_histogram": [
+                    {
+                      "from": 0,
+                      "to": 350,
+                      "count": 2
+                    },
+                    {
+                      "from": 350,
+                      "to": 700,
+                      "count": 4
+                    },
+                    "… 20 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 3
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/theknot/v1/vendor": {
+      "get": {
+        "operationId": "theknotVendor",
+        "summary": "The Knot vendor storefront",
+        "description": "One wedding vendor's storefront: name, category, headline, full description, AI review summary, rating and review count, price range, starting price range, estimated costs and seasonal pricing (peak and off-peak averages and minimums), guest capacity, weddings hosted, service area, address with coordinates, business phone, email and website, social profiles, amenities, awards (Best of Weddings years), facets (ceremony types, styles, services offered), the vendor's pricing FAQ, review topics, the team bio, logo and every photo, tier and claim status, plus `raw` with the site's full record.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 2 credits per successful call. Docs: https://api.sh/docs/theknot-vendor",
+        "tags": [
+          "The Knot"
+        ],
+        "x-credits": 2,
+        "parameters": [
+          {
+            "name": "vendor",
+            "in": "query",
+            "required": true,
+            "description": "The vendor: its numeric id (the number at the end of its link, e.g. `592451`) or its theknot.com/marketplace/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "592451"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "id": "592451",
+                  "storefront_id": "a3a20657-b449-48ed-8e60-f1983a149c0d",
+                  "vendor_id": "c4654bf5-0375-4c55-8bf4-8b137d128d5e",
+                  "name": "3 West Club",
+                  "url": "https://www.theknot.com/marketplace/3-west-club-new-york-ny-592451",
+                  "category": "Reception Venues",
+                  "category_code": "REC",
+                  "category_slug": "wedding-reception-venues",
+                  "headline": "Be a Part Of New York City’s History",
+                  "description": "3 West Club is a wedding venue and hotel located in New York, NY. Situated amidst the splendor of Rockefeller Center and only minutes from R…",
+                  "review_summary_ai": "Reviewers praised 3 West Club’s classic \"old New York\" charm, elegant event rooms, and plentiful photo backdrops with views of St. Patrick’s…",
+                  "rating": 5,
+                  "reviews_count": 124,
+                  "price_range": "$$ – Affordable",
+                  "starting_price_range": null,
+                  "estimated_cost": {
+                    "budget_range": {
+                      "value": 31000,
+                      "min": 10880,
+                      "max": 53322,
+                      "unit": "TOTAL",
+                      "currency": "USD",
+                      "type": null
+                    },
+                    "ceremony": {
+                      "value": 1900,
+                      "min": null,
+                      "max": null,
+                      "unit": "TOTAL",
+                      "currency": "USD",
+                      "type": "FIXED"
+                    },
+                    "catering": {
+                      "value": 195,
+                      "min": null,
+                      "max": null,
+                      "unit": "PER_GUEST",
+                      "currency": "USD",
+                      "type": "FIXED"
+                    },
+                    "bar_services": {
+                      "value": 20,
+                      "min": null,
+                      "max": null,
+                      "unit": "PER_GUEST",
+                      "currency": "USD",
+                      "type": "FIXED"
+                    },
+                    "reception": {
+                      "value": 7400,
+                      "min": null,
+                      "max": null,
+                      "unit": "TOTAL",
+                      "currency": "USD",
+                      "type": "FIXED"
+                    }
+                  },
+                  "guest_capacity": "Up to 150",
+                  "service_area": "Tri-State Area",
+                  "address": {
+                    "street": "3 West 51st Street",
+                    "city": "New York",
+                    "state": "NY",
+                    "postal_code": "10019",
+                    "latitude": 40.7598,
+                    "longitude": -73.9774
+                  },
+                  "phone": "+1 555 010 0000",
+                  "phone_extension": null,
+                  "email": "name@example.com",
+                  "website": "http://www.3westclub.com/web/3west/weddings",
+                  "social": {
+                    "facebook": "https://www.facebook.com/3westclub?ref=hl",
+                    "instagram": "https://www.instagram.com/3westclub",
+                    "twitter": "https://x.com/3westclub",
+                    "pinterest": "https://www.pinterest.com/3westclub",
+                    "tiktok": null
+                  },
+                  "seasonal_pricing": {
+                    "off_peak": {
+                      "average": 44000,
+                      "estimate": 24300,
+                      "minimum": 35000
+                    },
+                    "peak": {
+                      "average": 51000,
+                      "estimate": null,
+                      "minimum": 40000
+                    },
+                    "no_season": {
+                      "average": null,
+                      "estimate": null,
+                      "minimum": null
+                    }
+                  },
+                  "weddings_hosted": "50+",
+                  "review_topics": [
+                    "Amenities",
+                    "Guests comfort",
+                    "… 2 more"
+                  ],
+                  "faq": [
+                    {
+                      "group": "pricing",
+                      "question": "What months are included in your peak season?",
+                      "answers": [
+                        "February",
+                        "December",
+                        "… 7 more"
+                      ]
+                    },
+                    {
+                      "group": "pricing",
+                      "question": "What is the starting price per person for catering?",
+                      "answers": [
+                        "255.00"
+                      ]
+                    },
+                    "… 8 more"
+                  ],
+                  "amenities": [
+                    "Ceremony Area",
+                    "Covered Outdoors Space",
+                    "… 7 more"
+                  ],
+                  "awards": [
+                    "BOW2011",
+                    "BOW2013",
+                    "… 7 more"
+                  ],
+                  "facets": [
+                    {
+                      "name": "Ceremony Types",
+                      "values": [
+                        "Civil Union",
+                        "Commitment Ceremony",
+                        "… 6 more"
+                      ]
+                    },
+                    {
+                      "name": "Guest Capacity",
+                      "values": [
+                        "101-150"
+                      ]
+                    },
+                    "… 4 more"
+                  ],
+                  "team": {
+                    "name": null,
+                    "role": "Manager",
+                    "description": null,
+                    "photo": "https://media-api.xogrp.com/images/16bf35a4-ac47-4768-b187-5bfe0117cc89"
+                  },
+                  "logo": "https://media-api.xogrp.com/images/5bc77362-8fe4-4d68-ad94-1b62aa1dc8e8",
+                  "photos_count": 38,
+                  "photos": [
+                    {
+                      "id": "cf522f8f-b16b-4476-88c8-1e1924e92ec9",
+                      "url": "https://media-api.xogrp.com/images/256565b2-96a8-46b9-b884-05699e137c62",
+                      "type": "PHOTO",
+                      "width": 1024,
+                      "height": 684
+                    },
+                    {
+                      "id": "8a462081-a531-4eae-bd9d-b607bebb1a95",
+                      "url": "https://media-api.xogrp.com/images/4a8963c3-db43-4d45-8599-a93b79aa0965",
+                      "type": "PHOTO",
+                      "width": 4000,
+                      "height": 6000
+                    },
+                    "… 36 more"
+                  ],
+                  "designers": [],
+                  "tier": "FEATURED",
+                  "claimed": true,
+                  "paid": true,
+                  "has_award": true,
+                  "…": "4 more fields",
+                  "cached": false,
+                  "credits_used": 2
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/theknot/v1/vendor/reviews": {
+      "get": {
+        "operationId": "theknotVendorReviews",
+        "summary": "The Knot vendor reviews",
+        "description": "Every review of a vendor, as its storefront's review list shows them, oldest included: reviewer display name (first name and initial), star rating, date, title, full text, verified flag, highlighted flag, wedding date when given, the vendor's reply and review photos, plus the overall rating, total review count and AI review summary. Sort by newest, oldest, highest or lowest rating; filter by stars, to reviews with photos, or by words in the text. Phone numbers inside review text are hidden. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 2 credits per successful call. Docs: https://api.sh/docs/theknot-vendor-reviews",
+        "tags": [
+          "The Knot"
+        ],
+        "x-credits": 2,
+        "parameters": [
+          {
+            "name": "vendor",
+            "in": "query",
+            "required": true,
+            "description": "The vendor: its numeric id (e.g. `592451`) or its theknot.com/marketplace/... link.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "592451"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (default 1).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page, 1-50 (default 25).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order (default newest).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "oldest",
+                "highest_rating",
+                "lowest_rating"
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews with these stars, e.g. `5` or `1,2`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "with_photos",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews with photos.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews whose text contains these words.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "vendor": {
+                    "id": "592451",
+                    "name": "3 West Club",
+                    "url": "https://www.theknot.com/marketplace/3-west-club-new-york-ny-592451"
+                  },
+                  "rating": 5,
+                  "reviews_count": 124,
+                  "review_summary_ai": "Reviewers praised 3 West Club’s classic \"old New York\" charm, elegant event rooms, and plentiful photo backdrops with views of St. Patrick’s…",
+                  "page": 1,
+                  "limit": 25,
+                  "sort": "newest",
+                  "rating_filter": null,
+                  "with_photos": false,
+                  "q": null,
+                  "total": 124,
+                  "count": 25,
+                  "next_page": 2,
+                  "reviews": [
+                    {
+                      "id": "2f2558b5-4a7b-4256-aaec-39a17e90f220",
+                      "author": "James H.",
+                      "author_role": null,
+                      "rating": 5,
+                      "date": "2026-07-13T15:08:43.663Z",
+                      "updated_at": "2026-07-13T15:08:43.709Z",
+                      "title": null,
+                      "text": "Hi! I’m unable to send messages through the app, I’m reaching out here instead.\n\nOur wedding date is currently set for July 20, but every ti…",
+                      "verified": true,
+                      "highlighted": false,
+                      "wedding_date": null,
+                      "vendor_reply": null,
+                      "photos": []
+                    },
+                    {
+                      "id": "b8c6e0e7-6656-4a5f-80e6-6aab8a7b4fdc",
+                      "author": "Victoria F.",
+                      "author_role": null,
+                      "rating": 5,
+                      "date": "2025-12-19T19:48:42.859Z",
+                      "updated_at": "2025-12-19T19:48:42.923Z",
+                      "title": null,
+                      "text": "We had our June 2025 NYC wedding at 3 West Club and our experience was fabulous. If you are looking for that classic new york city vibe - th…",
+                      "verified": true,
+                      "highlighted": false,
+                      "wedding_date": "2025-06-20T00:00:00.000Z",
+                      "vendor_reply": null,
+                      "photos": [
+                        "https://media-api.xogrp.com/images/94b9a12d-f046-4aa3-81ae-9604b93b88d3",
+                        "https://media-api.xogrp.com/images/bfcc7549-ff2b-403f-a11f-6e0a827713c5",
+                        "… 2 more"
+                      ]
+                    },
+                    "… 23 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 2
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}
