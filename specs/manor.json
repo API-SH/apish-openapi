@@ -1,0 +1,2087 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Manor",
+    "version": "1.0.0",
+    "description": "The Manor API from API.SH: public Manor data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Manor",
+      "description": "12 endpoints (e-commerce)",
+      "x-slug": "manor",
+      "x-domains": [
+        "manor.ch"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/manor/v1/availability": {
+      "get": {
+        "operationId": "manorAvailability",
+        "summary": "Manor stock per size",
+        "description": "Live online stock for every size of the article's colour (article id, size, in stock, pieces left, status, price, previous price, restock dates), or for every colour with all_colors=true.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-availability",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A manor.ch product link (https://www.manor.ch/de/p/10003633410) or its article id (each size and colour is its own article: 11 digits, or a partner code such as mp-23654683-tproduct). `url` is accepted as the same thing.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10003633410"
+          },
+          {
+            "name": "ean",
+            "in": "query",
+            "required": false,
+            "description": "Look the article up by its EAN/GTIN instead of `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "all_colors",
+            "in": "query",
+            "required": false,
+            "description": "true: every colour of the style, each with its sizes.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/brands": {
+      "get": {
+        "operationId": "manorBrands",
+        "summary": "Manor brands",
+        "description": "Every brand Manor sells with its number of products and the id `brand=` takes; optional name filter.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-brands",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only brands whose name contains this text.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "levi"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/categories": {
+      "get": {
+        "operationId": "manorCategories",
+        "summary": "Manor category menu",
+        "description": "The store's full category menu (departments and every level below), each entry with its name, link, category code (for /manor/v1/category) or brand id.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-categories",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/category": {
+      "get": {
+        "operationId": "manorCategory",
+        "summary": "Manor category or brand listing",
+        "description": "The products of a Manor category or brand page, with the same product fields, filters, sorts and paging as search. Give a category code (from /manor/v1/categories), or a manor.ch category link (.../c/<code>, filters in the link are kept) or brand link (.../b/<brand>/...).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-category",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": true,
+            "description": "Category code such as woman-coat, or a manor.ch category or brand link (`url` is accepted as the same thing).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "men-clothing-jeans"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), price_asc, price_desc, top_rated, discount, top_seller, newest.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc",
+                "top_rated",
+                "discount",
+                "top_seller",
+                "newest"
+              ]
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Brand filter, comma = any of (names or ids from /manor/v1/brands, e.g. levis, tommy-hilfiger).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "required": false,
+            "description": "Colour filter by the site's colour names (Schwarz, Blau ... in the chosen language; values in `facets`), comma = any of.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "description": "Size filter by the size names in `facets` (XS, M, 38 ...), comma = any of.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price in CHF.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price in CHF.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "discount_min",
+            "in": "query",
+            "required": false,
+            "description": "Only products reduced by at least this percentage.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "shipped_by_manor",
+            "in": "query",
+            "required": false,
+            "description": "true: only products shipped by Manor itself (no partner sellers).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "Any other filter the site offers, as <facet id>:<value>|<value> (repeatable), with ids and values from `facets`, e.g. 60001243:60001243-70000000 for a fit.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Products per page, 1-200 (default 48).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_cursor` back to get the next page; null on the last page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/product": {
+      "get": {
+        "operationId": "manorProduct",
+        "summary": "Manor product",
+        "description": "One Manor article: brand, name, product type, EAN, price, previous price and recommended price (amount, ISO currency CHF, label), discount, unit price, the selected colour and size with their article ids, every size of the colour with its own article id, price and online stock (in stock, pieces left, restock dates), every colour with its article id and hex code, partner offers (seller, price, shipping, pieces, delivery dates), description, features (material, fit, care ...), documents such as the size guide, images, breadcrumbs, labels, energy label and store pickup availability. `raw` has the site's full record.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-product",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A manor.ch product link (https://www.manor.ch/de/p/10003633410) or its article id (each size and colour is its own article: 11 digits, or a partner code such as mp-23654683-tproduct). `url` is accepted as the same thing.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10003633410"
+          },
+          {
+            "name": "ean",
+            "in": "query",
+            "required": false,
+            "description": "Look the article up by its EAN/GTIN instead of `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/recommendations": {
+      "get": {
+        "operationId": "manorRecommendations",
+        "summary": "Manor recommendations",
+        "description": "Products the product page recommends for an article: similar products (\"discover also\"), what other customers bought, what the site shows after adding to the cart, or the products that go with it; same fields as search.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-recommendations",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A manor.ch product link (https://www.manor.ch/de/p/10003633410) or its article id (each size and colour is its own article: 11 digits, or a partner code such as mp-23654683-tproduct). `url` is accepted as the same thing.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10003633410"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "similar (default), bought_together, after_add_to_cart, fits.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "similar",
+                "bought_together",
+                "after_add_to_cart",
+                "fits"
+              ]
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/reviews": {
+      "get": {
+        "operationId": "manorReviews",
+        "summary": "Manor reviews",
+        "description": "Customer reviews of an article as its product page shows them: average rating, review count, recommendation count and rating distribution, then each review with rating, title, text, date, the reviewer's nickname, language, helpful votes, verified purchase, photos and the brand's replies. Page with `page` (`next_page`, null on the last page).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-reviews",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A manor.ch product link (https://www.manor.ch/de/p/10003633410) or its article id (each size and colour is its own article: 11 digits, or a partner code such as mp-23654683-tproduct). `url` is accepted as the same thing.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "p1-35827603"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "newest (default), oldest, highest, lowest, helpful, relevance.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "oldest",
+                "highest",
+                "lowest",
+                "helpful",
+                "relevance"
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews with this star rating (1-5).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "review_language",
+            "in": "query",
+            "required": false,
+            "description": "Only reviews written in this language (de, fr, it, en ...).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number (1-based).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Reviews per page, 1-100 (default 10).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/search": {
+      "get": {
+        "operationId": "manorSearch",
+        "summary": "Manor product search",
+        "description": "Search the whole Manor store (fashion, beauty, home, toys, electronics, wine and the partner marketplace) in German, French or Italian: every product with its article id, style id, brand, name, price, previous price and recommended price (amount, ISO currency CHF), discount, colour, size, the other colours with their article ids, online stock (in stock, pieces left), rating, image, categories and EAN, plus the site's filters with counts (`facets`). The site's sorts and every filter it offers (brand, colour, size, price, discount, shipped by Manor, and any other facet). Page with `cursor` (`next_cursor`, null on the last page).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-search",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search words (or give brand / category to list without words).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "levis 501"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "description": "Limit to a category code (from /manor/v1/categories), e.g. men-clothing-jeans.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "relevance (default), price_asc, price_desc, top_rated, discount, top_seller, newest.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc",
+                "top_rated",
+                "discount",
+                "top_seller",
+                "newest"
+              ]
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Brand filter, comma = any of (names or ids from /manor/v1/brands, e.g. levis, tommy-hilfiger).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "required": false,
+            "description": "Colour filter by the site's colour names (Schwarz, Blau ... in the chosen language; values in `facets`), comma = any of.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "description": "Size filter by the size names in `facets` (XS, M, 38 ...), comma = any of.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "required": false,
+            "description": "Lowest price in CHF.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "required": false,
+            "description": "Highest price in CHF.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "discount_min",
+            "in": "query",
+            "required": false,
+            "description": "Only products reduced by at least this percentage.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "shipped_by_manor",
+            "in": "query",
+            "required": false,
+            "description": "true: only products shipped by Manor itself (no partner sellers).",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "required": false,
+            "description": "Any other filter the site offers, as <facet id>:<value>|<value> (repeatable), with ids and values from `facets`, e.g. 60001243:60001243-70000000 for a fit.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "description": "Products per page, 1-200 (default 48).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Pass `next_cursor` back to get the next page; null on the last page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/size-guide": {
+      "get": {
+        "operationId": "manorSizeGuide",
+        "summary": "Manor size guide",
+        "description": "The size guide the product page links (a PDF in the chosen language) and the other product documents, with the sizes the article is sold in and their article ids.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-size-guide",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A manor.ch product link (https://www.manor.ch/de/p/10003633410) or its article id (each size and colour is its own article: 11 digits, or a partner code such as mp-23654683-tproduct). `url` is accepted as the same thing.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10003633410"
+          },
+          {
+            "name": "ean",
+            "in": "query",
+            "required": false,
+            "description": "Look the article up by its EAN/GTIN instead of `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/store-availability": {
+      "get": {
+        "operationId": "manorStoreAvailability",
+        "summary": "Manor stock per store",
+        "description": "The Manor stores that hold the article for click & collect, with each store's address, coordinates, pieces in stock, stock status and whether express pickup is offered; all_sizes=true lists the stores for every size of the colour. A store not listed holds none.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-store-availability",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "A manor.ch product link (https://www.manor.ch/de/p/10003633410) or its article id (each size and colour is its own article: 11 digits, or a partner code such as mp-23654683-tproduct). `url` is accepted as the same thing.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "10003633410"
+          },
+          {
+            "name": "ean",
+            "in": "query",
+            "required": false,
+            "description": "Look the article up by its EAN/GTIN instead of `id`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "all_sizes",
+            "in": "query",
+            "required": false,
+            "description": "true: every size of the article's colour.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/stores": {
+      "get": {
+        "operationId": "manorStores",
+        "summary": "Manor stores",
+        "description": "Every Manor store with address, phone, coordinates, click & collect, services, opening hours per weekday, special opening days and whether it is open now; optional filter by name, city or postcode.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-stores",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Only stores whose name, id, city or postcode contains this text.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "Zürich"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/manor/v1/suggest": {
+      "get": {
+        "operationId": "manorSuggest",
+        "summary": "Manor search suggestions",
+        "description": "What the search box suggests while typing: search phrases and matching products (with prices and stock).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/manor-suggest",
+        "tags": [
+          "Manor"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The text typed so far.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "robe"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Products to return, 1-20 (default 5).",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "description": "Language of names, texts and links: de (default, or the link's), fr or it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "de",
+                "fr",
+                "it"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}
