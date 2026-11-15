@@ -1,0 +1,1561 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: FBref",
+    "version": "1.0.0",
+    "description": "The FBref API from API.SH: public FBref data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "FBref",
+      "description": "10 endpoints (sports)",
+      "x-slug": "fbref",
+      "x-domains": [
+        "fbref.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/fbref/v1/competition": {
+      "get": {
+        "operationId": "fbrefCompetition",
+        "summary": "FBref competition season: table and squad stats",
+        "description": "A league or cup season: the league table (overall and home/away: rank, played, wins, draws, losses, goals, points, points per game, last 5, attendance, top scorer, goalkeeper) and squad standard, goalkeeping, shooting, playing time and miscellaneous stats for and against. Each table: `id`, `title`, `columns` (key and label) and `rows` keyed by column (numbers parsed; a linked cell adds `<column>_url`, a player cell `<column>_id`), plus `footer` rows (career or team totals) where the page has them. `table_ids` lists every table on the page; pass `tables` to get only some.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/fbref-competition",
+        "tags": [
+          "FBref"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Competition id (`9` Premier League, `12` La Liga, `20` Bundesliga, `11` Serie A, `13` Ligue 1, `8` Champions League, `22` MLS...) or a link to the competition.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9"
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "description": "Season: `2024-2025` for split-year leagues, `2025` for calendar-year ones; default the current season.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tables",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated table ids to return (see `table_ids` in any answer); default every table on the page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/fbref/v1/competition/stats": {
+      "get": {
+        "operationId": "fbrefCompetitionStats",
+        "summary": "FBref competition player stats",
+        "description": "Each table: `id`, `title`, `columns` (key and label) and `rows` keyed by column (numbers parsed; a linked cell adds `<column>_url`, a player cell `<column>_id`), plus `footer` rows (career or team totals) where the page has them. `table_ids` lists every table on the page; pass `tables` to get only some.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/fbref-competition-stats",
+        "tags": [
+          "FBref"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Competition id (`9` Premier League, `12` La Liga, `20` Bundesliga, `11` Serie A, `13` Ligue 1, `8` Champions League, `22` MLS...) or a link to the competition.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9"
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "description": "Season: `2024-2025` for split-year leagues, `2025` for calendar-year ones; default the current season.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Stat type; default `stats` (standard).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "stats",
+                "keepers",
+                "keepersadv",
+                "shooting",
+                "passing",
+                "passing_types",
+                "gca",
+                "defense",
+                "possession",
+                "playingtime",
+                "misc"
+              ]
+            },
+            "example": "stats"
+          },
+          {
+            "name": "tables",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated table ids to return (see `table_ids` in any answer); default every table on the page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/fbref/v1/match": {
+      "get": {
+        "operationId": "fbrefMatch",
+        "summary": "FBref match report",
+        "description": "One match: `scorebox` (both teams with score and manager, and the match facts: date, competition, attendance, venue, officials), lineups and every player's stats for each team, goalkeeping and the shots table where the match has them. Each table: `id`, `title`, `columns` (key and label) and `rows` keyed by column (numbers parsed; a linked cell adds `<column>_url`, a player cell `<column>_id`), plus `footer` rows (career or team totals) where the page has them. `table_ids` lists every table on the page; pass `tables` to get only some.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/fbref-match",
+        "tags": [
+          "FBref"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Match id (8 characters) or a link to the match report.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "a071faa8"
+          },
+          {
+            "name": "tables",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated table ids to return (see `table_ids` in any answer); default every table on the page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/fbref/v1/matches": {
+      "get": {
+        "operationId": "fbrefMatches",
+        "summary": "FBref matches on a date",
+        "description": "Every match FBref lists for a date across competitions, one table per competition: time, home and away team, score, attendance, venue, referee and the match report link. Each table: `id`, `title`, `columns` (key and label) and `rows` keyed by column (numbers parsed; a linked cell adds `<column>_url`, a player cell `<column>_id`), plus `footer` rows (career or team totals) where the page has them. `table_ids` lists every table on the page; pass `tables` to get only some.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/fbref-matches",
+        "tags": [
+          "FBref"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "description": "Date (YYYY-MM-DD).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2025-05-25"
+          },
+          {
+            "name": "tables",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated table ids to return (see `table_ids` in any answer); default every table on the page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/fbref/v1/page": {
+      "get": {
+        "operationId": "fbrefPage",
+        "summary": "FBref any page",
+        "description": "Any other page of fbref.com (competition lists, countries, club histories, head-to-head, player lists, records...), read the same way: `bio` where the page has a header block, `scorebox` on match reports, and every table. Each table: `id`, `title`, `columns` (key and label) and `rows` keyed by column (numbers parsed; a linked cell adds `<column>_url`, a player cell `<column>_id`), plus `footer` rows (career or team totals) where the page has them. `table_ids` lists every table on the page; pass `tables` to get only some.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/fbref-page",
+        "tags": [
+          "FBref"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "description": "Page path (`/en/comps/`) or a full link to the page.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "/en/comps/"
+          },
+          {
+            "name": "tables",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated table ids to return (see `table_ids` in any answer); default every table on the page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/fbref/v1/player": {
+      "get": {
+        "operationId": "fbrefPlayer",
+        "summary": "FBref player page: bio and every stats table",
+        "description": "One player's page: `bio` (`name`, `image`, `birth_date`, `facts` such as position, footed, born, national team, club and wages, every bio `lines`, `social` links and `achievements`), `schema` (structured person data) and every table (last 5 matches, standard stats, shooting, playing time and miscellaneous stats by season for domestic leagues, cups, international cups and the national team, wages). Each table: `id`, `title`, `columns` (key and label) and `rows` keyed by column (numbers parsed; a linked cell adds `<column>_url`, a player cell `<column>_id`), plus `footer` rows (career or team totals) where the page has them. `table_ids` lists every table on the page; pass `tables` to get only some.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/fbref-player",
+        "tags": [
+          "FBref"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Player id (`e342ad68`, 8 characters) or a link to the player page.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "e342ad68"
+          },
+          {
+            "name": "tables",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated table ids to return (see `table_ids` in any answer); default every table on the page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/fbref/v1/player/matchlogs": {
+      "get": {
+        "operationId": "fbrefPlayerMatchlogs",
+        "summary": "FBref player match logs for a season",
+        "description": "Every match of a player's season, one row per match: date, competition, round, venue, result, squad, opponent, start, position, minutes, goals, assists, shots, cards and the other stats of the chosen type. Each table: `id`, `title`, `columns` (key and label) and `rows` keyed by column (numbers parsed; a linked cell adds `<column>_url`, a player cell `<column>_id`), plus `footer` rows (career or team totals) where the page has them. `table_ids` lists every table on the page; pass `tables` to get only some.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/fbref-player-matchlogs",
+        "tags": [
+          "FBref"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Player id or a link to the player page.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "e342ad68"
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "description": "Season: `2024-2025` for split-year leagues, `2025` for calendar-year ones; default the current season.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Stat type; default `summary`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "summary",
+                "keeper",
+                "passing",
+                "passing_types",
+                "gca",
+                "defense",
+                "possession",
+                "misc"
+              ]
+            }
+          },
+          {
+            "name": "tables",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated table ids to return (see `table_ids` in any answer); default every table on the page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/fbref/v1/schedule": {
+      "get": {
+        "operationId": "fbrefSchedule",
+        "summary": "FBref competition fixtures and results",
+        "description": "Every match of a competition season: round or week, day, date, time, home and away team, score, attendance, venue, referee and the match report link. Each table: `id`, `title`, `columns` (key and label) and `rows` keyed by column (numbers parsed; a linked cell adds `<column>_url`, a player cell `<column>_id`), plus `footer` rows (career or team totals) where the page has them. `table_ids` lists every table on the page; pass `tables` to get only some.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/fbref-schedule",
+        "tags": [
+          "FBref"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Competition id (`9` Premier League, `12` La Liga, `20` Bundesliga, `11` Serie A, `13` Ligue 1, `8` Champions League, `22` MLS...) or a link to the competition.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "9"
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "description": "Season: `2024-2025` for split-year leagues, `2025` for calendar-year ones; default the current season.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tables",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated table ids to return (see `table_ids` in any answer); default every table on the page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/fbref/v1/search": {
+      "get": {
+        "operationId": "fbrefSearch",
+        "summary": "FBref search",
+        "description": "Search FBref by name: players, clubs, competitions and other pages, grouped in `sections` (`section`, `label`, `count`, `items` with `name`, `url`, `id` and the extra lines the site shows). When the name has one exact match the site jumps to, `sections` holds that one page (`section` `exact`).\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/fbref-search",
+        "tags": [
+          "FBref"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Name or text to search for.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "haaland"
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/fbref/v1/squad": {
+      "get": {
+        "operationId": "fbrefSquad",
+        "summary": "FBref club season: squad stats and match log",
+        "description": "A club's season page: `bio` (record, manager, captain and other facts), squad standard, goalkeeping, shooting, playing time and miscellaneous stats per player, the scores and fixtures with results, and the league table rows. Each table: `id`, `title`, `columns` (key and label) and `rows` keyed by column (numbers parsed; a linked cell adds `<column>_url`, a player cell `<column>_id`), plus `footer` rows (career or team totals) where the page has them. `table_ids` lists every table on the page; pass `tables` to get only some.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/fbref-squad",
+        "tags": [
+          "FBref"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Club id (`822bd0ba` Liverpool, 8 characters) or a link to the club page.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "822bd0ba"
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "description": "Season: `2024-2025` for split-year leagues, `2025` for calendar-year ones; default the current season.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tables",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated table ids to return (see `table_ids` in any answer); default every table on the page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}
