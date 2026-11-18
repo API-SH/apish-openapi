@@ -28,7 +28,7 @@
     },
     {
       "name": "Woolworths",
-      "description": "5 endpoints (e-commerce)",
+      "description": "6 endpoints (e-commerce)",
       "x-slug": "woolworths",
       "x-domains": [
         "woolworths.com.au"
@@ -325,7 +325,7 @@
             "name": "id",
             "in": "query",
             "required": false,
-            "description": "Return only this branch (a category id such as 1_6E4F4E4, or its slug such as dairy-eggs-fridge).",
+            "description": "Return only this branch (a category id such as 1_6E4F4E4, its slug such as dairy-eggs-fridge, a browse path such as dairy-eggs-fridge/milk, or a woolworths.com.au/shop/browse/... link; a slug used in several places means the highest one in the tree). The products of a branch are on /woolworths/v1/category.",
             "schema": {
               "type": "string"
             }
@@ -492,11 +492,398 @@
         }
       }
     },
+    "/woolworths/v1/category": {
+      "get": {
+        "operationId": "woolworthsCategory",
+        "summary": "Woolworths category products",
+        "description": "Every product in one Woolworths (Australia) category, page by page: a department (Dairy, Eggs & Fridge), an aisle (Milk) or a shelf (Full Cream Milk), or a specials group or branch (half price, half price in Pantry). Each product has the same fields as /woolworths/v1/search: stockcode, barcode and `gtin13`, name, brand, link, package size, price, was price and savings, unit price, in-store price, special / half-price flags, promotion text, multibuy and member prices, stock and availability for delivery, pickup and express, sponsored flag, departments and categories, ingredients, allergens, dietary claims, health star rating, nutrition and images, with size variants under `variants`. Also returned: `total`, the category (id, name, level, link and its `path` from the department down), its `subcategories` (pass an id back as `id`), and `facets`: the brand, dietary, allergen, health star and Everyday Market seller values with counts, each with the parameter that filters by it. `gtin13` is the barcode printed on the pack (EAN-13; an EAN-8 is zero-padded to 13 digits), the code to match products with other retailers: Woolworths' own record of the pack barcode, matched by stockcode. It is not derived from `barcode`, which is Woolworths' internal trade code (mostly a 14-digit GTIN-14 whose item number often differs from the pack's, so never strip it into an EAN-13). `gtin13` is null for products without a pack barcode (most Everyday Market partner listings), for in-store numbers (02, 04, 20-29: items weighed or packed in store, such as loose fruit, deli or bakery bread) and for case or multipack codes, and when the pack barcode could not be confirmed on this call: `gtin13_unconfirmed` counts those (normally 0; ask again for them). `location` says what the prices are for: woolworths.com.au shows the same online prices to every signed-out shopper, so `prices_for_location` is always false.\n\nPaging: pass `next_page` back as `page`; null on the last page. The site lists at most the first 10,000 products of one category (`total_capped` is true when it has more): page the `subcategories` of such a department instead. To collect a whole category use `sort=name` (or a price sort): the relevance order can shift between pages, so a product may move past a page boundary. Sponsored products (`sponsored: true`, counted in `sponsored_count`) come on top of the page's own products and may also appear in their own place in the list. Subcategories whose id ends in `_SPECIALS` list that category's specials and offers. Age-restricted categories (tobacco) answer 403: the site lists them only to signed-in shoppers.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/woolworths-category",
+        "tags": [
+          "Woolworths"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The category: its id from /woolworths/v1/categories or `subcategories` (1_6E4F4E4), its slug (dairy-eggs-fridge), a browse path (dairy-eggs-fridge/milk, specials/half-price/pantry), or a woolworths.com.au/shop/browse/... link. A slug used in several places means the highest one in the tree.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "1_6E4F4E4"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order: relevance (default), price_asc, price_desc, unit_price_asc, unit_price_desc, name. Use name or a price order to page through a whole category.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc",
+                "unit_price_asc",
+                "unit_price_desc",
+                "name"
+              ]
+            }
+          },
+          {
+            "name": "specials",
+            "in": "query",
+            "required": false,
+            "description": "true for the category's products on special only.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "description": "Only these brands, as listed in the Brand facet (e.g. `a2,Pauls`): comma-separated without a space, or repeat the parameter. A comma followed by a space stays part of the name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dietary",
+            "in": "query",
+            "required": false,
+            "description": "Only products with these dietary and lifestyle claims, as listed in the Dietary and Lifestyle facet (e.g. `Vegan`, `Gluten Free`); several as for `brand`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "allergens",
+            "in": "query",
+            "required": false,
+            "description": "Only products with these allergen claims, as listed in the Allergens facet (e.g. `Dairy Free`, `Nut Free`); several as for `brand`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "health_star",
+            "in": "query",
+            "required": false,
+            "description": "Only products with these health star ratings, as listed in the Health Star Rating facet (e.g. `4.5,5`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "seller",
+            "in": "query",
+            "required": false,
+            "description": "Only products from these Everyday Market partners, as listed in that facet; several as for `brand`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Products per page, 1-36 (default 24). Sponsored products come on top.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number, 1 for the first, up to 10,000 / `limit` (278 at 36). Pass back `next_page`.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "postcode",
+            "in": "query",
+            "required": false,
+            "description": "4-digit Australian postcode. Echoed in `location`; prices stay the site's online prices (it lets only signed-in shoppers choose a store). In-store availability near a postcode is on /woolworths/v1/product.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "store",
+            "in": "query",
+            "required": false,
+            "description": "Store number from /woolworths/v1/stores (e.g. 1449). Echoed in `location`; prices stay the site's online prices. In-store availability at a store is on /woolworths/v1/product.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "category": {
+                    "id": "1_6E4F4E4",
+                    "name": "Dairy, Eggs & Fridge",
+                    "slug": "dairy-eggs-fridge",
+                    "level": 1,
+                    "url": "https://www.woolworths.com.au/shop/browse/dairy-eggs-fridge",
+                    "parent_id": "1-4A3B264C",
+                    "specials": false,
+                    "path": [
+                      {
+                        "id": "1_6E4F4E4",
+                        "name": "Dairy, Eggs & Fridge",
+                        "slug": "dairy-eggs-fridge",
+                        "level": 1,
+                        "url": "https://www.woolworths.com.au/shop/browse/dairy-eggs-fridge"
+                      }
+                    ]
+                  },
+                  "subcategories": [
+                    {
+                      "id": "1_6E4F4E4_SPECIALS",
+                      "name": "Dairy, Eggs & Fridge Specials & Offers",
+                      "slug": "dairy-eggs-fridge-specials",
+                      "level": 2,
+                      "url": "https://www.woolworths.com.au/shop/browse/dairy-eggs-fridge-specials",
+                      "has_subcategories": false
+                    },
+                    {
+                      "id": "1_B7EF010",
+                      "name": "Cheese",
+                      "slug": "cheese",
+                      "level": 2,
+                      "url": "https://www.woolworths.com.au/shop/browse/cheese",
+                      "has_subcategories": true
+                    },
+                    "… 10 more"
+                  ],
+                  "sort": "relevance",
+                  "specials_only": false,
+                  "filters": {},
+                  "page": 1,
+                  "limit": 24,
+                  "total": 1732,
+                  "total_capped": false,
+                  "count": 32,
+                  "sponsored_count": 8,
+                  "next_page": 2,
+                  "gtin13_unconfirmed": 0,
+                  "title": "Dairy, Eggs & Fridge",
+                  "url": "https://www.woolworths.com.au/shop/browse/dairy-eggs-fridge",
+                  "facets": [
+                    {
+                      "name": "Brand",
+                      "label": "Brand",
+                      "param": "brand",
+                      "values": [
+                        {
+                          "id": "a2",
+                          "label": "a2",
+                          "count": 10
+                        },
+                        {
+                          "id": "Activia",
+                          "label": "Activia",
+                          "count": 8
+                        },
+                        "… 236 more"
+                      ]
+                    },
+                    {
+                      "name": "Allergens",
+                      "label": "Allergens",
+                      "param": "allergens",
+                      "values": [
+                        {
+                          "id": "Dairy Free",
+                          "label": "Dairy Free",
+                          "count": 385
+                        },
+                        {
+                          "id": "Egg Free",
+                          "label": "Egg Free",
+                          "count": 1406
+                        },
+                        "… 9 more"
+                      ]
+                    },
+                    "… 2 more"
+                  ],
+                  "location": {
+                    "selected": false,
+                    "postcode": null,
+                    "store": null,
+                    "prices_for_location": false,
+                    "availability_for_location": false,
+                    "note": "Prices are woolworths.com.au's online prices with no store or delivery address chosen; the site shows the same prices to every signed-out sh…"
+                  },
+                  "products": [
+                    {
+                      "id": "6004543",
+                      "barcode": "19310036078170",
+                      "gtin13": "9310036078173",
+                      "url": "https://www.woolworths.com.au/shop/productdetails/6004543/pauls-plus-protein-chocolate-yoghurt-pouch-no-added-sugar",
+                      "name": "Pauls Plus Protein Chocolate Yoghurt Pouch No added Sugar 150g",
+                      "short_name": "Pauls Plus Protein Chocolate Yoghurt Pouch No added Sugar",
+                      "brand": "Pauls",
+                      "description": "Our high protein chocolate yoghurt is created with 15 g of natural dairy protein which delivers a smooth, thick and creamy tasty yoghurt ble…",
+                      "summary": "Craving a delicious, high-protein snack with no added sugar? Try Pauls Plus Protein Chocolate Yoghurt Pouch. Order online at Woolworths toda…",
+                      "package_size": "150g",
+                      "unit": "Each",
+                      "variety": "Pouch No added Sugar",
+                      "price": 3.15,
+                      "was_price": 3.15,
+                      "savings": 0,
+                      "currency": "AUD",
+                      "unit_price": 2.1,
+                      "unit_price_measure": "100G",
+                      "unit_price_text": "$2.10 / 100G",
+                      "instore_price": 3.15,
+                      "instore_was_price": 3.15,
+                      "instore_unit_price_text": "$2.10 / 100G",
+                      "on_special": false,
+                      "instore_on_special": false,
+                      "half_price": false,
+                      "edr_special": false,
+                      "promotion": null,
+                      "promotion_type": "NOT_SET",
+                      "promotion_text": null,
+                      "multibuy": null,
+                      "member_price": null,
+                      "min_weight_price": null,
+                      "max_weight_price": null,
+                      "unit_weight_grams": null,
+                      "in_stock": true,
+                      "available": true,
+                      "instore_available": true,
+                      "purchasable": true,
+                      "ranged": true,
+                      "online_only": false,
+                      "…": "28 more fields"
+                    },
+                    {
+                      "id": "6004850",
+                      "barcode": "19310036079368",
+                      "gtin13": "9310036079361",
+                      "url": "https://www.woolworths.com.au/shop/productdetails/6004850/pauls-plus-protein-dairy-snack-chocolate",
+                      "name": "Pauls Plus Protein Dairy Snack Chocolate 160g",
+                      "short_name": "Pauls Plus Protein Dairy Snack Chocolate",
+                      "brand": "Pauls",
+                      "description": "Our high protein chocolate dairy snack contains 16 g of natural dairy protein and delivers a smooth, creamy treat that perfectly satisfies a…",
+                      "summary": "Pauls Plus Protein Dairy Snack Chocolate is a creamy, guilt-free treat. It's high in natural protein with no added sugar. Shop now at Woolwo…",
+                      "package_size": "160g",
+                      "unit": "Each",
+                      "variety": "Chocolate",
+                      "price": 3.15,
+                      "was_price": 3.15,
+                      "savings": 0,
+                      "currency": "AUD",
+                      "unit_price": 1.97,
+                      "unit_price_measure": "100G",
+                      "unit_price_text": "$1.97 / 100G",
+                      "instore_price": 3.15,
+                      "instore_was_price": 3.15,
+                      "instore_unit_price_text": "$1.97 / 100G",
+                      "on_special": false,
+                      "instore_on_special": false,
+                      "half_price": false,
+                      "edr_special": false,
+                      "promotion": null,
+                      "promotion_type": "NOT_SET",
+                      "promotion_text": null,
+                      "multibuy": null,
+                      "member_price": null,
+                      "min_weight_price": null,
+                      "max_weight_price": null,
+                      "unit_weight_grams": null,
+                      "in_stock": true,
+                      "available": true,
+                      "instore_available": true,
+                      "purchasable": true,
+                      "ranged": true,
+                      "online_only": false,
+                      "…": "28 more fields"
+                    },
+                    "… 30 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
     "/woolworths/v1/product": {
       "get": {
         "operationId": "woolworthsProduct",
         "summary": "Woolworths product",
-        "description": "One Woolworths product by stockcode, link or barcode: everything in search (price, unit price, promotion, availability, ingredients, allergens, dietary claims, health star rating, nutrition per 100 g and per serve, storage and usage) plus all product attributes, the star rating, rating count and recent reviews. `gtin13` is the 13-digit barcode printed on the pack (EAN-13), derived from Woolworths' own `barcode` (mostly a 14-digit GTIN-14: indicator digit dropped, check digit recomputed; 13-digit codes kept, 12-digit UPC-A padded); null when `barcode` is missing or has a wrong check digit, and for in-store numbers (02, 04, 20-29: items weighed or packed in store, such as loose fruit or bakery bread) that are not a product barcode. With `postcode` or `store`, `location.store` is that store (or the nearest supermarket to the postcode that lists the product) with `instore_available` (null when the site does not say), and `store_availability` lists the nearby supermarkets the site shows (up to 5) (number, name, address, distance) and whether each has the product in stock; prices stay the site's online prices, the same for every signed-out shopper (`prices_for_location` false). The list is empty for products the site sells online only.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/woolworths-product",
+        "description": "One Woolworths product by stockcode, link or barcode: everything in search (price, unit price, promotion, availability, ingredients, allergens, dietary claims, health star rating, nutrition per 100 g and per serve, storage and usage) plus all product attributes, the star rating, rating count and recent reviews. `gtin13` is the barcode printed on the pack (EAN-13; an EAN-8 is zero-padded to 13 digits), the code to match products with other retailers: Woolworths' own record of the pack barcode, matched by stockcode. It is not derived from `barcode`, which is Woolworths' internal trade code (mostly a 14-digit GTIN-14 whose item number often differs from the pack's, so never strip it into an EAN-13). `gtin13` is null for products without a pack barcode (most Everyday Market partner listings), for in-store numbers (02, 04, 20-29: items weighed or packed in store, such as loose fruit, deli or bakery bread) and for case or multipack codes, and when the pack barcode could not be confirmed on this call: `gtin13_unconfirmed` counts those (normally 0; ask again for them). With `postcode` or `store`, `location.store` is that store (or the nearest supermarket to the postcode that lists the product) with `instore_available` (null when the site does not say), and `store_availability` lists the nearby supermarkets the site shows (up to 5) (number, name, address, distance) and whether each has the product in stock; prices stay the site's online prices, the same for every signed-out shopper (`prices_for_location` false). The list is empty for products the site sells online only.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/woolworths-product",
         "tags": [
           "Woolworths"
         ],
@@ -516,7 +903,7 @@
             "name": "barcode",
             "in": "query",
             "required": false,
-            "description": "Look the product up by the barcode on the pack instead of `id`: the 13-digit EAN (e.g. 9300633556167), or a 14-digit GTIN / 12-digit UPC. Matched exactly on `gtin13`; 404 when Woolworths has no product with it.",
+            "description": "Look the product up by the barcode on the pack instead of `id`: the 13-digit EAN as in `gtin13` (e.g. 9300633556150), an EAN-8 or 12-digit UPC, or the 14-digit code in `barcode`. 404 when Woolworths has no product with it.",
             "schema": {
               "type": "string"
             }
@@ -578,6 +965,7 @@
                 "example": {
                   "id": "888140",
                   "barcode": "19300633563018",
+                  "gtin13": "9300633556150",
                   "url": "https://www.woolworths.com.au/shop/productdetails/888140/woolworths-full-cream-milk",
                   "name": "Woolworths Full Cream Milk 3L",
                   "short_name": "Woolworths Full Cream Milk",
@@ -615,8 +1003,7 @@
                   "purchasable": true,
                   "ranged": true,
                   "online_only": false,
-                  "new": false,
-                  "…": "36 more fields",
+                  "…": "39 more fields",
                   "cached": false,
                   "credits_used": 1
                 }
@@ -658,7 +1045,7 @@
       "get": {
         "operationId": "woolworthsSearch",
         "summary": "Search Woolworths products",
-        "description": "Woolworths (Australia) product search: stockcode, barcode, name, brand, link, package size, price, was price and savings, unit price (per kg/L), in-store price, special / half-price flags, promotion text, multibuy and member prices, stock and availability for delivery, pickup and express, departments and categories, ingredients, allergens (contains / may contain), dietary and lifestyle claims, health star rating, nutrition panel per 100 g and per serve, images, and size variants. `gtin13` is the 13-digit barcode printed on the pack (EAN-13), derived from Woolworths' own `barcode` (mostly a 14-digit GTIN-14: indicator digit dropped, check digit recomputed; 13-digit codes kept, 12-digit UPC-A padded); null when `barcode` is missing or has a wrong check digit, and for in-store numbers (02, 04, 20-29: items weighed or packed in store, such as loose fruit or bakery bread) that are not a product barcode. `location` says what the prices are for: woolworths.com.au shows the same online prices to every signed-out shopper and lets only signed-in shoppers choose a store or delivery address, so `prices_for_location` is always false; `selected` is false with no `postcode`/`store`. `facets` lists the departments the results fall into; `related_searches` the site's suggested refinements. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/woolworths-search",
+        "description": "Woolworths (Australia) product search: stockcode, barcode, name, brand, link, package size, price, was price and savings, unit price (per kg/L), in-store price, special / half-price flags, promotion text, multibuy and member prices, stock and availability for delivery, pickup and express, departments and categories, ingredients, allergens (contains / may contain), dietary and lifestyle claims, health star rating, nutrition panel per 100 g and per serve, images, and size variants. `gtin13` is the barcode printed on the pack (EAN-13; an EAN-8 is zero-padded to 13 digits), the code to match products with other retailers: Woolworths' own record of the pack barcode, matched by stockcode. It is not derived from `barcode`, which is Woolworths' internal trade code (mostly a 14-digit GTIN-14 whose item number often differs from the pack's, so never strip it into an EAN-13). `gtin13` is null for products without a pack barcode (most Everyday Market partner listings), for in-store numbers (02, 04, 20-29: items weighed or packed in store, such as loose fruit, deli or bakery bread) and for case or multipack codes, and when the pack barcode could not be confirmed on this call: `gtin13_unconfirmed` counts those (normally 0; ask again for them). `location` says what the prices are for: woolworths.com.au shows the same online prices to every signed-out shopper and lets only signed-in shoppers choose a store or delivery address, so `prices_for_location` is always false; `selected` is false with no `postcode`/`store`. `facets` lists the departments the results fall into; `related_searches` the site's suggested refinements. Pass `next_page` back as `page`; null on the last page. The site serves the first 10,000 results of a search (`total_capped` is true when there are more; pages past 10,000 / `limit`, e.g. 278 at 36, answer 400): narrow the search or list categories with /woolworths/v1/category.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/woolworths-search",
         "tags": [
           "Woolworths"
         ],
@@ -713,7 +1100,7 @@
             "name": "page",
             "in": "query",
             "required": false,
-            "description": "Page number, 1 for the first. Pass back `next_page`.",
+            "description": "Page number, 1 for the first, up to 10,000 / `limit` (278 at 36). Pass back `next_page`.",
             "schema": {
               "type": "integer"
             }
@@ -779,8 +1166,10 @@
                   "page": 1,
                   "limit": 24,
                   "total": 17,
+                  "total_capped": false,
                   "count": 17,
                   "next_page": null,
+                  "gtin13_unconfirmed": 0,
                   "suggested_term": null,
                   "corrections": null,
                   "related_searches": [],
@@ -820,35 +1209,44 @@
                     },
                     "… 4 more"
                   ],
+                  "location": {
+                    "selected": false,
+                    "postcode": null,
+                    "store": null,
+                    "prices_for_location": false,
+                    "availability_for_location": false,
+                    "note": "Prices are woolworths.com.au's online prices with no store or delivery address chosen; the site shows the same prices to every signed-out sh…"
+                  },
                   "products": [
                     {
-                      "id": "84628",
-                      "barcode": "19310072010813",
-                      "url": "https://www.woolworths.com.au/shop/productdetails/84628/arnott-s-tim-tam-original-chocolate-biscuits-large-pack",
-                      "name": "Arnott's Tim Tam Original Chocolate Biscuits Large Pack 365g",
-                      "short_name": "Arnott's Tim Tam Original Chocolate Biscuits Large Pack",
+                      "id": "36066",
+                      "barcode": "79310072000281",
+                      "gtin13": "9310072000282",
+                      "url": "https://www.woolworths.com.au/shop/productdetails/36066/arnott-s-tim-tam-original-chocolate-biscuits",
+                      "name": "Arnott's Tim Tam Original Chocolate Biscuits 200g",
+                      "short_name": "Arnott's Tim Tam Original Chocolate Biscuits",
                       "brand": "Arnott's",
-                      "description": "Arnott's Tim Tam Original Chocolate Biscuit Large Pack is made with irresistible real chocolate. The most irresistible chocolate biscuit. Tr…",
-                      "summary": "Indulge in Arnotts Tim Tam Chocolate Biscuits! Real chocolate and delicious taste make this a family favourite. Perfect for any sweet treat.…",
-                      "package_size": "365g",
+                      "description": "Discover the irresistible layers of Tim Tam Original - crunchy biscuits, smooth creamy filling and an indulgent real chocolate coating. Aust…",
+                      "summary": "Discover Arnotts Tim Tam Chocolate Biscuits Original. A delicious biscuit with real chocolate, ideal for sharing. Add it to your cart at Woo…",
+                      "package_size": "200g",
                       "unit": "Each",
-                      "variety": "Biscuits Large Pack",
-                      "price": 6.4,
-                      "was_price": 8,
-                      "savings": 1.6,
+                      "variety": "Chocolate Biscuits",
+                      "price": 6,
+                      "was_price": 6,
+                      "savings": 0,
                       "currency": "AUD",
-                      "unit_price": 1.75,
+                      "unit_price": 3,
                       "unit_price_measure": "100G",
-                      "unit_price_text": "$1.75 / 100G",
-                      "instore_price": 6.4,
-                      "instore_was_price": 8,
-                      "instore_unit_price_text": "$2.19 / 100G",
-                      "on_special": true,
-                      "instore_on_special": true,
+                      "unit_price_text": "$3.00 / 100G",
+                      "instore_price": 6,
+                      "instore_was_price": 6,
+                      "instore_unit_price_text": "$3.00 / 100G",
+                      "on_special": false,
+                      "instore_on_special": false,
                       "half_price": false,
                       "edr_special": false,
-                      "promotion": "Save $1.60",
-                      "promotion_type": "Special",
+                      "promotion": null,
+                      "promotion_type": "NOT_SET",
                       "promotion_text": null,
                       "multibuy": null,
                       "member_price": null,
@@ -861,12 +1259,12 @@
                       "purchasable": true,
                       "ranged": true,
                       "online_only": false,
-                      "new": false,
-                      "…": "27 more fields"
+                      "…": "28 more fields"
                     },
                     {
                       "id": "32257",
                       "barcode": "59310072013850",
+                      "gtin13": "9310072013855",
                       "url": "https://www.woolworths.com.au/shop/productdetails/32257/arnott-s-tim-tam-double-chocolate-biscuits",
                       "name": "Arnott's Tim Tam Double Chocolate Biscuits 200g",
                       "short_name": "Arnott's Tim Tam Double Chocolate Biscuits",
@@ -876,22 +1274,22 @@
                       "package_size": "200g",
                       "unit": "Each",
                       "variety": "Chocolate Biscuits",
-                      "price": 4.5,
+                      "price": 6,
                       "was_price": 6,
-                      "savings": 1.5,
+                      "savings": 0,
                       "currency": "AUD",
-                      "unit_price": 2.25,
+                      "unit_price": 3,
                       "unit_price_measure": "100G",
-                      "unit_price_text": "$2.25 / 100G",
-                      "instore_price": 4.5,
+                      "unit_price_text": "$3.00 / 100G",
+                      "instore_price": 6,
                       "instore_was_price": 6,
                       "instore_unit_price_text": "$3.00 / 100G",
-                      "on_special": true,
-                      "instore_on_special": true,
+                      "on_special": false,
+                      "instore_on_special": false,
                       "half_price": false,
                       "edr_special": false,
-                      "promotion": "Save $1.50",
-                      "promotion_type": "Special",
+                      "promotion": null,
+                      "promotion_type": "NOT_SET",
                       "promotion_text": null,
                       "multibuy": null,
                       "member_price": null,
@@ -904,8 +1302,7 @@
                       "purchasable": true,
                       "ranged": true,
                       "online_only": false,
-                      "new": false,
-                      "…": "27 more fields"
+                      "…": "28 more fields"
                     },
                     "… 15 more"
                   ],
@@ -950,7 +1347,7 @@
       "get": {
         "operationId": "woolworthsSpecials",
         "summary": "Woolworths specials",
-        "description": "Woolworths (Australia) specials by group (half price, lower shelf price, everyday low price, seasonal price, buy more save more, online only, bundles, Everyday Market), optionally narrowed to one department: total, and each product's stockcode, name, brand, link, package size, price, was price and savings, unit price, special / half-price flags, promotion text, multibuy and member prices, stock and availability, sponsored flag, departments, ingredients, allergens, dietary claims, health star rating, nutrition and images. `gtin13` is the 13-digit barcode printed on the pack (EAN-13), derived from Woolworths' own `barcode` (mostly a 14-digit GTIN-14: indicator digit dropped, check digit recomputed; 13-digit codes kept, 12-digit UPC-A padded); null when `barcode` is missing or has a wrong check digit, and for in-store numbers (02, 04, 20-29: items weighed or packed in store, such as loose fruit or bakery bread) that are not a product barcode. `location` says what the prices are for: woolworths.com.au shows the same online prices to every signed-out shopper and lets only signed-in shoppers choose a store or delivery address, so `prices_for_location` is always false; `selected` is false with no `postcode`/`store`. `facets` lists brands, allergens, dietary and health star filters with counts; `groups` and `departments` list the values to pass back. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/woolworths-specials",
+        "description": "Woolworths (Australia) specials by group (half price, lower shelf price, everyday low price, seasonal price, buy more save more, online only, bundles, Everyday Market), optionally narrowed to one department: total, and each product's stockcode, name, brand, link, package size, price, was price and savings, unit price, special / half-price flags, promotion text, multibuy and member prices, stock and availability, sponsored flag, departments, ingredients, allergens, dietary claims, health star rating, nutrition and images. `gtin13` is the barcode printed on the pack (EAN-13; an EAN-8 is zero-padded to 13 digits), the code to match products with other retailers: Woolworths' own record of the pack barcode, matched by stockcode. It is not derived from `barcode`, which is Woolworths' internal trade code (mostly a 14-digit GTIN-14 whose item number often differs from the pack's, so never strip it into an EAN-13). `gtin13` is null for products without a pack barcode (most Everyday Market partner listings), for in-store numbers (02, 04, 20-29: items weighed or packed in store, such as loose fruit, deli or bakery bread) and for case or multipack codes, and when the pack barcode could not be confirmed on this call: `gtin13_unconfirmed` counts those (normally 0; ask again for them). `location` says what the prices are for: woolworths.com.au shows the same online prices to every signed-out shopper and lets only signed-in shoppers choose a store or delivery address, so `prices_for_location` is always false; `selected` is false with no `postcode`/`store`. `facets` lists brands, allergens, dietary and health star filters with counts; `groups` and `departments` list the values to pass back. Pass `next_page` back as `page`; null on the last page. A group lists at most its first 10,000 products (`total_capped`; pages past 10,000 / `limit` answer 400): page its departments for the rest. To collect a whole group page it with `sort=name`; a group lists products that sit in none of its departments, so page the group rather than adding up departments.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/woolworths-specials",
         "tags": [
           "Woolworths"
         ],
@@ -1005,7 +1402,7 @@
             "name": "page",
             "in": "query",
             "required": false,
-            "description": "Page number. Pass `next_page` from the previous response; null on the last page.",
+            "description": "Page number, up to 10,000 / `limit` (278 at 36). Pass `next_page` from the previous response; null on the last page.",
             "schema": {
               "type": "integer"
             }
@@ -1074,9 +1471,11 @@
                   "sort": "relevance",
                   "page": 1,
                   "limit": 24,
-                  "total": 1627,
-                  "count": 30,
+                  "total": 3023,
+                  "total_capped": false,
+                  "count": 32,
                   "next_page": 2,
+                  "gtin13_unconfirmed": 0,
                   "title": "Half Price Specials | Woolworths",
                   "url": "https://www.woolworths.com.au/shop/browse/specials/half-price",
                   "facets": [
@@ -1085,16 +1484,16 @@
                       "label": "Brand",
                       "values": [
                         {
-                          "id": "Activia",
-                          "label": "Activia",
-                          "count": 3
+                          "id": "1000Hour",
+                          "label": "1000Hour",
+                          "count": 7
                         },
                         {
-                          "id": "Aerogard",
-                          "label": "Aerogard",
-                          "count": 3
+                          "id": "8Ware",
+                          "label": "8Ware",
+                          "count": 1
                         },
-                        "… 271 more"
+                        "… 402 more"
                       ]
                     },
                     {
@@ -1104,46 +1503,55 @@
                         {
                           "id": "Crustacea Free",
                           "label": "Crustacea Free",
-                          "count": 7
+                          "count": 2
                         },
                         {
                           "id": "Dairy Free",
                           "label": "Dairy Free",
-                          "count": 141
+                          "count": 162
                         },
-                        "… 11 more"
+                        "… 8 more"
                       ]
                     },
                     "… 3 more"
                   ],
+                  "location": {
+                    "selected": false,
+                    "postcode": null,
+                    "store": null,
+                    "prices_for_location": false,
+                    "availability_for_location": false,
+                    "note": "Prices are woolworths.com.au's online prices with no store or delivery address chosen; the site shows the same prices to every signed-out sh…"
+                  },
                   "products": [
                     {
-                      "id": "317455",
-                      "barcode": "29300650452545",
-                      "url": "https://www.woolworths.com.au/shop/productdetails/317455/oreo-mini-cookies-original-bags",
-                      "name": "Oreo Mini Cookies Original Bags 204g 10 pack",
-                      "short_name": "Oreo Mini Cookies Original Bags",
-                      "brand": "Oreo",
-                      "description": "Enjoy deliciously sweet vanilla creme between two of our iconic mini choc biscuits, with the classic OREO Mini Original. OREO Mini Original …",
-                      "summary": "Oreo Mini Cookies Original is your delicious choice for snacking on the go. It's the classic mini choc biscuit with vanilla creme. Shop now …",
-                      "package_size": "204g 10 pack",
+                      "id": "6052000",
+                      "barcode": "14987176328462",
+                      "gtin13": "4987176328465",
+                      "url": "https://www.woolworths.com.au/shop/productdetails/6052000/fairy-5-power-action-dishwashing-tablets-lemon",
+                      "name": "Fairy 5 Power Action Dishwashing Tablets Lemon 70 pack",
+                      "short_name": "Fairy 5 Power Action Dishwashing Tablets Lemon",
+                      "brand": "Fairy",
+                      "description": "Fairy best breakthrough cleaning formula + Cleans tough baked-on, burnt-on stains thoroughly without prewash #fairy #capsules #liquid #table…",
+                      "summary": "Fairy 5 Power Action Dishwashing Tablets Lemon: powerful cleaning for tough stains & baked-on grime. Get breakthrough results. Shop now at W…",
+                      "package_size": "70 pack",
                       "unit": "Each",
-                      "variety": "Bags",
-                      "price": 2.5,
-                      "was_price": 5,
-                      "savings": 2.5,
+                      "variety": "Tablets Lemon",
+                      "price": 35,
+                      "was_price": 76,
+                      "savings": 41,
                       "currency": "AUD",
-                      "unit_price": 1.23,
-                      "unit_price_measure": "100G",
-                      "unit_price_text": "$1.23 / 100G",
-                      "instore_price": 2.5,
-                      "instore_was_price": 5,
-                      "instore_unit_price_text": "$2.45 / 100G",
+                      "unit_price": 0.5,
+                      "unit_price_measure": "1EA",
+                      "unit_price_text": "$0.50 / 1EA",
+                      "instore_price": 35,
+                      "instore_was_price": 76,
+                      "instore_unit_price_text": "$1.09 / 1EA",
                       "on_special": true,
                       "instore_on_special": true,
                       "half_price": true,
                       "edr_special": false,
-                      "promotion": "Save $2.50",
+                      "promotion": "Save $41.00",
                       "promotion_type": "Special",
                       "promotion_text": null,
                       "multibuy": null,
@@ -1157,36 +1565,36 @@
                       "purchasable": true,
                       "ranged": true,
                       "online_only": false,
-                      "new": false,
-                      "…": "27 more fields"
+                      "…": "28 more fields"
                     },
                     {
-                      "id": "6062868",
-                      "barcode": "29300650454174",
-                      "url": "https://www.woolworths.com.au/shop/productdetails/6062868/oreo-original-cookies",
-                      "name": "Oreo Original Cookies 140g",
-                      "short_name": "Oreo Original Cookies",
-                      "brand": "Oreo",
-                      "description": "NEW OREO Original Minecraft cookies! Featuring 3x embossments for a limited time only. NEW OREO Original Minecraft cookies! Featuring 3x emb…",
-                      "summary": null,
-                      "package_size": "140g",
+                      "id": "6051971",
+                      "barcode": "14987176328479",
+                      "gtin13": "4987176328472",
+                      "url": "https://www.woolworths.com.au/shop/productdetails/6051971/fairy-5-power-action-dishwashing-tablets-lemon",
+                      "name": "Fairy 5 Power Action Dishwashing Tablets Lemon 34 pack",
+                      "short_name": "Fairy 5 Power Action Dishwashing Tablets Lemon",
+                      "brand": "Fairy",
+                      "description": "Fairy 5 Power Action Automatic Dishwasher Tablets is Fairy best breakthrough cleaning power*, cleaning tough baked-on, burnt-on stains^ thor…",
+                      "summary": "Tired of pre-washing dishes? Fairy 5 Power Action Dishwashing Tablets Lemon is an effective and powerful solution for tough baked-on stains.…",
+                      "package_size": "34 pack",
                       "unit": "Each",
-                      "variety": null,
-                      "price": 1.6,
-                      "was_price": 3.2,
-                      "savings": 1.6,
+                      "variety": "Tablets Lemon",
+                      "price": 21,
+                      "was_price": 46,
+                      "savings": 25,
                       "currency": "AUD",
-                      "unit_price": 1.14,
-                      "unit_price_measure": "100G",
-                      "unit_price_text": "$1.14 / 100G",
-                      "instore_price": 1.6,
-                      "instore_was_price": 3.2,
-                      "instore_unit_price_text": "$2.29 / 100G",
+                      "unit_price": 0.62,
+                      "unit_price_measure": "1EA",
+                      "unit_price_text": "$0.62 / 1EA",
+                      "instore_price": 21,
+                      "instore_was_price": 46,
+                      "instore_unit_price_text": "$1.35 / 1EA",
                       "on_special": true,
                       "instore_on_special": true,
                       "half_price": true,
                       "edr_special": false,
-                      "promotion": "Save $1.60",
+                      "promotion": "Save $25.00",
                       "promotion_type": "Special",
                       "promotion_text": null,
                       "multibuy": null,
@@ -1200,10 +1608,9 @@
                       "purchasable": true,
                       "ranged": true,
                       "online_only": false,
-                      "new": false,
-                      "…": "27 more fields"
+                      "…": "28 more fields"
                     },
-                    "… 28 more"
+                    "… 30 more"
                   ],
                   "groups": [
                     {
@@ -1225,9 +1632,9 @@
                       "slug": "personal-care"
                     },
                     {
-                      "id": "specialsgroup.3676.1_9851658",
-                      "name": "Health & Wellness",
-                      "slug": "health-wellness"
+                      "id": "specialsgroup.3676.1_8D61DD6",
+                      "name": "Beauty",
+                      "slug": "beauty"
                     },
                     "… 21 more"
                   ],
@@ -1369,7 +1776,7 @@
                       "latitude": -33.865306,
                       "longitude": 151.202667,
                       "distance_km": 0.45,
-                      "open_now": true,
+                      "open_now": false,
                       "timezone_offset": "11:0",
                       "hours": [
                         {
@@ -1399,7 +1806,7 @@
                       "latitude": -33.864935,
                       "longitude": 151.206521,
                       "distance_km": 0.61,
-                      "open_now": true,
+                      "open_now": false,
                       "timezone_offset": "11:0",
                       "hours": [
                         {
