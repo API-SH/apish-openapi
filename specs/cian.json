@@ -891,7 +891,7 @@
       "get": {
         "operationId": "cianSearch",
         "summary": "Cian property search (Russia)",
-        "description": "Search Cian, Russia's largest property portal: flats, houses, land and commercial property for sale or rent, and flats in new-build complexes, in any region, with the total count. Filters: rooms (studio, 1-6, free layout), price, total, kitchen and living area, floor and floors in the building, build year, new-build or resale, owner listings only, long-term or daily rent, house type, publication date, one agent's or agency's listings (`user_id`), and any other Cian search filter through `json_query`. Sorts: price, price per m², area, newest. Each offer has its id, link, title, price in rubles, price per m², deposit and fees, rooms, areas, floor, building facts (floors, year, material, lifts), address with its parts, coordinates, districts, metro stations with walking or transport minutes, description, photos and layouts, phone numbers, the seller (agent, agency or owner), the new-build complex, the publication date, plus `raw`. 28 offers a page. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/cian-search",
+        "description": "Search Cian, Russia's largest property portal: flats, houses, land and commercial property for sale or rent, and flats in new-build complexes, in any region, with the total count. Filters: rooms (studio, 1-6, free layout), price, total, kitchen and living area, floor and floors in the building, build year, new-build or resale, owner listings only, long-term or daily rent, house type, publication date, one agent's or agency's listings (`user_id`), and any other Cian search filter through `json_query`. Narrow a search to a place: a map rectangle (`bbox`), a drawn area (`polygon`), an address or street (`address`, resolved to Cian's own street and house ids, shown in `applied_filters.address`), or Cian street, house and district ids. If Cian does not accept a place filter or a `json_query` filter, the call fails with a 400 that names it (no charge) instead of searching the whole region; other filters Cian does not apply to a search (e.g. `building` for rentals) are named in `notice`. Sorts: price, price per m², area, newest. Each offer has its id, link, title, price in rubles, price per m², deposit and fees, rooms, areas, floor, building facts (floors, year, material, lifts), address with its parts, coordinates, districts, metro stations with walking or transport minutes, description, photos and layouts, phone numbers, the seller (agent, agency or owner), the new-build complex, the publication date, plus `raw`. 28 offers a page. Pass `next_page` back as `page`; null on the last page.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/cian-search",
         "tags": [
           "Cian"
         ],
@@ -1161,6 +1161,79 @@
             }
           },
           {
+            "name": "bbox",
+            "in": "query",
+            "required": false,
+            "description": "Only listings inside this map rectangle: two opposite corners as lat1,lon1,lat2,lon2 (latitude first), e.g. 58.0003407,56.3023173,58.0041987,56.3081425 (a few blocks in Perm). Use with the city's `region`.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "58.0003407,56.3023173,58.0041987,56.3081425"
+          },
+          {
+            "name": "polygon",
+            "in": "query",
+            "required": false,
+            "description": "Only listings inside this area: 3 or more points as lat,lon;lat,lon;lat,lon (latitude first), as when you draw an area on Cian's map.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "required": false,
+            "description": "Only listings at this address: a house (\"Пермь, улица Юрша, 80\") or a whole street (\"Пермь, улица Юрша\"), written as on Cian, with the city. Without `region`, the address's city becomes the region; with `region`, the match inside that region is used. The answer's `applied_filters.address` shows what it matched and the Cian ids (city_id, street_id, house_id) to reuse.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "street_id",
+            "in": "query",
+            "required": false,
+            "description": "Only listings on these streets: Cian street ids, comma-separated (from `applied_filters.address.street_id`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "house_id",
+            "in": "query",
+            "required": false,
+            "description": "Only listings in these buildings: Cian house ids, comma-separated (from `applied_filters.address.house_id`).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "district_id",
+            "in": "query",
+            "required": false,
+            "description": "Only listings in these districts or micro-districts: Cian district ids, comma-separated (e.g. 298 for Perm's Dzerzhinsky district).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metro_id",
+            "in": "query",
+            "required": false,
+            "description": "Only listings near these metro stations: Cian station ids, comma-separated (e.g. 27). Several stations, districts or complexes add up (listings near any of them).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "newbuilding_id",
+            "in": "query",
+            "required": false,
+            "description": "Only flats in these new-build complexes: Cian complex ids, comma-separated (the id from /cian/v1/newbuildings, e.g. 3911074).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "required": false,
@@ -1181,7 +1254,7 @@
             "name": "json_query",
             "in": "query",
             "required": false,
-            "description": "Any other Cian search filters as a JSON object in Cian's own format (each search answer echoes the full `json_query` it ran), e.g. {\"metro\":{\"type\":\"terms\",\"value\":[10]}}.",
+            "description": "Any other Cian search filters as a JSON object in Cian's own format (each search answer echoes the full `json_query` Cian ran), e.g. {\"office_type\":{\"type\":\"terms\",\"value\":[10]}} or {\"site\":{\"type\":\"range\",\"value\":{\"gte\":10}}} (land area). Place filters in Cian's format: a rectangle {\"bbox\":{\"type\":\"term\",\"value\":[[56.3023173,58.0003407],[56.3081425,58.0041987]]}} (longitude first; a \"lat1,lon1,lat2,lon2\" string is accepted too), an area {\"geo\":{\"type\":\"geo\",\"value\":[{\"type\":\"polygon\",\"name\":\"area\",\"coordinates\":[[\"56.30\",\"58.00\"],[\"56.31\",\"58.00\"],[\"56.31\",\"58.01\"]]}]}} (longitude first), or streets, houses and districts {\"geo\":{\"type\":\"geo\",\"value\":[{\"type\":\"street\",\"id\":277609},{\"type\":\"house\",\"id\":2044774},{\"type\":\"district\",\"id\":298}]}}; metro stations, new-build complexes and towns are geo items too ({\"type\":\"underground\",\"id\":27}, {\"type\":\"newobject\",\"id\":3911074}, {\"type\":\"location\",\"id\":5909}), and the keys metro, newbuilding, newobject and location are turned into them. A filter Cian does not accept fails the call with a 400 naming it.",
             "schema": {
               "type": "string"
             }
