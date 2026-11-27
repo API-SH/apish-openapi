@@ -1,0 +1,778 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API.SH: Upwork",
+    "version": "1.0.0",
+    "description": "The Upwork API from API.SH: public Upwork data as clean JSON. Every endpoint is a GET with query parameters and your key in the x-api-key header. Calls that run cost the credits shown (x-credits): successes, and lookups that found nothing (404). Refused calls and errors on our side are free. Docs: https://api.sh/docs · Every platform: https://api.sh/openapi.json",
+    "contact": {
+      "name": "API.SH support",
+      "email": "support@api.sh",
+      "url": "https://api.sh/contact"
+    },
+    "termsOfService": "https://api.sh/legal/terms"
+  },
+  "servers": [
+    {
+      "url": "https://api.api.sh"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account",
+      "description": "Your balance, usage, logs and past responses. Free."
+    },
+    {
+      "name": "Upwork",
+      "description": "1 endpoint (jobs & b2b)",
+      "x-slug": "upwork",
+      "x-domains": [
+        "upwork.com"
+      ]
+    }
+  ],
+  "paths": {
+    "/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Balance, plan, spend and spend limits",
+        "description": "Credits by bucket (free monthly, plan, pay-as-you-go), the plan, credits spent today and this month (UTC), your spend limits and the key used. Free: costs no credits.",
+        "responses": {
+          "200": {
+            "description": "Account",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "account": {
+                    "id": "8f0c…",
+                    "status": "active",
+                    "unlimited": false
+                  },
+                  "credits": {
+                    "total": 41250,
+                    "free": 100,
+                    "plan": 0,
+                    "payg": 41150,
+                    "free_resets_at": "2026-11-01T00:00:00Z"
+                  },
+                  "plan": null,
+                  "spend": {
+                    "today": 120,
+                    "this_month": 3400,
+                    "daily_limit": 5000,
+                    "monthly_limit": null,
+                    "period": "UTC"
+                  },
+                  "key": {
+                    "id": "…",
+                    "name": "production",
+                    "prefix": "ash_li",
+                    "created_at": "2026-10-01T00:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/usage": {
+      "get": {
+        "operationId": "getAccountUsage",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Usage per day and per endpoint",
+        "description": "Calls, errors and credits per UTC day, and the top endpoints by credits. Free. Add output=csv for the daily rows as CSV.",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/logs": {
+      "get": {
+        "operationId": "listAccountLogs",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your calls of the last 30 days",
+        "description": "Newest first. Filter by status, route prefix, key or time; page with `before` (the `next` value). Add output=csv|ndjson to download (up to 5,000 rows per request; the next cursor is in the x-next-cursor header). Free.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 50
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "ok, error, or an HTTP status like 502.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "description": "Route prefix, e.g. /tiktok/v1",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": false,
+            "description": "Only calls made with this key id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "ISO time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Cursor from `next`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/results/{request_id}": {
+      "get": {
+        "operationId": "getResult",
+        "tags": [
+          "Account"
+        ],
+        "summary": "Fetch a past response again, free",
+        "description": "The exact response a call returned, for 30 days after the call, at no cost. Use the call's x-request-id. Supports output=csv|ndjson.",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored response (headers: x-refetch: 1, x-original-time, x-original-route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Older than 30 days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upwork/v1/jobs": {
+      "get": {
+        "operationId": "upworkJobs",
+        "summary": "Upwork job search",
+        "description": "Upwork's public freelance job search: title, description, fixed budget or hourly range, duration, workload, experience level, skills, published date and job link. Client details (country, spend, rating) are only shown to signed-in freelancers and come back empty. `total` is Upwork's count for the search as shown without an account (it can be lower than the signed-in count). Optional filters: job type (hourly or fixed price), experience level, fixed-budget range, hourly-rate range and contract-to-hire roles. Upwork shows visitors only the first page of a search (up to 50 jobs with `per_page=50`), so `next_page` is null; budget and hourly-rate ranges are applied to those first 50 jobs. The payment-verified filter is shown only to signed-in users and answers 400.\n\nEvery response includes `credits_used`: the credits this call cost.\n\nPrice: 1 credit per successful call. Docs: https://api.sh/docs/upwork-jobs",
+        "tags": [
+          "Upwork"
+        ],
+        "x-credits": 1,
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search words.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "python"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Order of results.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "recency"
+              ]
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "Jobs per page.",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                "10",
+                "20",
+                "50"
+              ]
+            }
+          },
+          {
+            "name": "job_type",
+            "in": "query",
+            "required": false,
+            "description": "Only hourly or only fixed-price jobs.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hourly",
+                "fixed"
+              ]
+            }
+          },
+          {
+            "name": "experience_level",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated: `entry`, `intermediate`, `expert`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "budget_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum fixed-price budget, USD.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "budget_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum fixed-price budget, USD.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "hourly_rate_min",
+            "in": "query",
+            "required": false,
+            "description": "Minimum hourly rate, USD.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "hourly_rate_max",
+            "in": "query",
+            "required": false,
+            "description": "Maximum hourly rate, USD.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "contract_to_hire",
+            "in": "query",
+            "required": false,
+            "description": "Only contract-to-hire roles.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "payment_verified",
+            "in": "query",
+            "required": false,
+            "description": "Only clients with a verified payment method. Upwork shows this filter only to signed-in users, so it answers 400 now; leave it out.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Page number. Upwork shows visitors only page 1; other pages answer 400.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/raw"
+          },
+          {
+            "$ref": "#/components/parameters/fields"
+          },
+          {
+            "$ref": "#/components/parameters/fresh"
+          },
+          {
+            "$ref": "#/components/parameters/output"
+          },
+          {
+            "$ref": "#/components/parameters/records"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The data as JSON (or CSV / NDJSON with `output`).",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/x-request-id"
+              },
+              "x-credits-used": {
+                "$ref": "#/components/headers/x-credits-used"
+              },
+              "x-credits-remaining": {
+                "$ref": "#/components/headers/x-credits-remaining"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "example": {
+                  "query": "python",
+                  "page": 1,
+                  "per_page": 10,
+                  "sort": "relevance",
+                  "total": 114,
+                  "url": "https://www.upwork.com/nx/search/jobs/?q=python&page=1",
+                  "next_page": 2,
+                  "count": 10,
+                  "jobs": [
+                    {
+                      "id": "2110099034437902237",
+                      "ciphertext": "~022110099034437902237",
+                      "title": "Python Developer for Document Pipeline",
+                      "description": "Task Duration 1 - 2 weeks. \n\nWhat we have\nAn interactive US map (a single self-contained HTML file) with about 236 water sites: rivers, lake…",
+                      "type": "hourly",
+                      "budget": null,
+                      "hourly_min": 90,
+                      "hourly_max": 120,
+                      "weekly_budget": null,
+                      "duration": "1 to 3 months",
+                      "workload": "as needed",
+                      "experience_level": "Expert",
+                      "proposals": null,
+                      "freelancers_to_hire": null,
+                      "skills": [
+                        "Python",
+                        "Python Script",
+                        "… 5 more"
+                      ],
+                      "client": {
+                        "country": null,
+                        "payment_verified": false,
+                        "total_spent": null,
+                        "total_reviews": null,
+                        "rating": null
+                      },
+                      "enterprise": null,
+                      "premium": false,
+                      "created_at": "2026-10-13T20:03:08.647Z",
+                      "published_at": "2026-10-13T20:04:49.402Z",
+                      "renewed_at": null,
+                      "url": "https://www.upwork.com/jobs/~022110099034437902237"
+                    },
+                    {
+                      "id": "2110333719583839777",
+                      "ciphertext": "~022110333719583839777",
+                      "title": "I Need Coding/Python Teacher",
+                      "description": "I need a Coding/Python Teacher that can Teach in our Learning Hub. Teach children between the ges of 5-13 in a GROUP CLASS and sometimes ONE…",
+                      "type": "fixed",
+                      "budget": 30,
+                      "hourly_min": null,
+                      "hourly_max": null,
+                      "weekly_budget": null,
+                      "duration": "More than 6 months",
+                      "workload": null,
+                      "experience_level": "Intermediate",
+                      "proposals": null,
+                      "freelancers_to_hire": null,
+                      "skills": [
+                        "Python",
+                        "HTML",
+                        "… 2 more"
+                      ],
+                      "client": {
+                        "country": null,
+                        "payment_verified": false,
+                        "total_spent": null,
+                        "total_reviews": null,
+                        "rating": null
+                      },
+                      "enterprise": null,
+                      "premium": false,
+                      "created_at": "2026-10-14T11:35:41.868Z",
+                      "published_at": "2026-10-14T11:38:07.746Z",
+                      "renewed_at": null,
+                      "url": "https://www.upwork.com/jobs/~022110333719583839777"
+                    },
+                    "… 8 more"
+                  ],
+                  "cached": false,
+                  "credits_used": 1
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/E400"
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "502": {
+            "$ref": "#/components/responses/E502"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Create keys at https://app.api.sh/keys. Authorization: Bearer <key> also works."
+      }
+    },
+    "parameters": {
+      "raw": {
+        "name": "raw",
+        "in": "query",
+        "required": false,
+        "description": "0 leaves out the bulky `raw` source blocks (often 10-30x smaller).",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "0",
+            "1"
+          ]
+        }
+      },
+      "fields": {
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "description": "Comma-separated fields to return, e.g. `posts.id,posts.title`. Call metadata is always included.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "fresh": {
+        "name": "fresh",
+        "in": "query",
+        "required": false,
+        "description": "1 skips the 24-hour cache and fetches live.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "1"
+          ]
+        }
+      },
+      "output": {
+        "name": "output",
+        "in": "query",
+        "required": false,
+        "description": "csv or ndjson returns the response's records (its main list, or the object as one row) as CSV or NDJSON instead of JSON.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "json",
+            "csv",
+            "ndjson"
+          ]
+        }
+      },
+      "records": {
+        "name": "records",
+        "in": "query",
+        "required": false,
+        "description": "With output=csv|ndjson: the top-level list to turn into rows (e.g. `reviews`), or `.` for the whole object as one row.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "const": false
+          },
+          "error": {
+            "type": "string"
+          },
+          "status_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "On a 503 for a paused endpoint: the status page, which lists open incidents."
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      }
+    },
+    "responses": {
+      "E400": {
+        "description": "A parameter is missing or invalid. Not charged (unless the call ran and the source rejected the value; credits_used says).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E401": {
+        "description": "Missing, invalid, revoked or expired API key. Not charged. See https://api.sh/docs/errors#401",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "Not enough credits, a spend limit you set was reached (`spend_limit`), or the key's monthly credit cap was reached (`key_cap`). Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "Not found, or not public. A lookup that ran costs the endpoint's price (credits_used says); an unknown route is free.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E502": {
+        "description": "The source site failed this time; retry. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E503": {
+        "description": "Endpoint paused or temporarily unavailable; may include retry-after, and status_url (https://api.sh/status) for a paused endpoint. Not charged.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "x-request-id": {
+        "description": "The call's id (logs, re-fetch with /v1/results/{id}).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "x-credits-used": {
+        "description": "Credits charged for this call.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "x-credits-remaining": {
+        "description": "Balance after the call.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "url": "https://api.sh/docs"
+  }
+}
